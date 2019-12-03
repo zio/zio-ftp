@@ -25,15 +25,6 @@ install_jdk: &install_jdk
         sudo apt update
         sudo apt install openjdk-${JDK_VERSION}-jdk -y
 
-install_sbt: &install_sbt
-  - run:
-      name: Get sbt binary
-      command: |
-        echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-        curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
-        sudo apt-get update
-        sudo apt-get install sbt=1.3.4
-
 load_cache: &load_cache
   - restore_cache:
       key: sbt-nio-cache
@@ -51,10 +42,9 @@ lint: &lint
     - checkout
     - <<: *load_cache
     - <<: *install_jdk
-    - <<: *install_sbt
     - run:
         name: Lint code
-        command: sbt ++${SCALA_VERSION}! check
+        command: ./sbt ++${SCALA_VERSION}! check
     - <<: *save_cache
 
 test: &test
@@ -62,12 +52,11 @@ test: &test
     - checkout
     - <<: *load_cache
     - <<: *install_jdk
-    - <<: *install_sbt
     - run:
         name: Run tests
         command: |
           docker-compose up -d
-          sbt ++${SCALA_VERSION}! test
+          ./sbt ++${SCALA_VERSION}! test
     - <<: *save_cache
 
 jobs:

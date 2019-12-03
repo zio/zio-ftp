@@ -46,6 +46,17 @@ save_cache: &save_cache
         - "~/.sbt"
         - "~/.m2"
 
+lint: &lint
+  steps:
+    - checkout
+    - <<: *load_cache
+    - <<: *install_jdk
+    - <<: *install_sbt
+    - run:
+        name: Lint code
+        command: sbt ++${SCALA_VERSION}! check
+    - <<: *save_cache
+
 test: &test
   steps:
     - checkout
@@ -60,6 +71,13 @@ test: &test
     - <<: *save_cache
 
 jobs:
+  lint:
+    <<: *lint
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8
+
   test_212_jdk8:
     <<: *test
     <<: *machine_ubuntu
@@ -92,6 +110,10 @@ workflows:
   version: 2
   build:
     jobs:
+      - lint:
+          filters:
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
       - test_212_jdk8:
           filters:
             tags:

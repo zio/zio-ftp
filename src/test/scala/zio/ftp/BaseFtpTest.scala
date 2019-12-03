@@ -32,6 +32,11 @@ abstract class BaseFtpTest(labelSuite: String, settings: FtpSettings, home: Path
             files <- connect(settings).use(listFiles("/")(_).runCollect)
           } yield assert(files.map(_.name), hasSameElements(List("notes.txt", "console.dump", "users.csv")))
         ),
+        testM("listFiles with invalid directory")(
+          for {
+            files <- connect(settings).use(listFiles("/dont-exist")(_).runCollect)
+          } yield assert(files, equalTo(Nil))
+        ),
         testM("stat file") {
           for {
             file <- connect(settings).use(stat("/dir1/users.csv"))

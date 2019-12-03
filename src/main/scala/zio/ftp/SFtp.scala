@@ -1,6 +1,6 @@
 package zio.ftp
 
-import java.io.{File, IOException}
+import java.io.{ File, IOException }
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermission._
 
@@ -11,12 +11,13 @@ import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import net.schmizz.sshj.xfer.FilePermission._
 import zio.blocking.Blocking
-import zio.ftp.settings.{KeyFileSftpIdentity, RawKeySftpIdentity, SFtpSettings, SftpIdentity}
-import zio.stream.{Stream, ZSink, ZStream}
-import zio.{Chunk, Managed, ZIO}
+import zio.ftp.settings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SFtpSettings, SftpIdentity }
+import zio.stream.{ Stream, ZSink, ZStream }
+import zio.{ Chunk, Managed, ZIO }
 import scala.jdk.CollectionConverters._
 
 object SFtp {
+
   def connect(settings: SFtpSettings): Managed[IOException, SFTPClient] = {
     val ssh = new SSHClient(settings.sshConfig)
 
@@ -36,11 +37,12 @@ object SFtp {
       sftpIdentity.foreach(setIdentity(_, credentials.username)(ssh))
 
       ssh.newSFTPClient()
-    }.orDieWith(ex => new IOException(s"Fail to connect to server ${settings.host}:${settings.port}", ex)))(client =>
-      taskIO {
-        client.close()
-        if (ssh.isConnected) ssh.disconnect()
-      }.either.unit
+    }.orDieWith(ex => new IOException(s"Fail to connect to server ${settings.host}:${settings.port}", ex)))(
+      client =>
+        taskIO {
+          client.close()
+          if (ssh.isConnected) ssh.disconnect()
+        }.either.unit
     )
   }
 
@@ -64,35 +66,37 @@ object SFtp {
     }
   }
 
-  def listFiles(basePath: String, predicate: FtpFile => Boolean = _ => true)(client: SFTPClient): ZStream[Any, IOException, FtpFile] = {
+  def listFiles(basePath: String, predicate: FtpFile => Boolean = _ => true)(
+    client: SFTPClient
+  ): ZStream[Any, IOException, FtpFile] = {
     val path = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
     val filter = new RemoteResourceFilter {
       override def accept(r: RemoteResourceInfo): Boolean = predicate(SftpFileOps(r))
     }
 
-    ZStream.fromEffect(taskIO(client.ls(path, filter).asScala))
+    ZStream
+      .fromEffect(taskIO(client.ls(path, filter).asScala))
       .flatMap(Stream.fromIterable)
       .flatMap(f => if (f.isDirectory) listFiles(f.getPath)(client) else Stream(SftpFileOps(f)))
       .catchAll {
         case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE => Stream.empty
-        case other => Stream.fail(other)
+        case other                                                                     => Stream.fail(other)
       }
   }
 
   def stat(path: String)(client: SFTPClient): ZIO[Any, IOException, Option[FtpFile]] =
-    taskIO(client.stat(path))
-      .either
-      .map(r =>
-        r.map(r => SftpFileOps(path, r)).toOption
-      )
+    taskIO(client.stat(path)).either
+      .map(r => r.map(r => SftpFileOps(path, r)).toOption)
 
-
-  def readFile[E](path: String, chunkSize: Int = 2048)(client: SFTPClient): ZStream[Blocking, IOException, Byte] = {
+  def readFile[E](path: String, chunkSize: Int = 2048)(client: SFTPClient): ZStream[Blocking, IOException, Byte] =
     for {
-      remoteFile <- ZStream.fromEffect(taskIO(client.open(path, java.util.EnumSet.of(OpenMode.READ)))
-        .orDieWith(ex => new IOException(s"File does not exist $path", ex)))
+      remoteFile <- ZStream.fromEffect(
+                     taskIO(client.open(path, java.util.EnumSet.of(OpenMode.READ)))
+                       .orDieWith(ex => new IOException(s"File does not exist $path", ex))
+                   )
 
       is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64) {
+
         override def close(): Unit =
           try {
             super.close()
@@ -103,44 +107,55 @@ object SFtp {
 
       input <- Stream.fromInputStream(is, chunkSize).chunks.flatMap(Stream.fromChunk)
     } yield input
-  }
 
-  def rm(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] = taskIO(client.rm(path))
-    .orDieWith(ex => new IOException(s"Path is invalid. Cannot delete file : $path", ex))
+  def rm(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] =
+    taskIO(client.rm(path))
+      .orDieWith(ex => new IOException(s"Path is invalid. Cannot delete file : $path", ex))
 
-  def rmdir(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] = taskIO(client.rmdir(path))
-   .orDieWith(ex => new IOException(s"Path is invalid. Cannot delete directory : $path", ex))
+  def rmdir(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] =
+    taskIO(client.rmdir(path))
+      .orDieWith(ex => new IOException(s"Path is invalid. Cannot delete directory : $path", ex))
 
-  def mkdirs(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] = taskIO(client.mkdirs(path))
-    .orDieWith(ex => new IOException(s"Path is invalid. Cannot create directory : $path", ex))
+  def mkdirs(path: String)(client: SFTPClient): ZIO[Any, IOException, Unit] =
+    taskIO(client.mkdirs(path))
+      .orDieWith(ex => new IOException(s"Path is invalid. Cannot create directory : $path", ex))
 
   def upload(path: String, source: Stream[Throwable, Chunk[Byte]])(client: SFTPClient): ZIO[Blocking, Throwable, Unit] =
     for {
       remoteFile <- taskIO(client.open(path, java.util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
-        .orDieWith(ex => new IOException(s"Path is invalid. Cannot upload data to : $path", ex))
+                     .orDieWith(ex => new IOException(s"Path is invalid. Cannot upload data to : $path", ex))
 
       os: java.io.OutputStream = new remoteFile.RemoteFileOutputStream() {
-        override def close(): Unit = {
+
+        override def close(): Unit =
           try {
             remoteFile.close()
           } finally {
             super.close()
           }
-        }
       }
       _ <- source.run(ZSink.fromOutputStream(os))
     } yield ()
 
   object SftpFileOps {
-    def apply(file: RemoteResourceInfo): FtpFile = FtpFile(
-      file.getName,
-      file.getPath,
-      file.getAttributes.getSize,
-      file.getAttributes.getMtime,
-      posixFilePermissions(file.getAttributes))
+
+    def apply(file: RemoteResourceInfo): FtpFile =
+      FtpFile(
+        file.getName,
+        file.getPath,
+        file.getAttributes.getSize,
+        file.getAttributes.getMtime,
+        posixFilePermissions(file.getAttributes)
+      )
 
     def apply(path: String, attr: FileAttributes): FtpFile =
-      FtpFile(path.substring(path.lastIndexOf("/") + 1, path.length), path, attr.getSize, attr.getMtime, posixFilePermissions(attr))
+      FtpFile(
+        path.substring(path.lastIndexOf("/") + 1, path.length),
+        path,
+        attr.getSize,
+        attr.getMtime,
+        posixFilePermissions(attr)
+      )
 
     private val posixFilePermissions: FileAttributes => Set[PosixFilePermission] = { attr =>
       attr.getPermissions.asScala.collect {
@@ -156,5 +171,4 @@ object SFtp {
       }.toSet
     }
   }
-
 }

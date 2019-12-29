@@ -22,21 +22,28 @@ How to use it ?
 ```scala
 
 import zio.ftp.Ftp._
+import zio.ftp.settings._
 
 // FTP
 val settings = FtpSettings("127.0.0.1", 21, credentials("foo", "bar"))
 // FTPS
 val settings = FtpSettings.secure("127.0.0.1", 21, credentials("foo", "bar"))
 
-connect(settings).use(listFiles("/")(_).runCollect)
+//listing files
+listFiles("/").runCollect
+    .provideManaged(connect(settings))
 ```
 
 * SFTP
 
 ```scala
 import zio.ftp.SFtp._
+import zio.ftp.settings._
 
 val settings = SFtpSettings("127.0.0.1", 22, credentials("foo", "bar"))
 
-connect(settings).use(listFiles("/")(_).runCollect)    
+//listing files
+listFiles("/").runCollect
+    .provideManaged(connect(settings))
+
 ```

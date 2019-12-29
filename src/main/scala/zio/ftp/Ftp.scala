@@ -3,18 +3,32 @@ package zio.ftp
 import java.io.{ IOException, InputStream }
 import java.nio.file.attribute.PosixFilePermission
 
-import org.apache.commons.net.ftp._
-import zio.blocking.Blocking
+import org.apache.commons.net.ftp.{ FTP, FTPFile, FTPFileFilter, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.settings.FtpSettings
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
-import zio.{ Chunk, Managed, ZIO }
+import zio.{ Chunk, Managed, UIO, ZIO }
 
 object Ftp {
 
-  def connect(settings: FtpSettings): Managed[IOException, FTPClient] =
+  trait FtpClient {
+    private[ftp] val client: JFTPClient
+
+    def mlistFile(path: String): FTPFile                              = client.mlistFile(path)
+    def retrieveFileStream(path: String): InputStream                 = client.retrieveFileStream(path)
+    def deleteFile(path: String): Boolean                             = client.deleteFile(path)
+    def removeDirectory(path: String): Boolean                        = client.removeDirectory(path)
+    def makeDirectory(path: String): Boolean                          = client.makeDirectory(path)
+    def listFiles(path: String, filter: FTPFileFilter): List[FTPFile] = client.listFiles(path, filter).toList
+    def storeFile(path: String, is: InputStream): Boolean             = client.storeFile(path, is)
+
+    private[ftp] def logout(): Unit     = client.logout()
+    private[ftp] def disconnect(): Unit = client.disconnect()
+  }
+
+  def connect(settings: FtpSettings): Managed[IOException, FtpClient] =
     Managed.make(
       taskIO {
-        val ftpClient = if (settings.secure) new FTPSClient() else new FTPClient()
+        val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
         settings.proxy.foreach(ftpClient.setProxy)
         ftpClient.connect(settings.host, settings.port)
         settings.configureConnection(ftpClient)
@@ -28,78 +42,86 @@ object Ftp {
         if (settings.passiveMode) {
           ftpClient.enterLocalPassiveMode()
         }
-
-        success -> ftpClient
+        success -> new FtpClient {
+          val client = ftpClient
+        }
       }.filterOrDie(_._1)(new IOException(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._2)
     )(
       client =>
-        taskIO {
-          client.logout()
-          client.disconnect()
-        }.either.unit
+        UIO(client.logout())
+          .flatMap { _ =>
+            UIO(client.disconnect())
+          }
     )
 
-  def stat(path: String)(client: FTPClient): ZIO[Any, IOException, Option[FtpFile]] =
+  def stat(path: String): ZIO[FtpClient, IOException, Option[FtpFile]] = ZIO.accessM[FtpClient] { client =>
     taskIO(
       Option(client.mlistFile(path)).map(FtpFileOps.apply)
     )
+  }
 
-  def readFile(path: String, chunkSize: Int = 2048)(client: FTPClient): ZStream[Blocking, IOException, Byte] =
-    for {
-      is <- ZStream.fromEffect(
-             taskIO(Option(client.retrieveFileStream(path)))
-               .flatMap(
-                 _.fold[ZIO[Any, IOException, InputStream]](ZIO.fail(new IOException(s"File does not exist $path")))(
-                   ZIO.succeed
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[FtpClient, IOException, Byte] =
+    StreamAccess.accessM[FtpClient] { client =>
+      for {
+        is <- ZStream.fromEffect(
+               taskIO(Option(client.retrieveFileStream(path)))
+                 .flatMap(
+                   _.fold[ZIO[Any, IOException, InputStream]](ZIO.fail(new IOException(s"File does not exist $path")))(
+                     ZIO.succeed
+                   )
                  )
-               )
-           )
-      data <- ZStream.fromInputStream(is, chunkSize).chunks.flatMap(zio.stream.Stream.fromChunk)
-    } yield data
+             )
+        data <- ZStream.fromInputStream(is, chunkSize).chunks.flatMap(zio.stream.Stream.fromChunk)
+      } yield data
+    }
 
-  def rm(path: String)(client: FTPClient): ZIO[Any, IOException, Unit] =
+  def rm(path: String): ZIO[FtpClient, IOException, Unit] = ZIO.accessM[FtpClient] { client =>
     taskIO(client.deleteFile(path))
       .filterOrDie(identity)(new IOException(s"Path is invalid. Cannot delete file : $path"))
       .unit
+  }
 
-  def rmdir(path: String)(client: FTPClient): ZIO[Any, IOException, Unit] =
+  def rmdir(path: String): ZIO[FtpClient, IOException, Unit] = ZIO.accessM[FtpClient] { client =>
     taskIO(client.removeDirectory(path))
       .filterOrDie(b => b)(new IOException(s"Path is invalid. Cannot delete directory : $path"))
       .unit
+  }
 
-  def mkdir(path: String)(client: FTPClient): ZIO[Any, IOException, Unit] =
+  def mkdir(path: String): ZIO[FtpClient, IOException, Unit] = ZIO.accessM[FtpClient] { client =>
     taskIO(client.makeDirectory(path))
       .filterOrDie(identity)(new IOException(s"Path is invalid. Cannot create directory : $path"))
       .unit
-
-  def listFiles(basePath: String, predicate: FtpFile => Boolean = _ => true)(
-    client: FTPClient
-  ): ZStream[Any, Throwable, FtpFile] = {
-    val rootPath = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
-    val filter = new FTPFileFilter {
-      override def accept(file: FTPFile): Boolean = predicate(FtpFileOps(file))
-    }
-
-    ZStream
-      .fromEffect(taskIO(client.listFiles(rootPath, filter).toList))
-      .flatMap(Stream.fromIterable(_))
-      .flatMap { f =>
-        if (f.isDirectory)
-          listFiles(f.getName)(client)
-        else
-          Stream(FtpFileOps(f))
-      }
   }
 
-  def upload(path: String, source: Stream[Throwable, Chunk[Byte]])(client: FTPClient): ZIO[Any, Throwable, Unit] =
-    ZStreamChunk(source).toInputStream
-      .use(
-        is =>
-          taskIO(client.storeFile(path, is))
-            .filterOrDie(identity)(new IOException(s"Path is invalid. Cannot upload data to : $path"))
-            .unit
-      )
+  def listFiles(basePath: String, predicate: FtpFile => Boolean = _ => true): ZStream[FtpClient, Throwable, FtpFile] =
+    StreamAccess.accessM[FtpClient] { client =>
+      val rootPath = if (!basePath.isEmpty && basePath.head != '/') s"/$basePath" else basePath
+      val filter = new FTPFileFilter {
+        override def accept(file: FTPFile): Boolean = predicate(FtpFileOps(file))
+      }
+
+      ZStream
+        .fromEffect(taskIO(client.listFiles(rootPath, filter)))
+        .flatMap(Stream.fromIterable)
+        .flatMap { f =>
+          if (f.isDirectory)
+            listFiles(s"$basePath/${f.getName}", predicate)
+          else
+            Stream(FtpFileOps(f))
+        }
+    }
+
+  def upload(path: String, source: Stream[Throwable, Chunk[Byte]]): ZIO[FtpClient, Throwable, Unit] =
+    ZIO.accessM[FtpClient] { client =>
+      ZStreamChunk(source).toInputStream
+        .use(
+          is =>
+            taskIO(client.storeFile(path, is))
+              .filterOrDie(identity)(new IOException(s"Path is invalid. Cannot upload data to : $path"))
+              .unit
+        )
+    }
 
   object FtpFileOps {
 

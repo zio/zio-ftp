@@ -7,6 +7,7 @@ lazy val `zio-ftp` = project
     organization := "dev.zio",
     name := "zio-ftp",
     description := "zio-ftp",
+    version := "0.1.0-SNASPHOT",
     Test / fork := true,
     parallelExecution in Test := false,
     homepage := Some(url("https://github.com/zio/zio-ftp")),
@@ -49,6 +50,7 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                  %% "zio"                     % "1.0.0-RC17",
       "dev.zio"                  %% "zio-streams"             % "1.0.0-RC17",
+      "dev.zio"                  %% "zio-macros-core"         % "0.6.2",
       "com.hierynomus"           % "sshj"                     % "0.27.0",
       "commons-net"              % "commons-net"              % "3.6",
       "org.scala-lang.modules"   %% "scala-collection-compat" % "2.1.2",

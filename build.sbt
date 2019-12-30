@@ -3,7 +3,7 @@ import BuildHelper._
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage := Some(url("https://zio.github.io/zio-keeper/")),
+    homepage := Some(url("https://zio.github.io/zio-ftp/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
@@ -47,5 +47,4 @@ lazy val `zio-ftp` = project
       "dev.zio"                  %% "zio-test-sbt"            % "1.0.0-RC17" % Test
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-
   )

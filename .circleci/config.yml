@@ -63,6 +63,25 @@ test: &test
           ./sbt ++${SCALA_VERSION}! test
     - <<: *save_cache
 
+release: &release
+  steps:
+    - checkout
+    - run:
+        name: Fetch git tags
+        command: git fetch --tags
+    - <<: *load_cache
+    - run:
+        name: Write sonatype credentials
+        command: echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"${SONATYPE_USER}\", \"${SONATYPE_PASSWORD}\")" > ~/.sbt/1.0/sonatype.sbt
+    - run:
+        name: Write PGP public key
+        command: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
+    - run:
+        name: Write PGP secret key
+        command: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
+    - run:
+        name: Release artifacts
+        command: ./sbt ++${SCALA_VERSION}! clean sonatypeBundleClean +publishSigned sonatypeBundleRelease
 
 jobs:
   lint:
@@ -100,25 +119,12 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_11
 
-release: &release
-  steps:
-    - checkout
-    - run:
-        name: Fetch git tags
-        command: git fetch --tags
-    - <<: *load_cache
-    - run:
-        name: Write sonatype credentials
-        command: echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"${SONATYPE_USER}\", \"${SONATYPE_PASSWORD}\")" > ~/.sbt/1.0/sonatype.sbt
-    - run:
-        name: Write PGP public key
-        command: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
-    - run:
-        name: Write PGP secret key
-        command: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
-    - run:
-        name: Release artifacts
-        command: ./sbt ++${SCALA_VERSION}! clean sonatypeBundleClean +publishSigned sonatypeBundleRelease
+  release:
+    <<: *release
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
 
 workflows:
   version: 2
@@ -129,17 +135,21 @@ workflows:
             <<: *tags_filter
       - test_212_jdk8:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
       - test_212_jdk11:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
       - test_213_jdk8:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
       - test_213_jdk11:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *tags_filter
+      - release:
+          context: Sonatype
+#          requires:
+#            - microsite
+          filters:
+            <<: *tags_filter
+            branches:
+              ignore: /.*/

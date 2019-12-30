@@ -58,10 +58,9 @@ object SFtp {
       }
     }.orDieWith(ex => new IOException(s"Fail to connect to server ${settings.host}:${settings.port}", ex)))(
       client =>
-        taskIO {
-          client.close()
-          if (ssh.isConnected) ssh.disconnect()
-        }.orDie
+        taskIO(client.close()).ignore
+          .flatMap(_ => taskIO(ssh.disconnect()).when(ssh.isConnected))
+          .orDie
     )
   }
 

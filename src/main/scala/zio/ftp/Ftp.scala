@@ -6,22 +6,29 @@ import java.nio.file.attribute.PosixFilePermission
 import org.apache.commons.net.ftp.{ FTP, FTPFile, FTPFileFilter, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.settings.FtpSettings
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
-import zio.{ Chunk, Managed, UIO, ZIO }
+import zio.{ Chunk, Managed, ZIO }
 
 object Ftp {
 
   trait FtpClient {
     private[ftp] val client: JFTPClient
 
-    def mlistFile(path: String): FTPFile                              = client.mlistFile(path)
-    def retrieveFileStream(path: String): InputStream                 = client.retrieveFileStream(path)
-    def deleteFile(path: String): Boolean                             = client.deleteFile(path)
-    def removeDirectory(path: String): Boolean                        = client.removeDirectory(path)
-    def makeDirectory(path: String): Boolean                          = client.makeDirectory(path)
-    def listFiles(path: String, filter: FTPFileFilter): List[FTPFile] = client.listFiles(path, filter).toList
-    def storeFile(path: String, is: InputStream): Boolean             = client.storeFile(path, is)
+    def mlistFile(path: String): FTPFile = client.mlistFile(path)
 
-    private[ftp] def logout(): Unit     = client.logout()
+    def retrieveFileStream(path: String): InputStream = client.retrieveFileStream(path)
+
+    def deleteFile(path: String): Boolean = client.deleteFile(path)
+
+    def removeDirectory(path: String): Boolean = client.removeDirectory(path)
+
+    def makeDirectory(path: String): Boolean = client.makeDirectory(path)
+
+    def listFiles(path: String, filter: FTPFileFilter): List[FTPFile] = client.listFiles(path, filter).toList
+
+    def storeFile(path: String, is: InputStream): Boolean = client.storeFile(path, is)
+
+    private[ftp] def logout(): Unit = client.logout()
+
     private[ftp] def disconnect(): Unit = client.disconnect()
   }
 
@@ -47,13 +54,11 @@ object Ftp {
         }
       }.filterOrDie(_._1)(new IOException(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._2)
-    )(
-      client =>
-        UIO(client.logout())
-          .flatMap { _ =>
-            UIO(client.disconnect())
-          }
-    )
+    ) { client =>
+      taskIO(client.logout()).ignore
+        .flatMap(_ => taskIO(client.disconnect()))
+        .orDie
+    }
 
   def stat(path: String): ZIO[FtpClient, IOException, Option[FtpFile]] = ZIO.accessM[FtpClient] { client =>
     taskIO(

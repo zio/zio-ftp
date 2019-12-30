@@ -2,10 +2,11 @@ package zio.ftp
 
 import java.net.Proxy
 
-import net.schmizz.sshj.{Config => SshConfig, DefaultConfig => DefaultSshConfig}
+import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
 import org.apache.commons.net.ftp.FTPClient
 
-sealed trait credentials{
+sealed trait credentials {
+
   sealed trait FtpCredentials {
     val username: String
     val password: String
@@ -30,6 +31,7 @@ object settings extends credentials {
   )
 
   object SFtpSettings {
+
     def apply(host: String, port: Int, creds: FtpCredentials): SFtpSettings =
       new SFtpSettings(
         host,

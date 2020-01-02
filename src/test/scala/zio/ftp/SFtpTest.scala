@@ -2,18 +2,19 @@ package zio.ftp
 
 import java.nio.file.{ Files, Path, Paths }
 
-import zio.ftp.SFtp._
-import zio.ftp.settings._
-import zio.stream.{ ZSink, ZStream }
+import zio.blocking.Blocking
+import zio.ftp.FtpClient._
+import zio.ftp.Settings._
+import zio.stream.{ ZSink, ZStreamChunk }
 import zio.test.Assertion._
 import zio.test._
-import zio.{ IO, Managed, Task, UIO }
+import zio._
 
 import scala.io.Source
 
 object SFtpTest
     extends BaseSFtpTest(
-      SFtpSettings("127.0.0.1", port = 2222, credentials("foo", "foo")),
+      SFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo")),
       Paths.get("ftp-home/sftp/home/foo/work")
     )
 
@@ -22,9 +23,9 @@ abstract class BaseSFtpTest(settings: SFtpSettings, home: Path)
       suite("SFtp")(
         testM("invalid credentials")(
           for {
-            succeed <- connect(settings.copy(credentials = credentials("test", "test")))
+            succeed <- connect(settings.copy(credentials = FtpCredentials("test", "test")))
                         .use(_ => IO.succeed(""))
-                        .foldCause(_.dieOption.map(_.getMessage).mkString, identity)
+                        .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
           } yield assert(succeed, containsString("Fail to connect to server"))
         ),
         testM("valid credentials")(
@@ -32,48 +33,78 @@ abstract class BaseSFtpTest(settings: SFtpSettings, home: Path)
             succeed <- connect(settings).use(_ => IO.succeed(true))
           } yield assert(succeed, equalTo(true))
         ),
-        testM("listFiles")(
+        testM("ls")(
           for {
-            files <- listFiles("/").runCollect
-          } yield assert(files.map(_.name), hasSameElements(List("notes.txt", "console.dump", "users.csv")))
+            files <- connect(settings).use(_.ls("/").runCollect)
+          } yield assert(files.map(_.path), hasSameElements(List("/work")))
+        ),
+        testM("ls with invalid directory")(
+          for {
+            files <- connect(settings).use(_.ls("/dont-exist").runCollect)
+          } yield assert(files.map(_.path), hasSameElements(Nil))
+        ),
+        testM("ls descendant")(
+          for {
+            files <- connect(settings).use(_.lsDescendant("/work").runCollect)
+          } yield assert(
+            files.map(_.path),
+            hasSameElements(List("/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
+          )
+        ),
+        testM("ls descendant with invalid directory")(
+          for {
+            files <- connect(settings).use(_.lsDescendant("/dont-exist").runCollect)
+          } yield assert(files.map(_.path), hasSameElements(Nil))
         ),
         testM("stat file") {
           for {
-            file <- stat("/work/dir1/users.csv")
-          } yield assert(file.map(_.name), equalTo(Some("users.csv")))
+            file <- connect(settings).use(_.stat("/work/dir1/users.csv"))
+          } yield assert(file.map(f => f.path -> f.isDirectory), equalTo(Some("/work/dir1/users.csv" -> None)))
+        },
+        testM("stat directory") {
+          for {
+            file <- connect(settings).use(_.stat("/work/dir1"))
+          } yield assert(file.map(f => f.path -> f.isDirectory), equalTo(Some("/work/dir1" -> None)))
         },
         testM("stat file does not exist") {
           for {
-            file <- stat("/wrong-path.xml")
+            file <- connect(settings).use(_.stat("/wrong-path.xml"))
+          } yield assert(file, equalTo(None))
+        },
+        testM("stat directory does not exist") {
+          for {
+            file <- connect(settings).use(_.stat("/wrong-path"))
           } yield assert(file, equalTo(None))
         },
         testM("readFile") {
           for {
-            content <- readFile("/work/notes.txt").chunkN(100).chunks.run(ZSink.utf8DecodeChunk)
+            content <- connect(settings).use(_.readFile("/work/notes.txt").run(ZSink.utf8DecodeChunk))
           } yield assert(content, equalTo("""|Hello world !!!
                                              |this is a beautiful day""".stripMargin))
         },
         testM("readFile does not exist") {
           for {
-            invalid <- readFile("/work/invalid.txt")
-                        .chunkN(100)
-                        .chunks
-                        .run(ZSink.utf8DecodeChunk)
-                        .foldCause(_.dieOption.map(_.getMessage).mkString, _.mkString)
-          } yield assert(invalid, equalTo("File does not exist /work/invalid.txt"))
+            invalid <- connect(settings).use(
+                        _.readFile("/work/invalid.txt")
+                          .run(ZSink.utf8DecodeChunk)
+                          .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
+                      )
+          } yield assert(invalid, equalTo("No such file"))
         },
         testM("mkdir directory") {
           (for {
-            result <- mkdirs("/work/new-dir").map(_ => true)
+            result <- connect(settings).use(_.mkdir("/work/new-dir").map(_ => true))
           } yield assert(result, equalTo(true)))
             .tap(_ => Task(Files.delete(home.resolve("new-dir"))))
         },
         testM("mkdir fail when invalid path") {
           for {
-            failure <- mkdirs("/work/dir1/users.csv")
-                        .foldCause(_.dieOption.fold("")(_.getMessage), _ => "")
+            failure <- connect(settings).use(
+                        _.mkdir("/work/dir1/users.csv")
+                          .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                      )
           } yield {
-            assert(failure, containsString("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
+            assert(failure, containsString("/work/dir1/users.csv exists but is not a directory"))
           }
         },
         testM("rm valid path") {
@@ -81,51 +112,66 @@ abstract class BaseSFtpTest(settings: SFtpSettings, home: Path)
           Files.createFile(path)
 
           for {
-            success <- rm("/work/to-delete.txt")
-                        .foldCause(_ => false, _ => true)
+            success <- connect(settings).use(
+                        _.rm("/work/to-delete.txt")
+                          .foldCause(_ => false, _ => true)
+                      )
 
             fileExist <- Task(Files.notExists(path))
           } yield assert(success && fileExist, equalTo(true))
         },
         testM("rm fail when invalid path") {
           for {
-            invalid <- rm("/work/dont-exist")
-                        .foldCause(_.dieOption.fold("")(_.getMessage), _ => "")
-          } yield assert(invalid, equalTo("Path is invalid. Cannot delete file : /work/dont-exist"))
+            invalid <- connect(settings).use(
+                        _.rm("/work/dont-exist")
+                          .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                      )
+          } yield assert(invalid, equalTo("No such file"))
         },
         testM("rm directory") {
           val path = home.resolve("dir-to-delete")
           Files.createDirectory(path)
 
           for {
-            r     <- rmdir("/work/dir-to-delete").map(_ => true)
+            r     <- connect(settings).use(_.rmdir("/work/dir-to-delete").map(_ => true))
             exist <- Task(Files.notExists(path))
           } yield assert(r && exist, equalTo(true))
         },
         testM("rm fail invalid directory") {
           for {
-            r <- rmdir("/work/dont-exist")
-                  .foldCause(_.dieOption.fold("")(_.getMessage), _ => "")
-          } yield assert(r, equalTo("Path is invalid. Cannot delete directory : /work/dont-exist"))
+            r <- connect(settings).use(
+                  _.rmdir("/work/dont-exist")
+                    .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                )
+          } yield assert(r, equalTo("No such file"))
         },
         testM("upload a file") {
-          val data = ZStream.fromIterable("Hello F World".getBytes.toSeq).chunkN(10).chunks
+          val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
           val path = home.resolve("hello-world.txt")
 
           (for {
-            _      <- upload("/work/hello-world.txt", data)
-            result <- Managed.make(taskIO(Source.fromFile(path.toFile)))(s => UIO(s.close)).use(b => taskIO(b.mkString))
+            _ <- connect(settings).use(_.upload("/work/hello-world.txt", data))
+            result <- Managed
+                       .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                       .use(b => Task(b.mkString))
           } yield assert(result, equalTo("Hello F World"))).tap(_ => Task(Files.delete(path)))
         },
         testM("upload fail when path is invalid") {
-          val data = ZStream.fromIterable("Hello F World".getBytes.toSeq).chunkN(10).chunks
+          val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
           for {
-            failure <- upload("/work/dont-exist/hello-world.txt", data)
-                        .foldCause(_.dieOption.fold("")(_.getMessage), _ => "")
-          } yield assert(failure, equalTo("Path is invalid. Cannot upload data to : /work/dont-exist/hello-world.txt"))
+            failure <- connect(settings).use(
+                        _.upload("/work/dont-exist/hello-world.txt", data)
+                          .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                      )
+          } yield assert(failure, equalTo("No such file"))
+        },
+        testM("call version() underlying client") {
+          for {
+            version <- connect(settings).use(
+                        _.execute(_.version())
+                      )
+          } yield assert(version.toString, isNonEmptyString)
         }
-      ).provideManagedShared(
-        connect(settings).map(withBlocking[SFtpClient]).orDie
-      )
+      ).provideManagedShared(Managed.succeed(Blocking.Live))
     )

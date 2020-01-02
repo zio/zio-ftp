@@ -20,30 +20,60 @@ How to use it ?
 
 * FTP / FTPS
 ```scala
-
-import zio.ftp.Ftp._
-import zio.ftp.settings._
+import zio.blocking.Blocking
+import zio.ftp.FtpClient._
+import zio.ftp.Settings._
 
 // FTP
-val settings = FtpSettings("127.0.0.1", 21, credentials("foo", "bar"))
-// FTPS
-val settings = FtpSettings.secure("127.0.0.1", 21, credentials("foo", "bar"))
+val settings = FtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+// FTP with ssl (FTPS)
+val settings = FtpSettings.secure("127.0.0.1", 21, FtpCredentials("foo", "bar"))
 
 //listing files
-listFiles("/").runCollect
-    .provideManaged(connect(settings))
+connect(settings).use{
+  _.ls("/").runCollect
+}.provide(Blocking.Live)
+
 ```
 
-* SFTP
+* SFTP (support ssh key)
 
 ```scala
-import zio.ftp.SFtp._
-import zio.ftp.settings._
+import zio.blocking.Blocking
+import zio.ftp.FtpClient._
+import zio.ftp.Settings._
 
-val settings = SFtpSettings("127.0.0.1", 22, credentials("foo", "bar"))
+val settings = SFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
 
 //listing files
-listFiles("/").runCollect
-    .provideManaged(connect(settings))
-
+connect(settings).use{ 
+  _.ls("/").runCollect
+}.provide(Blocking.Live)
 ```
+
+Support any commands ?
+---
+
+If you need a method which is not wrapped by the library, you can have access to underlying FTP client in a safe manner by using
+
+```scala
+trait FtpClient[+A] {
+  def execute[T](f: A => T): ZIO[Blocking, Throwable, T]
+} 
+```
+
+All the call are safe since the computation will be executed in the blocking context you will provide
+
+```scala
+import zio.ftp.FtpClient._
+import zio.ftp.Settings._
+
+val settings = SFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+
+connect(settings).use{
+  _.execute(_.version())
+}
+``` 
+
+
+

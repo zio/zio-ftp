@@ -1,4 +1,4 @@
 package zio.ftp
-import settings._
+import Settings._
 
-object FtpTest extends BaseFtpTest("Ftp", FtpSettings("127.0.0.1", port = 2121, credentials("username", "userpass")))
+object FtpTest extends BaseFtpTest("Ftp", FtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass")))

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package zio.ftp
 
 import java.io.{ IOException, InputStream }
@@ -22,7 +21,7 @@ import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => 
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.FtpSettings.UnsecureFtpSettings
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
-import zio.{ IO, Task, ZIO, ZManaged }
+import zio.{ ZIO, ZManaged }
 
 final private class Ftp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
 

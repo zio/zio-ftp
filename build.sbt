@@ -31,8 +31,8 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 
 lazy val `zio-ftp` = project
   .in(file("."))
+  .settings(stdSettings("zio-ftp"))
   .settings(
-    skip in publish := true,
     libraryDependencies ++= Seq(
       "dev.zio"                  %% "zio"                     % "1.0.0-RC17",
       "dev.zio"                  %% "zio-streams"             % "1.0.0-RC17",

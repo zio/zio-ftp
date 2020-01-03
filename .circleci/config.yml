@@ -133,22 +133,35 @@ workflows:
       - lint:
           filters:
             <<: *tags_filter
+
       - test_212_jdk8:
+          requires:
+            - lint
           filters:
             <<: *tags_filter
       - test_212_jdk11:
+          requires:
+            - lint
           filters:
             <<: *tags_filter
       - test_213_jdk8:
+          requires:
+            - lint
           filters:
             <<: *tags_filter
       - test_213_jdk11:
+          requires:
+            - lint
           filters:
             <<: *tags_filter
       - release:
+          requires:
+            - lint
+            - test_212_jdk8
+            - test_212_jdk11
+            - test_213_jdk8
+            - test_213_jdk11
           context: Sonatype
-#          requires:
-#            - microsite
           filters:
             <<: *tags_filter
             branches:

@@ -1,9 +1,8 @@
 # ZIO with SFTP - FTP / FTPS
 
-thin wrapper over ftp and sftp client, which wrap with ZIO libraries
+A ZIO-based interface to ftp and sftp client.
 
 [![Build Status](https://circleci.com/gh/zio/zio-ftp.svg?style=svg&circle-token=???)](https://circleci.com/gh/zio/zio-ftp)
-[![codecov](https://codecov.io/gh/zio/zio-ftp/branch/master/graph/badge.svg)](https://codecov.io/gh/zio/zio-ftp)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.zio/zio-ftp_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Czio-ftp) 
 
 Setup
@@ -74,6 +73,3 @@ connect(settings).use{
   _.execute(_.version())
 }
 ``` 
-
-
-

@@ -4,7 +4,7 @@ import java.nio.file.{ Files, Path, Paths }
 
 import zio.blocking.Blocking
 import zio.ftp.FtpClient._
-import zio.ftp.Settings._
+import zio.ftp.FtpSettings._
 import zio.stream.{ ZSink, ZStreamChunk }
 import zio.test.Assertion._
 import zio.test._
@@ -14,11 +14,11 @@ import scala.io.Source
 
 object SFtpTest
     extends BaseSFtpTest(
-      SFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo")),
+      SecureFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo")),
       Paths.get("ftp-home/sftp/home/foo/work")
     )
 
-abstract class BaseSFtpTest(settings: SFtpSettings, home: Path)
+abstract class BaseSFtpTest(settings: SecureFtpSettings, home: Path)
     extends DefaultRunnableSpec(
       suite("SFtp")(
         testM("invalid credentials")(

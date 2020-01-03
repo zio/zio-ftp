@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017-2020 John A. De Goes and the ZIO Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package zio.ftp
 
 import java.net.Proxy
@@ -7,12 +23,12 @@ import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient }
 import org.apache.commons.net.ftp.{ FTPClient => JFTPClient }
 import zio.Chunk
 
-sealed trait Settings[+A]
+sealed trait FtpSettings[+A]
 
-object Settings {
-  case class FtpCredentials(username: String, password: String)
+object FtpSettings {
+  final case class FtpCredentials(username: String, password: String)
 
-  final case class SFtpSettings(
+  final case class SecureFtpSettings(
     host: String,
     port: Int,
     credentials: FtpCredentials,
@@ -20,7 +36,7 @@ object Settings {
     knownHosts: Option[String],
     sftpIdentity: Option[SftpIdentity],
     sshConfig: SshConfig
-  ) extends Settings[JSFTPClient]
+  ) extends FtpSettings[JSFTPClient]
 
   sealed trait SftpIdentity {
     type KeyType
@@ -63,10 +79,10 @@ object Settings {
       KeyFileSftpIdentity(privateKey, Some(privateKeyFilePassphrase))
   }
 
-  object SFtpSettings {
+  object SecureFtpSettings {
 
-    def apply(host: String, port: Int, creds: FtpCredentials): SFtpSettings =
-      new SFtpSettings(
+    def apply(host: String, port: Int, creds: FtpCredentials): SecureFtpSettings =
+      new SecureFtpSettings(
         host,
         port,
         creds,
@@ -77,7 +93,7 @@ object Settings {
       )
   }
 
-  final case class FtpSettings(
+  final case class UnsecureFtpSettings(
     host: String,
     port: Int,
     credentials: FtpCredentials,
@@ -85,14 +101,14 @@ object Settings {
     passiveMode: Boolean,
     proxy: Option[Proxy],
     secure: Boolean
-  ) extends Settings[JFTPClient]
+  ) extends FtpSettings[JFTPClient]
 
-  object FtpSettings {
+  object UnsecureFtpSettings {
 
-    def apply(host: String, port: Int, creds: FtpCredentials): FtpSettings =
-      new FtpSettings(host, port, creds, true, true, None, false)
+    def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+      new UnsecureFtpSettings(host, port, creds, true, true, None, false)
 
-    def secure(host: String, port: Int, creds: FtpCredentials): FtpSettings =
-      new FtpSettings(host, port, creds, true, true, None, true)
+    def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+      new UnsecureFtpSettings(host, port, creds, true, true, None, true)
   }
 }

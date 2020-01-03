@@ -22,17 +22,17 @@ How to use it ?
 ```scala
 import zio.blocking.Blocking
 import zio.ftp.FtpClient._
-import zio.ftp.Settings._
+import zio.ftp.FtpSettings._
 
 // FTP
-val settings = FtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val settings = UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
 // FTP with ssl (FTPS)
-val settings = FtpSettings.secure("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val settings = UnsecureFtpSettings.secure("127.0.0.1", 21, FtpCredentials("foo", "bar"))
 
 //listing files
 connect(settings).use{
   _.ls("/").runCollect
-}.provide(Blocking.Live)
+}
 
 ```
 
@@ -41,14 +41,14 @@ connect(settings).use{
 ```scala
 import zio.blocking.Blocking
 import zio.ftp.FtpClient._
-import zio.ftp.Settings._
+import zio.ftp.FtpSettings._
 
-val settings = SFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+val settings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
 
 //listing files
 connect(settings).use{ 
   _.ls("/").runCollect
-}.provide(Blocking.Live)
+}
 ```
 
 Support any commands ?
@@ -58,7 +58,7 @@ If you need a method which is not wrapped by the library, you can have access to
 
 ```scala
 trait FtpClient[+A] {
-  def execute[T](f: A => T): ZIO[Blocking, Throwable, T]
+  def execute[T](f: A => T): ZIO[Blocking, IOException, T]
 } 
 ```
 
@@ -66,9 +66,9 @@ All the call are safe since the computation will be executed in the blocking con
 
 ```scala
 import zio.ftp.FtpClient._
-import zio.ftp.Settings._
+import zio.ftp.FtpSettings._
 
-val settings = SFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+val settings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
 
 connect(settings).use{
   _.execute(_.version())

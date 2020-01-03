@@ -5,15 +5,18 @@ import java.nio.file.{ Files, Path, Paths }
 import zio._
 import zio.blocking.Blocking
 import zio.ftp.FtpClient.connect
-import zio.ftp.Settings._
+import zio.ftp.FtpSettings._
 import zio.stream.{ ZSink, ZStreamChunk }
 import zio.test.Assertion._
 import zio.test._
 
 import scala.io.Source
 
-abstract class BaseFtpTest(labelSuite: String, settings: FtpSettings, home: Path = Paths.get("ftp-home/ftp/home/work"))
-    extends DefaultRunnableSpec(
+abstract class BaseFtpTest(
+  labelSuite: String,
+  settings: UnsecureFtpSettings,
+  home: Path = Paths.get("ftp-home/ftp/home/work")
+) extends DefaultRunnableSpec(
       suite(labelSuite)(
         testM("invalid credentials")(
           for {

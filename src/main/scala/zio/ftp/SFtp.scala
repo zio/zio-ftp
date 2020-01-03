@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017-2020 John A. De Goes and the ZIO Contributors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package zio.ftp
 
 import java.io.{ File, IOException }
@@ -9,24 +25,21 @@ import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import zio.blocking.{ Blocking, effectBlocking }
-import zio.ftp.Settings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SFtpSettings, SftpIdentity }
+import zio.ftp.FtpSettings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SecureFtpSettings, SftpIdentity }
 import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
 import zio.{ Chunk, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
-final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
+final private class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
-    effectBlocking(
-      Option(unsafeClient.statExistence(path)).map(FtpResource(path, _))
-    ).refineToOrDie[IOException]
+    execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
   def readFile(path: String, chunkSize: Int): ZStreamChunk[Blocking, IOException, Byte] =
     ZStreamChunk(for {
       remoteFile <- ZStream.fromEffect(
                      execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
-                       .refineToOrDie[IOException]
                    )
 
       is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64) {
@@ -44,15 +57,12 @@ final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.rm(path))
-      .refineToOrDie[IOException]
 
   def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.rmdir(path))
-      .refineToOrDie[IOException]
 
   def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.mkdirs(path))
-      .refineToOrDie[IOException]
 
   def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
@@ -62,7 +72,6 @@ final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
           }
-          .refineToOrDie[IOException]
       )
       .flatMap(Stream.fromIterable)
       .map(FtpResource(_))
@@ -75,7 +84,6 @@ final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
           }
-          .refineToOrDie[IOException]
       )
       .flatMap(Stream.fromIterable)
       .flatMap { f =>
@@ -83,10 +91,9 @@ final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
         else Stream(FtpResource(f))
       }
 
-  def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, Throwable, Unit] =
+  def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
-                     .refineToOrDie[IOException]
 
       os: java.io.OutputStream = new remoteFile.RemoteFileOutputStream() {
 
@@ -97,15 +104,16 @@ final class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
             super.close()
           }
       }
-      _ <- source.run(ZSink.fromOutputStream(os))
+      _ <- source.run(ZSink.fromOutputStream(os)).mapError(new IOException(_))
     } yield ()
 
-  override def execute[T](f: JSFTPClient => T): ZIO[Blocking, Throwable, T] = effectBlocking(f(unsafeClient))
+  override def execute[T](f: JSFTPClient => T): ZIO[Blocking, IOException, T] =
+    effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }
 
 object SFtp {
 
-  def connect(settings: SFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JSFTPClient]] = {
+  def connect(settings: SecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JSFTPClient]] = {
     val ssh = new SSHClient(settings.sshConfig)
     import settings._
     ZManaged.make(

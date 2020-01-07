@@ -32,8 +32,8 @@ abstract class BaseFtpTest(
         ),
         testM("ls ")(
           for {
-            files <- connect(settings).use(_.ls("/work").fold(List.empty[String])((s, f) => f.path +: s))
-          } yield assert(files.reverse, hasSameElements(List("/work/notes.txt", "/work/dir1")))
+            files <- connect(settings).use(_.ls("/").fold(List.empty[String])((s, f) => f.path +: s))
+          } yield assert(files.reverse, hasSameElements(List("/empty.txt", "/work")))
         ),
         testM("ls with invalid directory")(
           for {
@@ -45,7 +45,7 @@ abstract class BaseFtpTest(
             files <- connect(settings).use(_.lsDescendant("/").fold(List.empty[String])((s, f) => f.path +: s))
           } yield assert(
             files.reverse,
-            hasSameElements(List("/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
+            hasSameElements(List("/empty.txt", "/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
           )
         ),
         testM("ls descendant with invalid directory")(

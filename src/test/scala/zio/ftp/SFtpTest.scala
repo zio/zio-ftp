@@ -36,7 +36,7 @@ abstract class BaseSFtpTest(settings: SecureFtpSettings, home: Path)
         testM("ls")(
           for {
             files <- connect(settings).use(_.ls("/").runCollect)
-          } yield assert(files.map(_.path), hasSameElements(List("/work")))
+          } yield assert(files.map(_.path), hasSameElements(List("/empty.txt", "/work")))
         ),
         testM("ls with invalid directory")(
           for {
@@ -45,10 +45,10 @@ abstract class BaseSFtpTest(settings: SecureFtpSettings, home: Path)
         ),
         testM("ls descendant")(
           for {
-            files <- connect(settings).use(_.lsDescendant("/work").runCollect)
+            files <- connect(settings).use(_.lsDescendant("/").runCollect)
           } yield assert(
             files.map(_.path),
-            hasSameElements(List("/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
+            hasSameElements(List("/empty.txt", "/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
           )
         ),
         testM("ls descendant with invalid directory")(

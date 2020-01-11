@@ -48,7 +48,6 @@ lazy val `zio-ftp` = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
 
-
 lazy val docs = project
   .in(file("zio-ftp-docs"))
   .settings(

@@ -57,8 +57,24 @@ object FtpSettings {
     strictHostKeyChecking: Boolean,
     knownHosts: Option[String],
     sftpIdentity: Option[SftpIdentity],
+    proxy: Option[Proxy],
     sshConfig: SshConfig
   ) extends FtpSettings[JSFTPClient]
+
+  object SecureFtpSettings {
+
+    def apply(host: String, port: Int, creds: FtpCredentials): SecureFtpSettings =
+      new SecureFtpSettings(
+        host,
+        port,
+        creds,
+        strictHostKeyChecking = false,
+        knownHosts = None,
+        sftpIdentity = None,
+        proxy = None,
+        new DefaultSshConfig()
+      )
+  }
 
   sealed trait SftpIdentity {
     type KeyType
@@ -112,20 +128,6 @@ object FtpSettings {
 
     def createFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Chunk[Byte]): KeyFileSftpIdentity =
       KeyFileSftpIdentity(privateKey, Some(privateKeyFilePassphrase))
-  }
-
-  object SecureFtpSettings {
-
-    def apply(host: String, port: Int, creds: FtpCredentials): SecureFtpSettings =
-      new SecureFtpSettings(
-        host,
-        port,
-        creds,
-        strictHostKeyChecking = false,
-        knownHosts = None,
-        sftpIdentity = None,
-        new DefaultSshConfig()
-      )
   }
 
   /**

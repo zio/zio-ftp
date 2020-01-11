@@ -1,5 +1,6 @@
 package zio.ftp
 
+import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Path, Paths }
 
 import zio._
@@ -24,6 +25,14 @@ abstract class BaseFtpTest(
                         .use(_ => IO.succeed(""))
                         .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
           } yield assert(failure, containsString("Fail to connect to server"))
+        ),
+        testM("invalid proxy")(
+          for {
+            failure <- connect(
+                        settings.copy(proxy = Some(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("invalid", 9999))))
+                      ).use(_ => IO.succeed(""))
+                        .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
+          } yield assert(failure, containsString("invalid"))
         ),
         testM("valid credentials")(
           for {

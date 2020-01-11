@@ -31,7 +31,7 @@ import zio.{ Chunk, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
-final private class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
+final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
@@ -111,7 +111,7 @@ final private class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClien
     effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }
 
-object SFtp {
+object SecureFtp {
 
   def connect(settings: SecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JSFTPClient]] = {
     val ssh = new SSHClient(settings.sshConfig)
@@ -130,7 +130,8 @@ object SFtp {
 
         sftpIdentity.foreach(setIdentity(_, settings.credentials.username)(ssh))
 
-        new SFtp(ssh.newSFTPClient())
+        val c: FtpClient[JSFTPClient] = new SecureFtp(ssh.newSFTPClient())
+        c
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
     )(
       cli =>

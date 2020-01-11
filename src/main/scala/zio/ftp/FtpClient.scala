@@ -38,7 +38,7 @@ trait FtpClient[+A] {
 object FtpClient {
 
   def connect[A](settings: FtpSettings[A]): ZManaged[Blocking, ConnectionError, FtpClient[A]] = settings match {
-    case s: UnsecureFtpSettings => Ftp.connect(s)
-    case s: SecureFtpSettings   => SFtp.connect(s)
+    case s: UnsecureFtpSettings => UnsecureFtp.connect(s)
+    case s: SecureFtpSettings   => SecureFtp.connect(s)
   }
 }

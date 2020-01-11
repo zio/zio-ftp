@@ -23,11 +23,33 @@ import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient }
 import org.apache.commons.net.ftp.{ FTPClient => JFTPClient }
 import zio.Chunk
 
+/**
+ * Base trait Ftp Settings
+ *
+ * @tparam A Ftp client type
+ */
 sealed trait FtpSettings[+A]
 
 object FtpSettings {
+  /**
+   * Credential used during ftp authentication
+   *
+   * @param username identifier of the user in plain text
+   * @param password secure secret of the user in plain text
+   */
   final case class FtpCredentials(username: String, password: String)
 
+  /**
+   * Settings to connect to a secure Ftp server (Ftp over ssh)
+   *
+   * @param host hostname of ftp server (ipAddress / dnsName)
+   * @param port port of communication used by the server
+   * @param credentials auth credentials
+   * @param strictHostKeyChecking sets whether to use strict host key checking.
+   * @param knownHosts known hosts file to be used when connecting
+   * @param sftpIdentity private/public key config to use when connecting
+   * @param sshConfig configuration of ssh client
+   */
   final case class SecureFtpSettings(
     host: String,
     port: Int,
@@ -44,6 +66,13 @@ object FtpSettings {
     val privateKeyFilePassphrase: Option[Chunk[Byte]]
   }
 
+  /**
+   * SFTP identity for authenticating using private/public key value
+   *
+   * @param privateKey private key value to use when connecting
+   * @param privateKeyFilePassphrase password to use to decrypt private key
+   * @param publicKey public key value to use when connecting
+   */
   final case class RawKeySftpIdentity(
     privateKey: Chunk[Byte],
     privateKeyFilePassphrase: Option[Chunk[Byte]] = None,
@@ -52,6 +81,12 @@ object FtpSettings {
     type KeyType = Chunk[Byte]
   }
 
+  /**
+   * SFTP identity for authenticating using private/public key file
+   *
+   * @param privateKey private key file to use when connecting
+   * @param privateKeyFilePassphrase password to use to decrypt private key file
+   */
   final case class KeyFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Option[Chunk[Byte]] = None)
       extends SftpIdentity {
     type KeyType = String
@@ -93,6 +128,16 @@ object FtpSettings {
       )
   }
 
+  /**
+   * Settings to connect unsecure Ftp server
+   *
+   * @param host hostname of ftp server (ipAddress / dnsName)
+   * @param port port of communication used by the server
+   * @param credentials credentials (username and password)
+   * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
+   * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+   * @param proxy An optional proxy to use when connecting with these settings
+   */
   final case class UnsecureFtpSettings(
     host: String,
     port: Int,

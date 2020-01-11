@@ -31,6 +31,12 @@ import zio.{ Chunk, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
+/**
+ * Secure Ftp client wrapper
+ *
+ * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
+ * since the underlying java client only provide blocking methods.
+ */
 final private class SFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =

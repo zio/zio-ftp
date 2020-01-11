@@ -23,6 +23,13 @@ import zio.ftp.FtpSettings.UnsecureFtpSettings
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
 import zio.{ ZIO, ZManaged }
 
+/**
+ * Unsecure Ftp client wrapper
+ *
+ * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
+ * since the underlying java client only provide blocking methods.
+ *
+ */
 final private class Ftp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =

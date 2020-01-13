@@ -28,7 +28,7 @@ import org.apache.commons.net.DefaultSocketFactory
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.FtpSettings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SecureFtpSettings, SftpIdentity }
 import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
-import zio.{ Chunk, URIO, ZIO, ZManaged }
+import zio.{ Chunk, Task, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
@@ -49,15 +49,17 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
                      execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
                    )
 
-      is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64) {
+      is <- ZStream
+             .managed(ZManaged.fromAutoCloseable(Task(new remoteFile.ReadAheadRemoteFileInputStream(64) {
 
-        override def close(): Unit =
-          try {
-            super.close()
-          } finally {
-            remoteFile.close()
-          }
-      }
+               override def close(): Unit =
+                 try {
+                   super.close()
+                 } finally {
+                   remoteFile.close()
+                 }
+             })))
+             .mapError(e => new IOException(e.getMessage, e))
 
       input <- Stream.fromInputStream(is, chunkSize).chunks
     } yield input)
@@ -102,7 +104,7 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
 
-      os: java.io.OutputStream = new remoteFile.RemoteFileOutputStream() {
+      osManaged = ZManaged.fromAutoCloseable(Task(new remoteFile.RemoteFileOutputStream() {
 
         override def close(): Unit =
           try {
@@ -110,8 +112,8 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
           } finally {
             super.close()
           }
-      }
-      _ <- source.run(ZSink.fromOutputStream(os)).mapError(new IOException(_))
+      }))
+      _ <- osManaged.use(os => source.run(ZSink.fromOutputStream(os))).mapError(new IOException(_))
     } yield ()
 
   override def execute[T](f: JSFTPClient => T): ZIO[Blocking, IOException, T] =

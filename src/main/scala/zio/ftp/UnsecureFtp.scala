@@ -30,7 +30,7 @@ import zio.{ ZIO, ZManaged }
  * since the underlying java client only provide blocking methods.
  *
  */
-final private class Ftp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
+final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource(_)))
@@ -97,7 +97,7 @@ final private class Ftp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] 
     effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }
 
-object Ftp {
+object UnsecureFtp {
 
   def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JFTPClient]] =
     ZManaged.make(
@@ -115,8 +115,8 @@ object Ftp {
         if (settings.passiveMode) {
           ftpClient.enterLocalPassiveMode()
         }
-        new Ftp(ftpClient) -> success
-      }.mapError(ConnectionError(_))
+        new UnsecureFtp(ftpClient) -> success
+      }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
     )(

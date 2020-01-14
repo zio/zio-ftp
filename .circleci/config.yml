@@ -41,6 +41,14 @@ save_cache: &save_cache
         - "~/.sbt"
         - "~/.m2"
 
+clean_cache: &clean_cache
+  - run:
+      name: Clean unwanted files from cache
+      command: |
+        rm -fv $HOME/.ivy2/.sbt.ivy.lock
+        find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+        find $HOME/.sbt        -name "*.lock"               -print -delete
+
 lint: &lint
   steps:
     - checkout
@@ -83,7 +91,73 @@ release: &release
         name: Release artifacts
         command: ./sbt ++${SCALA_VERSION}! clean sonatypeBundleClean +publishSigned sonatypeBundleRelease
 
+mdoc: &mdoc
+  steps:
+    - checkout
+    - <<: *load_cache
+    - run:
+        name: Generate documentation
+        command: |
+          ./sbt doc
+          ./sbt ++${SCALA_VERSION}! docs/mdoc
+    - <<: *save_cache
+
+install_yarn: &install_yarn
+  - run:
+      name: Install Yarn
+      command: |
+        curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
+        sudo apt update && sudo apt install yarn -y
+        yarn policies set-version
+        yarn -v
+
+install_nodejs: &install_nodejs
+  - run:
+      name: Install node.js
+      command: |
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install
+        nvm use
+        node -v
+
+microsite: &microsite
+  steps:
+    - add_ssh_keys:
+        fingerprints:
+          - "68:95:b1:fc:a3:eb:4e:85:45:74:07:d3:c0:35:c8:ec"
+    - checkout
+    - <<: *load_cache
+    - <<: *install_nodejs
+    - <<: *install_yarn
+    - run:
+        name: Publishing website
+        command: |
+          git config --global user.email "${GH_NAME}@users.noreply.github.com"
+          git config --global user.name "${GH_NAME}"
+          export GIT_USER=${GH_NAME}
+          export TRAVIS_BUILD_NUMBER="${CIRCLE_BUILD_NUM}"
+          export TRAVIS_COMMIT="${CIRCLE_SHA1}"
+          sudo chown -R $USER:$USER /tmp
+          export NVM_DIR="/opt/circleci/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install
+          nvm use
+          node -v
+          ./sbt ++${SCALA_VERSION}! docs/docusaurusCreateSite
+          ./sbt ++${SCALA_VERSION}! docs/docusaurusPublishGhpages
+    - <<: *clean_cache
+    - <<: *save_cache
+
 jobs:
+  mdoc:
+    <<: *mdoc
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8
+
   lint:
     <<: *lint
     <<: *machine_ubuntu
@@ -126,6 +200,13 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_8
 
+  microsite:
+    <<: *microsite
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8
+
 workflows:
   version: 2
   build:
@@ -133,7 +214,11 @@ workflows:
       - lint:
           filters:
             <<: *tags_filter
-
+      - mdoc:
+          requires:
+            - lint
+          filters:
+            <<: *tags_filter
       - test_212_jdk8:
           requires:
             - lint
@@ -157,11 +242,24 @@ workflows:
       - release:
           requires:
             - lint
+            - microsite
             - test_212_jdk8
             - test_212_jdk11
             - test_213_jdk8
             - test_213_jdk11
           context: Sonatype
+          filters:
+            <<: *tags_filter
+            branches:
+              ignore: /.*/
+      - microsite:
+          context: Website
+          requires:
+            - test_212_jdk8
+            - test_212_jdk11
+            - test_213_jdk8
+            - test_213_jdk11
+            - mdoc
           filters:
             <<: *tags_filter
             branches:

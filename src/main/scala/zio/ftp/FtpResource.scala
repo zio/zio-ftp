@@ -23,6 +23,15 @@ import net.schmizz.sshj.xfer.FilePermission._
 import org.apache.commons.net.ftp.FTPFile
 import scala.jdk.CollectionConverters._
 
+/**
+ * Represent a file / directory / symbolic link on a ftp server
+ *
+ * @param path location on the resource on the ftp server
+ * @param size size in bytes
+ * @param lastModified last modified date as a timestamp
+ * @param permissions linux file system permissions
+ * @param isDirectory boolean flag: 'true' if it is a directory, 'false' if it is a file. In some situation we cannot determine the type of the resource
+ */
 final case class FtpResource(
   path: String,
   size: Long,

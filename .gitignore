@@ -14,4 +14,9 @@ project/plugins/project/
 .cache
 .lib/
 .metals/
+website/node_modules
+website/i18n/en.json
+website/yarn.lock
+website/build
+zio-ftp-docs/
 .DS_Store

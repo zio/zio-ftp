@@ -2,74 +2,14 @@
 
 A ZIO-based interface to ftp and sftp client.
 
-[![Build Status](https://circleci.com/gh/zio/zio-ftp.svg?style=svg&circle-token=???)](https://circleci.com/gh/zio/zio-ftp)
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.zio/zio-ftp_2.12.svg)](http://search.maven.org/#search%7Cga%7C1%7Czio-ftp) 
+[![Build Status][Badge-Circle]][Link-Circle]
+[![Release Artifacts][Badge-SonatypeReleases]][Link-SonatypeReleases]
 
 Setup
 -----
 
-```
-//support scala 2.12 / 2.13
+The library is a thin wrapper over (s)ftp java client, which give you a clean and powerful functional api.
+Please find more details in the [website](https://zio.github.io/zio-ftp/).
 
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.1.0"
-```
-
-How to use it ?
----
-
-* FTP / FTPS
-```scala
-import zio.blocking.Blocking
-import zio.ftp.FtpClient._
-import zio.ftp.FtpSettings._
-
-// FTP
-val settings = UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
-// FTP with ssl (FTPS)
-val settings = UnsecureFtpSettings.secure("127.0.0.1", 21, FtpCredentials("foo", "bar"))
-
-//listing files
-connect(settings).use{
-  _.ls("/").runCollect
-}
-
-```
-
-* SFTP (support ssh key)
-
-```scala
-import zio.blocking.Blocking
-import zio.ftp.FtpClient._
-import zio.ftp.FtpSettings._
-
-val settings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
-
-//listing files
-connect(settings).use{ 
-  _.ls("/").runCollect
-}
-```
-
-Support any commands ?
----
-
-If you need a method which is not wrapped by the library, you can have access to underlying FTP client in a safe manner by using
-
-```scala
-trait FtpClient[+A] {
-  def execute[T](f: A => T): ZIO[Blocking, IOException, T]
-} 
-```
-
-All the call are safe since the computation will be executed in the blocking context you will provide
-
-```scala
-import zio.ftp.FtpClient._
-import zio.ftp.FtpSettings._
-
-val settings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
-
-connect(settings).use{
-  _.execute(_.version())
-}
-``` 
+[Link-Circle]: https://circleci.com/gh/zio/zio-ftp "circleci"
+[Link-SonatypeReleases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-ftp_2.12/ "Sonatype Releases"

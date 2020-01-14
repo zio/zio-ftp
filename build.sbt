@@ -47,3 +47,22 @@ lazy val `zio-ftp` = project
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+
+lazy val docs = project
+  .in(file("zio-ftp-docs"))
+  .settings(
+    skip.in(publish) := true,
+    moduleName := "zio-ftp-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % "1.0.0-RC17"
+    ),
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(`zio-ftp`),
+    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
+    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
+    docusaurusCreateSite := docusaurusCreateSite.dependsOn(unidoc in Compile).value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(unidoc in Compile).value
+  )
+  .dependsOn(`zio-ftp`)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)

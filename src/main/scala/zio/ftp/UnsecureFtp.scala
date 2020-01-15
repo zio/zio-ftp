@@ -21,7 +21,7 @@ import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => 
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.FtpSettings.UnsecureFtpSettings
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
-import zio.{ ZIO, ZManaged }
+import zio.{ Task, ZIO, ZManaged }
 
 /**
  * Unsecure Ftp client wrapper
@@ -47,7 +47,10 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
                  )
                )
            )
-      data <- ZStream.fromInputStream(is, chunkSize).chunks
+
+      safeIs <- ZStream.managed(ZManaged.fromAutoCloseable(Task(is))).mapError(e => new IOException(e.getMessage, e))
+
+      data <- ZStream.fromInputStream(safeIs, chunkSize).chunks
     } yield data)
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =

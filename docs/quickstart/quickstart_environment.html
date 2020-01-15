@@ -1,0 +1,104 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Environment · ZIO Ftp</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="FtpClient &amp; Blocking"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Environment · ZIO Ftp"/><meta property="og:type" content="website"/><meta property="og:url" content="https://zio.github.io/zio-ftp/"/><meta property="og:description" content="FtpClient &amp; Blocking"/><meta property="og:image" content="https://zio.github.io/zio-ftp/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://zio.github.io/zio-ftp/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/zio-ftp/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
+        document.addEventListener('DOMContentLoaded', function() {
+          addBackToTop(
+            {"zIndex":100,"cornerOffset":100}
+          )
+        });
+        </script><script src="/zio-ftp/js/scrollSpy.js"></script><link rel="stylesheet" href="/zio-ftp/css/main.css"/><script src="/zio-ftp/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/zio-ftp/"><img class="logo" src="/zio-ftp/img/navbar_brand2x.png" alt="ZIO Ftp"/><h2 class="headerTitleWithLogo">ZIO Ftp</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/zio-ftp/docs/quickstart/quickstart_index" target="_self">Quickstart</a></li><li class=""><a href="/zio-ftp/docs/about/about_index" target="_self">About</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Quickstart</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Quickstart</h3><ul class=""><li class="navListItem"><a class="navItem" href="/zio-ftp/docs/quickstart/quickstart_index">Quick Start</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/zio-ftp/docs/quickstart/quickstart_environment">Environment</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Environment</h1></header><article><div><span><h2><a class="anchor" aria-hidden="true" id="ftpclient--blocking"></a><a href="#ftpclient--blocking" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>FtpClient &amp; Blocking</h2>
+<p>ZIO Ftp use Environment type parameter to required a blocking context. Since (s)ftp java client don't provide any async client,
+we are lifting all blocking (effectful) functions into a blocking execution context by using <code>zio.blocking.effectBlocking()</code>.</p>
+<p>Since we never expose the underlying ftp client, you can only use a ZIO wrapper <code>FtpClient[_]</code></p>
+<pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">FtpClient</span>[<span class="hljs-type">T</span>] </span>{
+ <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">stat</span></span>(path: <span class="hljs-type">String</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Option</span>[<span class="hljs-type">FtpResource</span>]]
+ <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">ls</span></span>(path: <span class="hljs-type">String</span>): <span class="hljs-type">ZStream</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">FtpResource</span>]
+ ...
+}
+</code></pre>
+<p>All provided functions require a <code>Blocking</code> context.</p>
+<p>There is already predefined Blocking context defined in ZIO <code>zio.blocking.Blocking.Live</code></p>
+<h2><a class="anchor" aria-hidden="true" id="how-to-provide-blocking-environment-"></a><a href="#how-to-provide-blocking-environment-" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>How to provide Blocking Environment ?</h2>
+<p>Your main entrypoint should extend <code>zio.App</code></p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.<span class="hljs-type">App</span>
+<span class="hljs-keyword">import</span> zio.<span class="hljs-type">ZIO</span>
+<span class="hljs-keyword">import</span> zio.blocking.<span class="hljs-type">Blocking</span>
+<span class="hljs-keyword">import</span> java.io.<span class="hljs-type">IOException</span>
+
+<span class="hljs-comment">// Provide default environment(s) context such as (Blocking, Clock, Console,...) since it is provided by zio.App which extend zio.DefaultRuntime</span>
+<span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">MyApp</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">App</span> </span>{
+    <span class="hljs-keyword">val</span> program: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Unit</span>] = ???
+    
+    <span class="hljs-keyword">final</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">run</span></span>(args: <span class="hljs-type">List</span>[<span class="hljs-type">String</span>]): <span class="hljs-type">ZIO</span>[<span class="hljs-type">ZEnv</span>, <span class="hljs-type">Nothing</span>, <span class="hljs-type">Int</span>] = program
+  }
+</code></pre>
+<p>or you can simply provide your own blocking context</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio.<span class="hljs-type">ZIO</span>
+<span class="hljs-keyword">import</span> zio.blocking.<span class="hljs-type">Blocking</span>
+<span class="hljs-keyword">import</span> java.io.<span class="hljs-type">IOException</span>
+
+<span class="hljs-keyword">val</span> program: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Unit</span>] = ???
+<span class="hljs-comment">// Blocking environment is not anymore required</span>
+<span class="hljs-keyword">val</span> run: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Any</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Unit</span>] = program.provide(<span class="hljs-type">Blocking</span>.<span class="hljs-type">Live</span>)
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="resources"></a><a href="#resources" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Resources</h2>
+<ul>
+<li><a href="https://zio.dev/docs/overview/overview_creating_effects#blocking-synchronous-side-effects">ZIO Effect Blocking</a></li>
+<li><a href="http://degoes.net/articles/zio-environment">ZIO environment by John de goes</a></li>
+<li><a href="https://blog.softwaremill.com/zio-environment-meets-constructor-based-dependency-injection-6a13de6e000">ZIO environment meets constructor based-dependency injection</a></li>
+</ul>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-ftp/docs/quickstart/quickstart_index"><span class="arrow-prev">← </span><span>Quick Start</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#ftpclient--blocking">FtpClient &amp; Blocking</a></li><li><a href="#how-to-provide-blocking-environment-">How to provide Blocking Environment ?</a></li><li><a href="#resources">Resources</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/zio-ftp/" class="nav-home"><img src="/zio-ftp/img/sidebar_brand2x.png" alt="ZIO Ftp"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-ftp" data-icon="octicon-star" data-count-href="/zio/zio-ftp/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Chat with us on Discord</h5><a href="https://discord.gg/2ccFBr4"><img src="/zio-ftp//img/discord.png" width="120" alt="discord"/></a></div><div><h5>Additional resources</h5><a href="/zio-ftp/api/index.html">Scaladoc of zio-ftp</a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>

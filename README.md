@@ -2,8 +2,9 @@
 
 A ZIO-based interface to ftp and sftp client.
 
-[![Build Status][Badge-Circle]][Link-Circle]
-[![Release Artifacts][Badge-SonatypeReleases]][Link-SonatypeReleases]
+[![CircleCI][Badge-Circle]][Link-Circle]
+[![Release][Badge-SonatypeReleases]][Link-SonatypeReleases]
+[![Snapshots][Badge-SonatypeSnapshots]][Link-SonatypeSnapshots]
 
 Setup
 -----
@@ -16,3 +17,5 @@ Please find more details in the [website](https://zio.github.io/zio-ftp/).
 
 [Link-SonatypeReleases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-ftp_2.12/ "Sonatype Releases"
 [Badge-SonatypeReleases]: https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-ftp_2.12.svg "Sonatype Releases"
+[Badge-SonatypeSnapshots]: https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-ftp_2.12.svg "Sonatype Snapshots"
+[Link-SonatypeSnapshots]: https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-ftp_2.12/ "Sonatype Snapshots"

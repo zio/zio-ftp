@@ -89,11 +89,10 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
   def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     source.toInputStream
       .mapError(new IOException(_))
-      .use(
-        is =>
-          execute(_.storeFile(path, is))
-            .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
-            .unit
+      .use(is =>
+        execute(_.storeFile(path, is))
+          .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
+          .unit
       )
 
   override def execute[T](f: JFTPClient => T): ZIO[Blocking, IOException, T] =
@@ -122,10 +121,9 @@ object UnsecureFtp {
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
-    )(
-      client =>
-        client.execute(_.logout()).ignore >>= (
-          _ => client.execute(_.disconnect()).ignore
-        )
+    )(client =>
+      client.execute(_.logout()).ignore >>= (
+        _ => client.execute(_.disconnect()).ignore
+      )
     )
 }

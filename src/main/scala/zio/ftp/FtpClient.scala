@@ -31,6 +31,7 @@ import zio.{ ZIO, ZManaged }
  * @tparam A Ftp client type
  */
 trait FtpClient[+A] {
+
   /**
    * Lift unsafe operation that does blocking IO into a pure value. If the operation failed an error will be emitted
    *

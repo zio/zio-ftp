@@ -31,6 +31,7 @@ import zio.Chunk
 sealed trait FtpSettings[+A]
 
 object FtpSettings {
+
   /**
    * Credential used during ftp authentication
    *

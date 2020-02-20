@@ -13,6 +13,8 @@ import zio._
 
 import scala.io.Source
 
+object Load
+
 object SFtpTest
     extends BaseSFtpTest(
       SecureFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo")),
@@ -42,6 +44,29 @@ abstract class BaseSFtpTest(settings: SecureFtpSettings, home: Path)
             succeed <- connect(settings).use(_ => IO.succeed(true))
           } yield assert(succeed, equalTo(true))
         ),
+        testM("connect with ssh key file") {
+          for {
+            privatekey <- Managed
+                           .fromAutoCloseable(
+                             IO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
+                           )
+                           .use(b => Task(b.mkString))
+            settings = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
+            succeed  <- connect(settings).use(_ => IO.succeed(true))
+          } yield assert(succeed, equalTo(true))
+        },
+        testM("connect with ssh key") {
+          for {
+            privatekey <- Task(Paths.get(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
+            settings = SecureFtpSettings(
+              "127.0.0.1",
+              3333,
+              FtpCredentials("fooz", ""),
+              KeyFileSftpIdentity(privatekey, None)
+            )
+            succeed <- connect(settings).use(_ => IO.succeed(true))
+          } yield assert(succeed, equalTo(true))
+        },
         testM("ls")(
           for {
             files <- connect(settings).use(_.ls("/").runCollect)

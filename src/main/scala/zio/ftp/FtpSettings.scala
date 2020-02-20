@@ -17,11 +17,11 @@
 package zio.ftp
 
 import java.net.Proxy
+import java.nio.file.Path
 
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
 import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient }
 import org.apache.commons.net.ftp.{ FTPClient => JFTPClient }
-import zio.Chunk
 
 /**
  * Base trait Ftp Settings
@@ -55,23 +55,35 @@ object FtpSettings {
     host: String,
     port: Int,
     credentials: FtpCredentials,
+    sftpIdentity: Option[SftpIdentity],
     strictHostKeyChecking: Boolean,
     knownHosts: Option[String],
-    sftpIdentity: Option[SftpIdentity],
     proxy: Option[Proxy],
     sshConfig: SshConfig
   ) extends FtpSettings[JSFTPClient]
 
   object SecureFtpSettings {
 
-    def apply(host: String, port: Int, creds: FtpCredentials): SecureFtpSettings =
+    def apply(host: String, port: Int, credentials: FtpCredentials): SecureFtpSettings =
       new SecureFtpSettings(
         host,
         port,
-        creds,
+        credentials,
+        sftpIdentity = None,
         strictHostKeyChecking = false,
         knownHosts = None,
-        sftpIdentity = None,
+        proxy = None,
+        new DefaultSshConfig()
+      )
+
+    def apply(host: String, port: Int, credentials: FtpCredentials, identity: SftpIdentity): SecureFtpSettings =
+      new SecureFtpSettings(
+        host,
+        port,
+        credentials,
+        sftpIdentity = Some(identity),
+        strictHostKeyChecking = false,
+        knownHosts = None,
         proxy = None,
         new DefaultSshConfig()
       )
@@ -80,55 +92,47 @@ object FtpSettings {
   sealed trait SftpIdentity {
     type KeyType
     val privateKey: KeyType
-    val privateKeyFilePassphrase: Option[Chunk[Byte]]
+    val passphrase: Option[String]
   }
 
   /**
    * SFTP identity for authenticating using private/public key value
    *
    * @param privateKey private key value to use when connecting
-   * @param privateKeyFilePassphrase password to use to decrypt private key
+   * @param passphrase password to use to decrypt private key
    * @param publicKey public key value to use when connecting
    */
   final case class RawKeySftpIdentity(
-    privateKey: Chunk[Byte],
-    privateKeyFilePassphrase: Option[Chunk[Byte]] = None,
-    publicKey: Option[Chunk[Byte]] = None
+    privateKey: String,
+    passphrase: Option[String] = None,
+    publicKey: Option[String] = None
   ) extends SftpIdentity {
-    type KeyType = Chunk[Byte]
+    type KeyType = String
+  }
+
+  object RawKeySftpIdentity {
+
+    def apply(privateKey: String): RawKeySftpIdentity =
+      RawKeySftpIdentity(privateKey, None, None)
+
+    def apply(privateKey: String, passphrase: String): RawKeySftpIdentity =
+      RawKeySftpIdentity(privateKey, Some(passphrase), None)
   }
 
   /**
    * SFTP identity for authenticating using private/public key file
    *
    * @param privateKey private key file to use when connecting
-   * @param privateKeyFilePassphrase password to use to decrypt private key file
+   * @param passphrase password to use to decrypt private key file
    */
-  final case class KeyFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Option[Chunk[Byte]] = None)
-      extends SftpIdentity {
-    type KeyType = String
+  final case class KeyFileSftpIdentity(privateKey: Path, passphrase: Option[String] = None) extends SftpIdentity {
+    type KeyType = Path
   }
 
-  object SftpIdentity {
+  object KeyFileSftpIdentity {
 
-    def createRawSftpIdentity(privateKey: Chunk[Byte]): RawKeySftpIdentity =
-      RawKeySftpIdentity(privateKey)
-
-    def createRawSftpIdentity(privateKey: Chunk[Byte], privateKeyFilePassphrase: Chunk[Byte]): RawKeySftpIdentity =
-      RawKeySftpIdentity(privateKey, Some(privateKeyFilePassphrase))
-
-    def createRawSftpIdentity(
-      privateKey: Chunk[Byte],
-      privateKeyFilePassphrase: Chunk[Byte],
-      publicKey: Chunk[Byte]
-    ): RawKeySftpIdentity =
-      RawKeySftpIdentity(privateKey, Some(privateKeyFilePassphrase), Some(publicKey))
-
-    def createFileSftpIdentity(privateKey: String): KeyFileSftpIdentity =
-      KeyFileSftpIdentity(privateKey)
-
-    def createFileSftpIdentity(privateKey: String, privateKeyFilePassphrase: Chunk[Byte]): KeyFileSftpIdentity =
-      KeyFileSftpIdentity(privateKey, Some(privateKeyFilePassphrase))
+    def apply(privateKey: Path): KeyFileSftpIdentity =
+      KeyFileSftpIdentity(privateKey, None)
   }
 
   /**

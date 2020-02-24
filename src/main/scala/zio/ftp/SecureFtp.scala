@@ -22,13 +22,12 @@ import java.util
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient, _ }
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
-import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import org.apache.commons.net.DefaultSocketFactory
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.FtpSettings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SecureFtpSettings, SftpIdentity }
 import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
-import zio.{ Chunk, Task, URIO, ZIO, ZManaged }
+import zio.{ Task, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
@@ -136,10 +135,10 @@ object SecureFtp {
 
         ssh.connect(host, port)
 
-        if (settings.credentials.password != "" && sftpIdentity.isEmpty)
-          ssh.authPassword(settings.credentials.username, settings.credentials.password)
-
-        sftpIdentity.foreach(setIdentity(_, settings.credentials.username)(ssh))
+        sftpIdentity
+          .fold(ssh.authPassword(credentials.username, credentials.password))(
+            setIdentity(_, credentials.username)(ssh)
+          )
 
         new SecureFtp(ssh.newSFTPClient())
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
@@ -151,22 +150,17 @@ object SecureFtp {
   }
 
   private[this] def setIdentity(identity: SftpIdentity, username: String)(ssh: SSHClient): Unit = {
-    def bats(chunk: Chunk[Byte]): String = new String(chunk.toArray, "UTF-8")
-
-    def initKey(f: OpenSSHKeyFile => Unit): Unit = {
-      val key = new OpenSSHKeyFile
-      f(key)
-      ssh.authPublickey(username, key)
-    }
+    def bats(array: Array[Byte]): String = new String(array, "UTF-8")
 
     val passphrase =
-      identity.privateKeyFilePassphrase.map(pass => PasswordUtils.createOneOff(bats(pass).toCharArray)).orNull
+      identity.passphrase.map(pass => PasswordUtils.createOneOff(bats(pass.getBytes).toCharArray)).orNull
 
-    identity match {
+    val keyProvider = identity match {
       case id: RawKeySftpIdentity =>
-        initKey(_.init(bats(id.privateKey), id.publicKey.map(bats).orNull, passphrase))
+        ssh.loadKeys(bats(id.privateKey.getBytes), id.publicKey.map(p => bats(p.getBytes)).orNull, passphrase)
       case id: KeyFileSftpIdentity =>
-        initKey(_.init(new File(id.privateKey), passphrase))
+        ssh.loadKeys(id.privateKey.toString, passphrase)
     }
+    ssh.authPublickey(username, keyProvider)
   }
 }

@@ -241,12 +241,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="SFTP identity for authenticating using private/public key file" href="FtpSettings$$KeyFileSftpIdentity.html"><span class="name">KeyFileSftpIdentity</span></a><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="privateKeyFilePassphrase">privateKeyFilePassphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="SFTP identity for authenticating using private/public key file" href="FtpSettings$$KeyFileSftpIdentity.html"><span class="name">KeyFileSftpIdentity</span></a><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="java.nio.file.Path">Path</span></span>, <span name="passphrase">passphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">SFTP identity for authenticating using private/public key file
 </p><div class="fullcomment"><div class="comment cmt"><p>SFTP identity for authenticating using private/public key file
-</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key file to use when connecting</p></dd><dt class="param">privateKeyFilePassphrase</dt><dd class="cmt"><p>password to use to decrypt private key file</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key file to use when connecting</p></dd><dt class="param">passphrase</dt><dd class="cmt"><p>password to use to decrypt private key file</p></dd></dl></div>
     </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="RawKeySftpIdentityextendsFtpSettings.SftpIdentitywithProductwithSerializable"></a><a id="RawKeySftpIdentity:RawKeySftpIdentity"></a>
       <span class="permalink">
@@ -259,12 +259,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="SFTP identity for authenticating using private/public key value" href="FtpSettings$$RawKeySftpIdentity.html"><span class="name">RawKeySftpIdentity</span></a><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="privateKeyFilePassphrase">privateKeyFilePassphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="SFTP identity for authenticating using private/public key value" href="FtpSettings$$RawKeySftpIdentity.html"><span class="name">RawKeySftpIdentity</span></a><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="passphrase">passphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">SFTP identity for authenticating using private/public key value
 </p><div class="fullcomment"><div class="comment cmt"><p>SFTP identity for authenticating using private/public key value
-</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">privateKeyFilePassphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">passphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl></div>
     </li><li name="zio.ftp.FtpSettings.SecureFtpSettings" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SecureFtpSettingsextendsFtpSettings[net.schmizz.sshj.sftp.SFTPClient]withProductwithSerializable"></a><a id="SecureFtpSettings:SecureFtpSettings"></a>
       <span class="permalink">
@@ -277,12 +277,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Settings to connect to a secure Ftp server (Ftp over ssh)" href="FtpSettings$$SecureFtpSettings.html"><span class="name">SecureFtpSettings</span></a><span class="params">(<span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="credentials">credentials: <a href="FtpSettings$$FtpCredentials.html" class="extype" name="zio.ftp.FtpSettings.FtpCredentials">FtpCredentials</a></span>, <span name="strictHostKeyChecking">strictHostKeyChecking: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="knownHosts">knownHosts: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sftpIdentity">sftpIdentity: <span class="extype" name="scala.Option">Option</span>[<a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a>]</span>, <span name="proxy">proxy: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.net.Proxy">Proxy</span>]</span>, <span name="sshConfig">sshConfig: <span class="extype" name="net.schmizz.sshj.Config">Config</span></span>)</span><span class="result"> extends <a href="FtpSettings.html" class="extype" name="zio.ftp.FtpSettings">FtpSettings</a>[<span class="extype" name="net.schmizz.sshj.sftp.SFTPClient">SFTPClient</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="Settings to connect to a secure Ftp server (Ftp over ssh)" href="FtpSettings$$SecureFtpSettings.html"><span class="name">SecureFtpSettings</span></a><span class="params">(<span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="credentials">credentials: <a href="FtpSettings$$FtpCredentials.html" class="extype" name="zio.ftp.FtpSettings.FtpCredentials">FtpCredentials</a></span>, <span name="sftpIdentity">sftpIdentity: <span class="extype" name="scala.Option">Option</span>[<a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a>]</span>, <span name="strictHostKeyChecking">strictHostKeyChecking: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="knownHosts">knownHosts: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="proxy">proxy: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.net.Proxy">Proxy</span>]</span>, <span name="sshConfig">sshConfig: <span class="extype" name="net.schmizz.sshj.Config">Config</span></span>)</span><span class="result"> extends <a href="FtpSettings.html" class="extype" name="zio.ftp.FtpSettings">FtpSettings</a>[<span class="extype" name="net.schmizz.sshj.sftp.SFTPClient">SFTPClient</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">Settings to connect to a secure Ftp server (Ftp over ssh)
 </p><div class="fullcomment"><div class="comment cmt"><p>Settings to connect to a secure Ftp server (Ftp over ssh)
-</p></div><dl class="paramcmts block"><dt class="param">host</dt><dd class="cmt"><p>hostname of ftp server (ipAddress / dnsName)</p></dd><dt class="param">port</dt><dd class="cmt"><p>port of communication used by the server</p></dd><dt class="param">credentials</dt><dd class="cmt"><p>auth credentials</p></dd><dt class="param">strictHostKeyChecking</dt><dd class="cmt"><p>sets whether to use strict host key checking.</p></dd><dt class="param">knownHosts</dt><dd class="cmt"><p>known hosts file to be used when connecting</p></dd><dt class="param">sftpIdentity</dt><dd class="cmt"><p>private/public key config to use when connecting</p></dd><dt class="param">sshConfig</dt><dd class="cmt"><p>configuration of ssh client</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">host</dt><dd class="cmt"><p>hostname of ftp server (ipAddress / dnsName)</p></dd><dt class="param">port</dt><dd class="cmt"><p>port of communication used by the server</p></dd><dt class="param">credentials</dt><dd class="cmt"><p>auth credentials</p></dd><dt class="param">sftpIdentity</dt><dd class="cmt"><p>private/public key config to use when connecting</p></dd><dt class="param">strictHostKeyChecking</dt><dd class="cmt"><p>sets whether to use strict host key checking.</p></dd><dt class="param">knownHosts</dt><dd class="cmt"><p>known hosts file to be used when connecting</p></dd><dt class="param">sshConfig</dt><dd class="cmt"><p>configuration of ssh client</p></dd></dl></div>
     </li><li name="zio.ftp.FtpSettings.SftpIdentity" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="SftpIdentityextendsAnyRef"></a><a id="SftpIdentity:SftpIdentity"></a>
       <span class="permalink">
@@ -675,6 +675,38 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="zio.ftp.FtpSettings.KeyFileSftpIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KeyFileSftpIdentity"></a><a id="KeyFileSftpIdentity:KeyFileSftpIdentity"></a>
+      <span class="permalink">
+      <a href="../../zio/ftp/FtpSettings$.html#KeyFileSftpIdentity" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FtpSettings$$KeyFileSftpIdentity$.html"><span class="name">KeyFileSftpIdentity</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      
+      
+    </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RawKeySftpIdentity"></a><a id="RawKeySftpIdentity:RawKeySftpIdentity"></a>
+      <span class="permalink">
+      <a href="../../zio/ftp/FtpSettings$.html#RawKeySftpIdentity" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FtpSettings$$RawKeySftpIdentity$.html"><span class="name">RawKeySftpIdentity</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      
+      
     </li><li name="zio.ftp.FtpSettings.SecureFtpSettings" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SecureFtpSettings"></a><a id="SecureFtpSettings:SecureFtpSettings"></a>
       <span class="permalink">
@@ -688,22 +720,6 @@
       </span>
       <span class="symbol">
         <a title="" href="FtpSettings$$SecureFtpSettings$.html"><span class="name">SecureFtpSettings</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      
-      
-    </li><li name="zio.ftp.FtpSettings.SftpIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SftpIdentity"></a><a id="SftpIdentity:SftpIdentity"></a>
-      <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$.html#SftpIdentity" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="FtpSettings$$SftpIdentity$.html"><span class="name">SftpIdentity</span></a>
       </span>
       
       

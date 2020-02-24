@@ -122,11 +122,11 @@
                         <a class="class" href="FtpSettings$$FtpCredentials.html" title="Credential used during ftp authentication"></a>
                         <a href="FtpSettings$$FtpCredentials.html" title="Credential used during ftp authentication">FtpCredentials</a>
                       </li><li class="current-entities indented3">
-                        <span class="separator"></span>
+                        <a class="object" href="FtpSettings$$KeyFileSftpIdentity$.html" title=""></a>
                         <a class="class" href="FtpSettings$$KeyFileSftpIdentity.html" title="SFTP identity for authenticating using private/public key file"></a>
                         <a href="FtpSettings$$KeyFileSftpIdentity.html" title="SFTP identity for authenticating using private/public key file">KeyFileSftpIdentity</a>
                       </li><li class="current-entities indented3">
-                        <span class="separator"></span>
+                        <a class="object" href="FtpSettings$$RawKeySftpIdentity$.html" title=""></a>
                         <a class="class" href="" title="SFTP identity for authenticating using private/public key value"></a>
                         <a href="" title="SFTP identity for authenticating using private/public key value">RawKeySftpIdentity</a>
                       </li><li class="current-entities indented3">
@@ -134,7 +134,7 @@
                         <a class="class" href="FtpSettings$$SecureFtpSettings.html" title="Settings to connect to a secure Ftp server (Ftp over ssh)"></a>
                         <a href="FtpSettings$$SecureFtpSettings.html" title="Settings to connect to a secure Ftp server (Ftp over ssh)">SecureFtpSettings</a>
                       </li><li class="current-entities indented3">
-                        <a class="object" href="FtpSettings$$SftpIdentity$.html" title=""></a>
+                        <span class="separator"></span>
                         <a class="trait" href="FtpSettings$$SftpIdentity.html" title=""></a>
                         <a href="FtpSettings$$SftpIdentity.html" title="">SftpIdentity</a>
                       </li><li class="current-entities indented3">
@@ -148,14 +148,16 @@
           <div id="content">
             <body class="class type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <a href="FtpSettings$$RawKeySftpIdentity$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../index.html" class="extype" name="zio">zio</a>.<a href="index.html" class="extype" name="zio.ftp">ftp</a>.<a href="FtpSettings$.html" class="extype" name="zio.ftp.FtpSettings">FtpSettings</a></p>
-        <h1>RawKeySftpIdentity<span class="permalink">
+        <h1><a href="FtpSettings$$RawKeySftpIdentity$.html" title="See companion object">RawKeySftpIdentity</a><span class="permalink">
       <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"></span></h3>
+        <h3><span class="morelinks"><div>
+            Companion <a href="FtpSettings$$RawKeySftpIdentity$.html" title="See companion object">object RawKeySftpIdentity</a>
+          </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
@@ -164,13 +166,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">RawKeySftpIdentity</span><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="privateKeyFilePassphrase">privateKeyFilePassphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">RawKeySftpIdentity</span><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="passphrase">passphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
 
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>SFTP identity for authenticating using private/public key value
-</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">privateKeyFilePassphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl><div class="toggleContainer block">
+</p></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">passphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -221,9 +223,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(privateKey:zio.Chunk[Byte],privateKeyFilePassphrase:Option[zio.Chunk[Byte]],publicKey:Option[zio.Chunk[Byte]]):zio.ftp.FtpSettings.RawKeySftpIdentity"></a><a id="&lt;init&gt;:RawKeySftpIdentity"></a>
+      <a id="&lt;init&gt;(privateKey:String,passphrase:Option[String],publicKey:Option[String]):zio.ftp.FtpSettings.RawKeySftpIdentity"></a><a id="&lt;init&gt;:RawKeySftpIdentity"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#&lt;init&gt;(privateKey:zio.Chunk[Byte],privateKeyFilePassphrase:Option[zio.Chunk[Byte]],publicKey:Option[zio.Chunk[Byte]]):zio.ftp.FtpSettings.RawKeySftpIdentity" title="Permalink">
+      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#&lt;init&gt;(privateKey:String,passphrase:Option[String],publicKey:Option[String]):zio.ftp.FtpSettings.RawKeySftpIdentity" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -232,19 +234,19 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RawKeySftpIdentity</span><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="privateKeyFilePassphrase">privateKeyFilePassphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]] = <span class="symbol">None</span></span>)</span>
+        <span class="name">RawKeySftpIdentity</span><span class="params">(<span name="privateKey">privateKey: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="passphrase">passphrase: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>, <span name="publicKey">publicKey: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span>
       </span>
       
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">privateKeyFilePassphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">privateKey</dt><dd class="cmt"><p>private key value to use when connecting</p></dd><dt class="param">passphrase</dt><dd class="cmt"><p>password to use to decrypt private key</p></dd><dt class="param">publicKey</dt><dd class="cmt"><p>public key value to use when connecting</p></dd></dl></div>
     </li></ol>
             </div>
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="zio.ftp.FtpSettings.RawKeySftpIdentity.KeyType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="KeyType=zio.Chunk[Byte]"></a><a id="KeyType:KeyType"></a>
+      <a id="KeyType=String"></a><a id="KeyType:KeyType"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#KeyType=zio.Chunk[Byte]" title="Permalink">
+      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#KeyType=String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -253,7 +255,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">KeyType</span><span class="result alias"> = <span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+        <span class="name">KeyType</span><span class="result alias"> = <span class="extype" name="java.lang.String">String</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="zio.ftp.FtpSettings.RawKeySftpIdentity">RawKeySftpIdentity</a> → <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a></dd></dl></div>
@@ -480,10 +482,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#privateKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="privateKey:zio.Chunk[Byte]"></a><a id="privateKey:Chunk[Byte]"></a>
+    </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#passphrase" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="passphrase:Option[String]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#privateKey:zio.Chunk[Byte]" title="Permalink">
+      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#passphrase:Option[String]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -492,14 +494,14 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">privateKey</span><span class="result">: <span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+        <span class="name">passphrase</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="zio.ftp.FtpSettings.RawKeySftpIdentity">RawKeySftpIdentity</a> → <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a></dd></dl></div>
-    </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#privateKeyFilePassphrase" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="privateKeyFilePassphrase:Option[zio.Chunk[Byte]]"></a><a id="privateKeyFilePassphrase:Option[Chunk[Byte]]"></a>
+    </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#privateKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="privateKey:String"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#privateKeyFilePassphrase:Option[zio.Chunk[Byte]]" title="Permalink">
+      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#privateKey:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -508,14 +510,14 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">privateKeyFilePassphrase</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
+        <span class="name">privateKey</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="zio.ftp.FtpSettings.RawKeySftpIdentity">RawKeySftpIdentity</a> → <a href="FtpSettings$$SftpIdentity.html" class="extype" name="zio.ftp.FtpSettings.SftpIdentity">SftpIdentity</a></dd></dl></div>
     </li><li name="zio.ftp.FtpSettings.RawKeySftpIdentity#publicKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="publicKey:Option[zio.Chunk[Byte]]"></a><a id="publicKey:Option[Chunk[Byte]]"></a>
+      <a id="publicKey:Option[String]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#publicKey:Option[zio.Chunk[Byte]]" title="Permalink">
+      <a href="../../zio/ftp/FtpSettings$$RawKeySftpIdentity.html#publicKey:Option[String]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -524,7 +526,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">publicKey</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
+        <span class="name">publicKey</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       
       

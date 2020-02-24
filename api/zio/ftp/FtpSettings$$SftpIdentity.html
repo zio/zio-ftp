@@ -122,11 +122,11 @@
                         <a class="class" href="FtpSettings$$FtpCredentials.html" title="Credential used during ftp authentication"></a>
                         <a href="FtpSettings$$FtpCredentials.html" title="Credential used during ftp authentication">FtpCredentials</a>
                       </li><li class="current-entities indented3">
-                        <span class="separator"></span>
+                        <a class="object" href="FtpSettings$$KeyFileSftpIdentity$.html" title=""></a>
                         <a class="class" href="FtpSettings$$KeyFileSftpIdentity.html" title="SFTP identity for authenticating using private/public key file"></a>
                         <a href="FtpSettings$$KeyFileSftpIdentity.html" title="SFTP identity for authenticating using private/public key file">KeyFileSftpIdentity</a>
                       </li><li class="current-entities indented3">
-                        <span class="separator"></span>
+                        <a class="object" href="FtpSettings$$RawKeySftpIdentity$.html" title=""></a>
                         <a class="class" href="FtpSettings$$RawKeySftpIdentity.html" title="SFTP identity for authenticating using private/public key value"></a>
                         <a href="FtpSettings$$RawKeySftpIdentity.html" title="SFTP identity for authenticating using private/public key value">RawKeySftpIdentity</a>
                       </li><li class="current-entities indented3">
@@ -134,7 +134,7 @@
                         <a class="class" href="FtpSettings$$SecureFtpSettings.html" title="Settings to connect to a secure Ftp server (Ftp over ssh)"></a>
                         <a href="FtpSettings$$SecureFtpSettings.html" title="Settings to connect to a secure Ftp server (Ftp over ssh)">SecureFtpSettings</a>
                       </li><li class="current-entities indented3">
-                        <a class="object" href="FtpSettings$$SftpIdentity$.html" title=""></a>
+                        <span class="separator"></span>
                         <a class="trait" href="" title=""></a>
                         <a href="" title="">SftpIdentity</a>
                       </li><li class="current-entities indented3">
@@ -148,16 +148,14 @@
           <div id="content">
             <body class="trait type">
       <div id="definition">
-        <a href="FtpSettings$$SftpIdentity$.html" title="See companion object"><div class="big-circle trait-companion-object">t</div></a>
+        <div class="big-circle trait">t</div>
         <p id="owner"><a href="../index.html" class="extype" name="zio">zio</a>.<a href="index.html" class="extype" name="zio.ftp">ftp</a>.<a href="FtpSettings$.html" class="extype" name="zio.ftp.FtpSettings">FtpSettings</a></p>
-        <h1><a href="FtpSettings$$SftpIdentity$.html" title="See companion object">SftpIdentity</a><span class="permalink">
+        <h1>SftpIdentity<span class="permalink">
       <a href="../../zio/ftp/FtpSettings$$SftpIdentity.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"><div>
-            Companion <a href="FtpSettings$$SftpIdentity$.html" title="See companion object">object SftpIdentity</a>
-          </div></span></h3>
+        <h3><span class="morelinks"></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
@@ -249,7 +247,23 @@
 
         <div class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="zio.ftp.FtpSettings.SftpIdentity#privateKey" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="zio.ftp.FtpSettings.SftpIdentity#passphrase" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="passphrase:Option[String]"></a>
+      <span class="permalink">
+      <a href="../../zio/ftp/FtpSettings$$SftpIdentity.html#passphrase:Option[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">passphrase</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
+    </li><li name="zio.ftp.FtpSettings.SftpIdentity#privateKey" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="privateKey:SftpIdentity.this.KeyType"></a><a id="privateKey:KeyType"></a>
       <span class="permalink">
       <a href="../../zio/ftp/FtpSettings$$SftpIdentity.html#privateKey:SftpIdentity.this.KeyType" title="Permalink">
@@ -262,22 +276,6 @@
       </span>
       <span class="symbol">
         <span class="name">privateKey</span><span class="result">: <a href="#KeyType" class="extmbr" name="zio.ftp.FtpSettings.SftpIdentity.KeyType">KeyType</a></span>
-      </span>
-      
-      
-    </li><li name="zio.ftp.FtpSettings.SftpIdentity#privateKeyFilePassphrase" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="privateKeyFilePassphrase:Option[zio.Chunk[Byte]]"></a><a id="privateKeyFilePassphrase:Option[Chunk[Byte]]"></a>
-      <span class="permalink">
-      <a href="../../zio/ftp/FtpSettings$$SftpIdentity.html#privateKeyFilePassphrase:Option[zio.Chunk[Byte]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">privateKeyFilePassphrase</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.Chunk">Chunk</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
       </span>
       
       

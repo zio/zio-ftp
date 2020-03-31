@@ -28,7 +28,6 @@ import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.FtpSettings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SecureFtpSettings, SftpIdentity }
 import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
 import zio.{ Task, URIO, ZIO, ZManaged }
-
 import scala.jdk.CollectionConverters._
 
 /**
@@ -81,7 +80,7 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
           }
       )
-      .flatMap(Stream.fromIterable)
+      .flatMap(ZStream.fromIterable(_))
       .map(FtpResource(_))
 
   def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
@@ -93,7 +92,7 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
           }
       )
-      .flatMap(Stream.fromIterable)
+      .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
         if (f.isDirectory) lsDescendant(f.getPath)
         else Stream(FtpResource(f))

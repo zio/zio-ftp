@@ -43,7 +43,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
                  _.fold[ZIO[Any, InvalidPathError, InputStream]](
                    ZIO.fail(InvalidPathError(s"File does not exist $path"))
                  )(
-                   ZIO.succeed
+                   ZIO.succeed(_)
                  )
                )
            )
@@ -71,13 +71,13 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
   def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
       .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable)
+      .flatMap(Stream.fromIterable(_))
       .map(FtpResource(_, Some(path)))
 
   def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
       .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable)
+      .flatMap(Stream.fromIterable(_))
       .flatMap { f =>
         if (f.isDirectory) {
           val dirPath = Option(path).filter(_.endsWith("/")).fold(s"$path/${f.getName}")(p => s"$p${f.getName}")

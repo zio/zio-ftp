@@ -1,7 +1,7 @@
 package zio.ftp
 
 import java.net.{ InetSocketAddress, Proxy }
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file.{ Files, Paths }
 
 import zio._
 import zio.ftp.FtpClient.connect
@@ -13,12 +13,12 @@ import zio.test._
 import scala.io.Source
 
 object FtpsTest extends DefaultRunnableSpec {
-  val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
+  val settings      = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
   override def spec = FtpSuite.spec("FtpsSpec", settings)
 }
 
 object FtpTest extends DefaultRunnableSpec {
-  val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
+  val settings      = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
   override def spec = FtpSuite.spec("FtpSpec", settings)
 }
 

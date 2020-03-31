@@ -42,7 +42,7 @@ final case class FtpResource(
 
 object FtpResource {
 
-  def apply(f: FTPFile, path: Option[String] = None): FtpResource =
+  def fromFtpFile(f: FTPFile, path: Option[String] = None): FtpResource =
     FtpResource(
       path.fold(f.getName) {
         case "/" => s"/${f.getName}"
@@ -54,7 +54,7 @@ object FtpResource {
       Some(f.isDirectory)
     )
 
-  def apply(file: RemoteResourceInfo): FtpResource =
+  def fromResource(file: RemoteResourceInfo): FtpResource =
     FtpResource(
       file.getPath,
       file.getAttributes.getSize,

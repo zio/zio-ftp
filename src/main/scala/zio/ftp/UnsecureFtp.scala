@@ -18,8 +18,8 @@ package zio.ftp
 import java.io.{ IOException, InputStream }
 
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
-import zio.blocking.{ Blocking, effectBlocking }
-import zio.ftp.FtpSettings.UnsecureFtpSettings
+import zio.blocking._
+import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
 import zio.{ Task, ZIO, ZManaged }
 
@@ -30,10 +30,10 @@ import zio.{ Task, ZIO, ZManaged }
  * since the underlying java client only provide blocking methods.
  *
  */
-final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
+final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
-    execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource(_)))
+    execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[Blocking, IOException, Byte] =
     ZStreamChunk(for {
@@ -60,7 +60,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
 
   def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.removeDirectory(path))
-      .filterOrFail(b => b)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
+      .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
       .unit
 
   def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
@@ -72,7 +72,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
     ZStream
       .fromEffect(execute(_.listFiles(path).toList))
       .flatMap(Stream.fromIterable(_))
-      .map(FtpResource(_, Some(path)))
+      .map(FtpResource.fromFtpFile(_, Some(path)))
 
   def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
@@ -83,7 +83,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
           val dirPath = Option(path).filter(_.endsWith("/")).fold(s"$path/${f.getName}")(p => s"$p${f.getName}")
           lsDescendant(dirPath)
         } else
-          Stream(FtpResource(f, Some(path)))
+          Stream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
   def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
@@ -95,15 +95,16 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
           .unit
       )
 
-  override def execute[T](f: JFTPClient => T): ZIO[Blocking, IOException, T] =
-    effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
+  override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
+    effectBlockingIO(f(unsafeClient))
 }
 
 object UnsecureFtp {
+  type Client = JFTPClient
 
-  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JFTPClient]] =
+  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] =
     ZManaged.make(
-      effectBlocking {
+      effectBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
         settings.proxy.foreach(ftpClient.setProxy)
         ftpClient.connect(settings.host, settings.port)

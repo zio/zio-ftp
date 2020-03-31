@@ -1,36 +1,12 @@
-/*
- * Copyright 2017-2020 John A. De Goes and the ZIO Contributors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package zio.ftp
 
 import java.io.IOException
 
+import zio.ZIO
 import zio.blocking.Blocking
-import zio.ftp.FtpSettings.{ SecureFtpSettings, UnsecureFtpSettings }
 import zio.stream.{ ZStream, ZStreamChunk }
-import zio.{ ZIO, ZManaged }
 
-/**
- * Based trait for Ftp Wrapper
- *
- * It is required to provide an Blocking Environment for each command.
- *
- * @tparam A Ftp client type
- */
-trait FtpClient[+A] {
+trait FtpAccessors[+A] {
 
   /**
    * Lift unsafe operation that does blocking IO into a pure value. If the operation failed an error will be emitted
@@ -100,18 +76,5 @@ trait FtpClient[+A] {
    * @tparam R environment of the specified stream source, required to extend Blocking
    */
   def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit]
-}
 
-object FtpClient {
-
-  /**
-   * Create a safe resource FtpClient. If the operation failed, an ConnectionError will be emitted
-   *
-   * @param settings ftp connection settings
-   * @tparam A
-   */
-  def connect[A](settings: FtpSettings[A]): ZManaged[Blocking, ConnectionError, FtpClient[A]] = settings match {
-    case s: UnsecureFtpSettings => UnsecureFtp.connect(s)
-    case s: SecureFtpSettings   => SecureFtp.connect(s)
-  }
 }

@@ -20,14 +20,15 @@ import java.io.{ File, IOException }
 import java.util
 
 import net.schmizz.sshj.SSHClient
-import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient, _ }
+import net.schmizz.sshj.sftp.{ SFTPClient, _ }
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import org.apache.commons.net.DefaultSocketFactory
 import zio.blocking.{ Blocking, effectBlocking }
-import zio.ftp.FtpSettings.{ KeyFileSftpIdentity, RawKeySftpIdentity, SecureFtpSettings, SftpIdentity }
+import zio.ftp.SecureFtp.Client
 import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
 import zio.{ Task, URIO, ZIO, ZManaged }
+
 import scala.jdk.CollectionConverters._
 
 /**
@@ -36,7 +37,7 @@ import scala.jdk.CollectionConverters._
  * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
  * since the underlying java client only provide blocking methods.
  */
-final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTPClient] {
+final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
@@ -81,7 +82,7 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
           }
       )
       .flatMap(ZStream.fromIterable(_))
-      .map(FtpResource(_))
+      .map(FtpResource.fromResource)
 
   def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
@@ -95,7 +96,7 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
       .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
         if (f.isDirectory) lsDescendant(f.getPath)
-        else Stream(FtpResource(f))
+        else Stream(FtpResource.fromResource(f))
       }
 
   def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
@@ -114,13 +115,14 @@ final private class SecureFtp(unsafeClient: JSFTPClient) extends FtpClient[JSFTP
       _ <- osManaged.use(os => source.run(ZSink.fromOutputStream(os))).mapError(new IOException(_))
     } yield ()
 
-  override def execute[T](f: JSFTPClient => T): ZIO[Blocking, IOException, T] =
+  override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
     effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }
 
 object SecureFtp {
+  type Client = SFTPClient
 
-  def connect(settings: SecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JSFTPClient]] = {
+  def connect(settings: SecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] = {
     val ssh = new SSHClient(settings.sshConfig)
     import settings._
     ZManaged.make(

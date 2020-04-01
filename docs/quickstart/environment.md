@@ -13,10 +13,9 @@ we are lifting all blocking (effectful) functions into a blocking execution cont
 Since we never expose the underlying ftp client, you can only use a ZIO wrapper `FtpClient[_]`
 
 ``` scala 
-trait FtpClient[T] {
+trait FtpAccessors[+A] {
  def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]]
  def ls(path: String): ZStream[Blocking, IOException, FtpResource]
- ...
 }
 ```
 
@@ -53,7 +52,7 @@ import java.io.IOException
 
 val program: ZIO[Blocking, IOException, Unit] = ???
 // Blocking environment is not anymore required
-val run: ZIO[Any, IOException, Unit] = program.provide(Blocking.Live)
+val run: ZIO[Any, IOException, Unit] = program.provideLayer(Blocking.live)
 ```
 
 Resources

@@ -18,8 +18,8 @@ package zio.ftp
 import java.io.{ IOException, InputStream }
 
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
-import zio.blocking.{ Blocking, effectBlocking }
-import zio.ftp.FtpSettings.UnsecureFtpSettings
+import zio.blocking._
+import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream, ZStreamChunk }
 import zio.{ Task, ZIO, ZManaged }
 
@@ -30,10 +30,10 @@ import zio.{ Task, ZIO, ZManaged }
  * since the underlying java client only provide blocking methods.
  *
  */
-final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTPClient] {
+final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
-    execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource(_)))
+    execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[Blocking, IOException, Byte] =
     ZStreamChunk(for {
@@ -43,7 +43,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
                  _.fold[ZIO[Any, InvalidPathError, InputStream]](
                    ZIO.fail(InvalidPathError(s"File does not exist $path"))
                  )(
-                   ZIO.succeed
+                   ZIO.succeed(_)
                  )
                )
            )
@@ -60,7 +60,7 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
 
   def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.removeDirectory(path))
-      .filterOrFail(b => b)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
+      .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
       .unit
 
   def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
@@ -71,19 +71,19 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
   def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
       .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable)
-      .map(FtpResource(_, Some(path)))
+      .flatMap(Stream.fromIterable(_))
+      .map(FtpResource.fromFtpFile(_, Some(path)))
 
   def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
     ZStream
       .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable)
+      .flatMap(Stream.fromIterable(_))
       .flatMap { f =>
         if (f.isDirectory) {
           val dirPath = Option(path).filter(_.endsWith("/")).fold(s"$path/${f.getName}")(p => s"$p${f.getName}")
           lsDescendant(dirPath)
         } else
-          Stream(FtpResource(f, Some(path)))
+          Stream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
   def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
@@ -95,15 +95,16 @@ final private class UnsecureFtp(unsafeClient: JFTPClient) extends FtpClient[JFTP
           .unit
       )
 
-  override def execute[T](f: JFTPClient => T): ZIO[Blocking, IOException, T] =
-    effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
+  override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
+    effectBlockingIO(f(unsafeClient))
 }
 
 object UnsecureFtp {
+  type Client = JFTPClient
 
-  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpClient[JFTPClient]] =
+  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] =
     ZManaged.make(
-      effectBlocking {
+      effectBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
         settings.proxy.foreach(ftpClient.setProxy)
         ftpClient.connect(settings.host, settings.port)
@@ -121,9 +122,5 @@ object UnsecureFtp {
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
-    )(client =>
-      client.execute(_.logout()).ignore >>= (
-        _ => client.execute(_.disconnect()).ignore
-      )
-    )
+    )(client => client.execute(_.logout()).ignore >>= (_ => client.execute(_.disconnect()).ignore))
 }

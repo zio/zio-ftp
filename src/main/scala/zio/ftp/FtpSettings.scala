@@ -18,149 +18,136 @@ package zio.ftp
 
 import java.net.Proxy
 import java.nio.file.Path
-
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
-import net.schmizz.sshj.sftp.{ SFTPClient => JSFTPClient }
-import org.apache.commons.net.ftp.{ FTPClient => JFTPClient }
 
 /**
- * Base trait Ftp Settings
+ * Credential used during ftp authentication
  *
- * @tparam A Ftp client type
+ * @param username identifier of the user in plain text
+ * @param password secure secret of the user in plain text
  */
-sealed trait FtpSettings[+A]
+final case class FtpCredentials(username: String, password: String)
 
-object FtpSettings {
+/**
+ * Settings to connect to a secure Ftp server (Ftp over ssh)
+ *
+ * @param host hostname of ftp server (ipAddress / dnsName)
+ * @param port port of communication used by the server
+ * @param credentials auth credentials
+ * @param strictHostKeyChecking sets whether to use strict host key checking.
+ * @param knownHosts known hosts file to be used when connecting
+ * @param sftpIdentity private/public key config to use when connecting
+ * @param sshConfig configuration of ssh client
+ */
+final case class SecureFtpSettings(
+  host: String,
+  port: Int,
+  credentials: FtpCredentials,
+  sftpIdentity: Option[SftpIdentity],
+  strictHostKeyChecking: Boolean,
+  knownHosts: Option[String],
+  proxy: Option[Proxy],
+  sshConfig: SshConfig
+)
 
-  /**
-   * Credential used during ftp authentication
-   *
-   * @param username identifier of the user in plain text
-   * @param password secure secret of the user in plain text
-   */
-  final case class FtpCredentials(username: String, password: String)
+object SecureFtpSettings {
 
-  /**
-   * Settings to connect to a secure Ftp server (Ftp over ssh)
-   *
-   * @param host hostname of ftp server (ipAddress / dnsName)
-   * @param port port of communication used by the server
-   * @param credentials auth credentials
-   * @param strictHostKeyChecking sets whether to use strict host key checking.
-   * @param knownHosts known hosts file to be used when connecting
-   * @param sftpIdentity private/public key config to use when connecting
-   * @param sshConfig configuration of ssh client
-   */
-  final case class SecureFtpSettings(
-    host: String,
-    port: Int,
-    credentials: FtpCredentials,
-    sftpIdentity: Option[SftpIdentity],
-    strictHostKeyChecking: Boolean,
-    knownHosts: Option[String],
-    proxy: Option[Proxy],
-    sshConfig: SshConfig
-  ) extends FtpSettings[JSFTPClient]
+  def apply(host: String, port: Int, credentials: FtpCredentials): SecureFtpSettings =
+    new SecureFtpSettings(
+      host,
+      port,
+      credentials,
+      sftpIdentity = None,
+      strictHostKeyChecking = false,
+      knownHosts = None,
+      proxy = None,
+      new DefaultSshConfig()
+    )
 
-  object SecureFtpSettings {
+  def apply(host: String, port: Int, credentials: FtpCredentials, identity: SftpIdentity): SecureFtpSettings =
+    new SecureFtpSettings(
+      host,
+      port,
+      credentials,
+      sftpIdentity = Some(identity),
+      strictHostKeyChecking = false,
+      knownHosts = None,
+      proxy = None,
+      new DefaultSshConfig()
+    )
+}
 
-    def apply(host: String, port: Int, credentials: FtpCredentials): SecureFtpSettings =
-      new SecureFtpSettings(
-        host,
-        port,
-        credentials,
-        sftpIdentity = None,
-        strictHostKeyChecking = false,
-        knownHosts = None,
-        proxy = None,
-        new DefaultSshConfig()
-      )
+sealed trait SftpIdentity {
+  type KeyType
+  val privateKey: KeyType
+  val passphrase: Option[String]
+}
 
-    def apply(host: String, port: Int, credentials: FtpCredentials, identity: SftpIdentity): SecureFtpSettings =
-      new SecureFtpSettings(
-        host,
-        port,
-        credentials,
-        sftpIdentity = Some(identity),
-        strictHostKeyChecking = false,
-        knownHosts = None,
-        proxy = None,
-        new DefaultSshConfig()
-      )
-  }
+/**
+ * SFTP identity for authenticating using private/public key value
+ *
+ * @param privateKey private key value to use when connecting
+ * @param passphrase password to use to decrypt private key
+ * @param publicKey public key value to use when connecting
+ */
+final case class RawKeySftpIdentity(
+  privateKey: String,
+  passphrase: Option[String] = None,
+  publicKey: Option[String] = None
+) extends SftpIdentity {
+  type KeyType = String
+}
 
-  sealed trait SftpIdentity {
-    type KeyType
-    val privateKey: KeyType
-    val passphrase: Option[String]
-  }
+object RawKeySftpIdentity {
 
-  /**
-   * SFTP identity for authenticating using private/public key value
-   *
-   * @param privateKey private key value to use when connecting
-   * @param passphrase password to use to decrypt private key
-   * @param publicKey public key value to use when connecting
-   */
-  final case class RawKeySftpIdentity(
-    privateKey: String,
-    passphrase: Option[String] = None,
-    publicKey: Option[String] = None
-  ) extends SftpIdentity {
-    type KeyType = String
-  }
+  def apply(privateKey: String): RawKeySftpIdentity =
+    RawKeySftpIdentity(privateKey, None, None)
 
-  object RawKeySftpIdentity {
+  def apply(privateKey: String, passphrase: String): RawKeySftpIdentity =
+    RawKeySftpIdentity(privateKey, Some(passphrase), None)
+}
 
-    def apply(privateKey: String): RawKeySftpIdentity =
-      RawKeySftpIdentity(privateKey, None, None)
+/**
+ * SFTP identity for authenticating using private/public key file
+ *
+ * @param privateKey private key file to use when connecting
+ * @param passphrase password to use to decrypt private key file
+ */
+final case class KeyFileSftpIdentity(privateKey: Path, passphrase: Option[String] = None) extends SftpIdentity {
+  type KeyType = Path
+}
 
-    def apply(privateKey: String, passphrase: String): RawKeySftpIdentity =
-      RawKeySftpIdentity(privateKey, Some(passphrase), None)
-  }
+object KeyFileSftpIdentity {
 
-  /**
-   * SFTP identity for authenticating using private/public key file
-   *
-   * @param privateKey private key file to use when connecting
-   * @param passphrase password to use to decrypt private key file
-   */
-  final case class KeyFileSftpIdentity(privateKey: Path, passphrase: Option[String] = None) extends SftpIdentity {
-    type KeyType = Path
-  }
+  def apply(privateKey: Path): KeyFileSftpIdentity =
+    KeyFileSftpIdentity(privateKey, None)
+}
 
-  object KeyFileSftpIdentity {
+/**
+ * Settings to connect unsecure Ftp server
+ *
+ * @param host hostname of ftp server (ipAddress / dnsName)
+ * @param port port of communication used by the server
+ * @param credentials credentials (username and password)
+ * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
+ * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
+ * @param proxy An optional proxy to use when connecting with these settings
+ */
+final case class UnsecureFtpSettings(
+  host: String,
+  port: Int,
+  credentials: FtpCredentials,
+  binary: Boolean,
+  passiveMode: Boolean,
+  proxy: Option[Proxy],
+  secure: Boolean
+)
 
-    def apply(privateKey: Path): KeyFileSftpIdentity =
-      KeyFileSftpIdentity(privateKey, None)
-  }
+object UnsecureFtpSettings {
 
-  /**
-   * Settings to connect unsecure Ftp server
-   *
-   * @param host hostname of ftp server (ipAddress / dnsName)
-   * @param port port of communication used by the server
-   * @param credentials credentials (username and password)
-   * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
-   * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
-   * @param proxy An optional proxy to use when connecting with these settings
-   */
-  final case class UnsecureFtpSettings(
-    host: String,
-    port: Int,
-    credentials: FtpCredentials,
-    binary: Boolean,
-    passiveMode: Boolean,
-    proxy: Option[Proxy],
-    secure: Boolean
-  ) extends FtpSettings[JFTPClient]
+  def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+    new UnsecureFtpSettings(host, port, creds, true, true, None, false)
 
-  object UnsecureFtpSettings {
-
-    def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-      new UnsecureFtpSettings(host, port, creds, true, true, None, false)
-
-    def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-      new UnsecureFtpSettings(host, port, creds, true, true, None, true)
-  }
+  def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+    new UnsecureFtpSettings(host, port, creds, true, true, None, true)
 }

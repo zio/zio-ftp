@@ -7,9 +7,9 @@ Setup
 -----
 
 ```
-//support scala 2.12 / 2.13
+//support scala 2.11 / 2.12 / 2.13
 
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.3.0"
+libraryDependencies += "dev.zio" %% "zio-ftp" % "0.3.1"
 ```
 
 
@@ -41,10 +41,11 @@ import zio.ftp._
 import zio.ftp.SFtp._
 
 val settings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+val sftpLayer = secure(settings)
 
 //listing files
 ls("/").runCollect.provideLayer(
-  unsecure(settings) ++ Blocking.live
+  sftpLayer ++ Blocking.live
 )
 ```
 

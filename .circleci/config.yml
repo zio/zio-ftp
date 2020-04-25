@@ -1,5 +1,8 @@
 version: 2.1
 
+scala_211: &scala_211
+  SCALA_VERSION: 2.11.12
+
 scala_212: &scala_212
   SCALA_VERSION: 2.12.11
 
@@ -176,6 +179,20 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_8
 
+  test_211_jdk8:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_211
+      - <<: *jdk_8
+
+  test_211_jdk11:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_211
+      - <<: *jdk_11
+
   test_212_jdk8:
     <<: *test
     <<: *machine_ubuntu
@@ -230,6 +247,16 @@ workflows:
             - lint
           filters:
             <<: *tags_filter
+      - test_211_jdk8:
+          requires:
+            - lint
+          filters:
+            <<: *tags_filter
+      - test_211_jdk11:
+          requires:
+            - lint
+          filters:
+            <<: *tags_filter
       - test_212_jdk8:
           requires:
             - lint
@@ -254,11 +281,12 @@ workflows:
           context: Sonatype2
           requires:
             - mdoc
+            - test_211_jdk8
+            - test_211_jdk11
             - test_212_jdk8
             - test_212_jdk11
             - test_213_jdk8
             - test_213_jdk11
-          
           filters:
             <<: *tags_filter
             branches:

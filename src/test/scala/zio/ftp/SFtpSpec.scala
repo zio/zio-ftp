@@ -47,9 +47,9 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("connect with ssh key file") {
         for {
           privatekey <- Managed
-                         .fromAutoCloseable(
+                         .make(
                            IO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
-                         )
+                         )(s => IO(s.close()).ignore)
                          .use(b => Task(b.mkString))
           settings = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
           succeed  <- SecureFtp.connect(settings).use(_ => IO.succeed(true))

@@ -19,11 +19,11 @@ package zio.ftp
 import java.io.{ FileOutputStream, IOException }
 import java.nio.file.NoSuchFileException
 
-import zio.ZIO
 import zio.blocking.Blocking
 import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
-import zio.stream.{ ZSink, ZStream, ZStreamChunk }
+import zio.stream.{ ZSink, ZStream }
+import zio.{ ZIO, ZManaged }
 
 object TestFtp {
 
@@ -41,15 +41,14 @@ object TestFtp {
         .refineToOrDie[IOException]
     }
 
-    override def readFile(path: String, chunkSize: Int): ZStreamChunk[Blocking, IOException, Byte] =
-      ZStreamChunk(
-        ZStream
-          .fromEffect(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
-          .catchAll {
-            case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
-            case err                    => ZStream.fail(err)
-          }
-      )
+    override def readFile(path: String, chunkSize: Int): ZStream[Blocking, IOException, Byte] =
+      ZStream
+        .fromEffect(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
+        .catchAll {
+          case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
+          case err                    => ZStream.fail(err)
+        }
+        .flatMap(ZStream.fromChunk(_))
 
     override def rm(path: String): ZIO[Blocking, IOException, Unit] =
       Files
@@ -94,13 +93,17 @@ object TestFtp {
 
     override def upload[R <: Blocking](
       path: String,
-      source: ZStreamChunk[R, Throwable, Byte]
+      source: ZStream[R, Throwable, Byte]
     ): ZIO[R, IOException, Unit] = {
       val file = (root / ZPath(path).elements.mkString("/")).toFile
 
-      source
-        .run(ZSink.fromEffect(ZIO(new FileOutputStream(file))).flatMap(ZSink.fromOutputStream))
-        .unit
+      ZManaged
+        .fromAutoCloseable(ZIO(new FileOutputStream(file)))
+        .use { out =>
+          source
+            .run(ZSink.fromOutputStream(out))
+            .unit
+        }
         .refineToOrDie[IOException]
         .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot upload data to : $path", err)))
     }

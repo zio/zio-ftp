@@ -20,7 +20,7 @@ import java.io.{ IOException, InputStream }
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.blocking._
 import zio.ftp.UnsecureFtp.Client
-import zio.stream.{ Stream, ZStream, ZStreamChunk }
+import zio.stream.{ Stream, ZStream }
 import zio.{ Task, ZIO, ZManaged }
 
 /**
@@ -35,8 +35,8 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[Blocking, IOException, Byte] =
-    ZStreamChunk(for {
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] =
+    for {
       is <- ZStream.fromEffect(
              execute(c => Option(c.retrieveFileStream(path)))
                .flatMap(
@@ -50,8 +50,8 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 
       safeIs <- ZStream.managed(ZManaged.fromAutoCloseable(Task(is))).mapError(e => new IOException(e.getMessage, e))
 
-      data <- ZStream.fromInputStream(safeIs, chunkSize).chunks
-    } yield data)
+      data <- ZStream.fromInputStream(safeIs, chunkSize)
+    } yield data
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.deleteFile(path))
@@ -86,7 +86,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
           Stream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
-  def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     source.toInputStream
       .mapError(new IOException(_))
       .use(is =>

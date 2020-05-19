@@ -5,11 +5,12 @@ import java.nio.file.{ Files, Paths }
 
 import zio._
 import zio.blocking.Blocking
-import zio.stream.{ ZSink, ZStreamChunk }
+import zio.ftp.SFtp._
+import zio.stream.{ ZStream, ZTransducer }
 import zio.test.Assertion._
 import zio.test._
+
 import scala.io.Source
-import SFtp._
 object Load
 
 object SFtpTest extends DefaultRunnableSpec {
@@ -111,14 +112,17 @@ object SFtpTest extends DefaultRunnableSpec {
       },
       testM("readFile") {
         for {
-          content <- readFile("/work/notes.txt").run(ZSink.utf8DecodeChunk)
-        } yield assert(content)(equalTo("""|Hello world !!!
-                                           |this is a beautiful day""".stripMargin))
+          content <- readFile("/work/notes.txt")
+                      .transduce(ZTransducer.utf8Decode)
+                      .runCollect
+        } yield assert(content.mkString)(equalTo("""|Hello world !!!
+                                                    |this is a beautiful day""".stripMargin))
       },
       testM("readFile does not exist") {
         for {
           invalid <- readFile("/work/invalid.txt")
-                      .run(ZSink.utf8DecodeChunk)
+                      .transduce(ZTransducer.utf8Decode)
+                      .runCollect
                       .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
 
         } yield assert(invalid)(equalTo("No such file"))
@@ -173,7 +177,7 @@ object SFtpTest extends DefaultRunnableSpec {
         } yield assert(r)(equalTo("No such file"))
       },
       testM("upload a file") {
-        val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
+        val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
         val path = home.resolve("hello-world.txt")
 
         (for {
@@ -184,7 +188,7 @@ object SFtpTest extends DefaultRunnableSpec {
         } yield assert(result)(equalTo("Hello F World"))).tap(_ => Task(Files.delete(path)))
       },
       testM("upload fail when path is invalid") {
-        val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
+        val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
           failure <- upload("/work/dont-exist/hello-world.txt", data)

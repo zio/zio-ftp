@@ -26,7 +26,7 @@ import net.schmizz.sshj.userauth.password.PasswordUtils
 import org.apache.commons.net.DefaultSocketFactory
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.SecureFtp.Client
-import zio.stream.{ Stream, ZSink, ZStream, ZStreamChunk }
+import zio.stream.{ Stream, ZSink, ZStream }
 import zio.{ Task, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
@@ -42,8 +42,8 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
-  def readFile(path: String, chunkSize: Int): ZStreamChunk[Blocking, IOException, Byte] =
-    ZStreamChunk(for {
+  def readFile(path: String, chunkSize: Int): ZStream[Blocking, IOException, Byte] =
+    for {
       remoteFile <- ZStream.fromEffect(
                      execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
                    )
@@ -60,8 +60,8 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
              })))
              .mapError(e => new IOException(e.getMessage, e))
 
-      input <- Stream.fromInputStream(is, chunkSize).chunks
-    } yield input)
+      input <- Stream.fromInputStream(is, chunkSize)
+    } yield input
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.rm(path))
@@ -99,7 +99,7 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
         else Stream(FtpResource.fromResource(f))
       }
 
-  def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
 

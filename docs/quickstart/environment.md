@@ -10,7 +10,7 @@ ZIO Ftp use Environment type parameter to required a blocking context. Since (s)
 we are lifting all blocking (effectful) functions into a blocking execution context by using `zio.blocking.effectBlocking()`.
 
 
-Since we never expose the underlying ftp client, you can only use a ZIO wrapper `FtpClient[_]`
+Since we never expose the underlying ftp client, you can only use a ZIO wrapper `FtpAccessors[_]`
 
 ``` scala 
 trait FtpAccessors[+A] {
@@ -21,7 +21,7 @@ trait FtpAccessors[+A] {
 
 All provided functions require a `Blocking` context.
 
-There is already predefined Blocking context defined in ZIO `zio.blocking.Blocking.Live`
+There is already predefined Blocking context defined in ZIO `zio.blocking.Blocking.live`
 
 
 How to provide Blocking Environment ?

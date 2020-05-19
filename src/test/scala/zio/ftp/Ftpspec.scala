@@ -7,7 +7,7 @@ import zio.blocking.Blocking
 import zio.ftp.Ftp._
 import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
-import zio.stream.{ ZSink, ZStreamChunk }
+import zio.stream.{ ZStream, ZTransducer }
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
@@ -106,14 +106,15 @@ object FtpSuite {
       },
       testM("readFile") {
         for {
-          content <- readFile("/work/notes.txt").run(ZSink.utf8DecodeChunk)
-        } yield assert(content)(equalTo("""|Hello world !!!
-                                           |this is a beautiful day""".stripMargin))
+          content <- readFile("/work/notes.txt").transduce(ZTransducer.utf8Decode).runCollect
+        } yield assert(content.mkString)(equalTo("""|Hello world !!!
+                                                    |this is a beautiful day""".stripMargin))
       },
       testM("readFile does not exist") {
         for {
           invalid <- readFile("/invalid.txt")
-                      .run(ZSink.utf8DecodeChunk)
+                      .transduce(ZTransducer.utf8Decode)
+                      .runCollect
                       .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
 
         } yield assert(invalid)(equalTo("File does not exist /invalid.txt"))
@@ -167,7 +168,7 @@ object FtpSuite {
         } yield assert(r)(equalTo("Path is invalid. Cannot delete directory : /dont-exist"))
       },
       testM("upload a file") {
-        val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
+        val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
         val path = home / "work" / "hello-world.txt"
 
         (for {
@@ -178,7 +179,7 @@ object FtpSuite {
         } yield assert(result)(equalTo("Hello F World"))).tap(_ => Files.delete(path))
       },
       testM("upload fail when path is invalid") {
-        val data = ZStreamChunk.fromChunks(Chunk.fromArray("Hello F World".getBytes))
+        val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
           failure <- upload("/dont-exist/hello-world.txt", data)

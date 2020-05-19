@@ -4,7 +4,7 @@ import java.io.IOException
 
 import zio.ZIO
 import zio.blocking.Blocking
-import zio.stream.{ ZStream, ZStreamChunk }
+import zio.stream.ZStream
 
 trait FtpAccessors[+A] {
 
@@ -30,7 +30,7 @@ trait FtpAccessors[+A] {
    * @param path absolute path of a file
    * @param chunkSize default chunk size is 2048 bytes
    */
-  def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[Blocking, IOException, Byte]
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte]
 
   /**
    * Delete a file on a server. If the operation failed, an error will be emitted
@@ -75,6 +75,6 @@ trait FtpAccessors[+A] {
    * @param source data stream to store
    * @tparam R environment of the specified stream source, required to extend Blocking
    */
-  def upload[R <: Blocking](path: String, source: ZStreamChunk[R, Throwable, Byte]): ZIO[R, IOException, Unit]
+  def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit]
 
 }

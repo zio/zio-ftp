@@ -565,9 +565,9 @@
               
         </dd></dl></div>
     </li><li name="zio.ftp.StubFtp#readFile" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="readFile(path:String,chunkSize:Int):zio.stream.ZStreamChunk[zio.ftp.package.StubFtpwithzio.blocking.Blocking,java.io.IOException,Byte]"></a><a id="readFile(String,Int):ZStreamChunk[StubFtpwithBlocking,IOException,Byte]"></a>
+      <a id="readFile(path:String,chunkSize:Int):zio.stream.ZStream[zio.ftp.package.StubFtpwithzio.blocking.Blocking,java.io.IOException,Byte]"></a><a id="readFile(String,Int):ZStream[StubFtpwithBlocking,IOException,Byte]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/package$$StubFtp$.html#readFile(path:String,chunkSize:Int):zio.stream.ZStreamChunk[zio.ftp.package.StubFtpwithzio.blocking.Blocking,java.io.IOException,Byte]" title="Permalink">
+      <a href="../../zio/ftp/package$$StubFtp$.html#readFile(path:String,chunkSize:Int):zio.stream.ZStream[zio.ftp.package.StubFtpwithzio.blocking.Blocking,java.io.IOException,Byte]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -576,7 +576,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="chunkSize">chunkSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2048</span></span>)</span><span class="result">: <span class="extype" name="zio.stream.ZStreamChunk">ZStreamChunk</span>[<a href="index.html#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a> with <span class="extype" name="zio.blocking.Blocking">Blocking</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>
+        <span class="name">readFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="chunkSize">chunkSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2048</span></span>)</span><span class="result">: <span class="extype" name="zio.stream.ZStream">ZStream</span>[<a href="index.html#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a> with <span class="extype" name="zio.blocking.Blocking">Blocking</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>
       </span>
       
       
@@ -661,9 +661,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="zio.ftp.StubFtp#upload" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStreamChunk[R,Throwable,Byte]):zio.ZIO[zio.ftp.package.StubFtpwithR,java.io.IOException,Unit]"></a><a id="upload[R&lt;:Blocking](String,ZStreamChunk[R,Throwable,Byte]):ZIO[StubFtpwithR,IOException,Unit]"></a>
+      <a id="upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStream[R,Throwable,Byte]):zio.ZIO[zio.ftp.package.StubFtpwithR,java.io.IOException,Unit]"></a><a id="upload[R&lt;:Blocking](String,ZStream[R,Throwable,Byte]):ZIO[StubFtpwithR,IOException,Unit]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/package$$StubFtp$.html#upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStreamChunk[R,Throwable,Byte]):zio.ZIO[zio.ftp.package.StubFtpwithR,java.io.IOException,Unit]" title="Permalink">
+      <a href="../../zio/ftp/package$$StubFtp$.html#upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStream[R,Throwable,Byte]):zio.ZIO[zio.ftp.package.StubFtpwithR,java.io.IOException,Unit]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -672,7 +672,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">upload</span><span class="tparams">[<span name="R">R &lt;: <span class="extype" name="zio.blocking.Blocking">Blocking</span></span>]</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="source">source: <span class="extype" name="zio.stream.ZStreamChunk">ZStreamChunk</span>[<span class="extype" name="zio.ftp.StubFtp.upload.R">R</span>, <span class="extype" name="scala.Throwable">Throwable</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="zio.ZIO">ZIO</span>[<a href="index.html#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a> with <span class="extype" name="zio.ftp.StubFtp.upload.R">R</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
+        <span class="name">upload</span><span class="tparams">[<span name="R">R &lt;: <span class="extype" name="zio.blocking.Blocking">Blocking</span></span>]</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="source">source: <span class="extype" name="zio.stream.ZStream">ZStream</span>[<span class="extype" name="zio.ftp.StubFtp.upload.R">R</span>, <span class="extype" name="scala.Throwable">Throwable</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="zio.ZIO">ZIO</span>[<a href="index.html#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a> with <span class="extype" name="zio.ftp.StubFtp.upload.R">R</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       
       

@@ -316,9 +316,9 @@
       <p class="shortcomment cmt">Create a directory.</p><div class="fullcomment"><div class="comment cmt"><p>Create a directory. If the operation failed, an error will be emitted
 </p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>absolute path of the directory</p></dd></dl></div>
     </li><li name="zio.ftp.FtpAccessors#readFile" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="readFile(path:String,chunkSize:Int):zio.stream.ZStreamChunk[zio.blocking.Blocking,java.io.IOException,Byte]"></a><a id="readFile(String,Int):ZStreamChunk[Blocking,IOException,Byte]"></a>
+      <a id="readFile(path:String,chunkSize:Int):zio.stream.ZStream[zio.blocking.Blocking,java.io.IOException,Byte]"></a><a id="readFile(String,Int):ZStream[Blocking,IOException,Byte]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpAccessors.html#readFile(path:String,chunkSize:Int):zio.stream.ZStreamChunk[zio.blocking.Blocking,java.io.IOException,Byte]" title="Permalink">
+      <a href="../../zio/ftp/FtpAccessors.html#readFile(path:String,chunkSize:Int):zio.stream.ZStream[zio.blocking.Blocking,java.io.IOException,Byte]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -327,7 +327,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="chunkSize">chunkSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2048</span></span>)</span><span class="result">: <span class="extype" name="zio.stream.ZStreamChunk">ZStreamChunk</span>[<span class="extype" name="zio.blocking.Blocking">Blocking</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>
+        <span class="name">readFile</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="chunkSize">chunkSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">2048</span></span>)</span><span class="result">: <span class="extype" name="zio.stream.ZStream">ZStream</span>[<span class="extype" name="zio.blocking.Blocking">Blocking</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>
       </span>
       
       <p class="shortcomment cmt">Read a file by using stream.</p><div class="fullcomment"><div class="comment cmt"><p>Read a file by using stream. If the operation failed, an error will be emitted
@@ -385,9 +385,9 @@
 If the operation failed an error will be emitted
 </p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>absolute path of the file</p></dd></dl></div>
     </li><li name="zio.ftp.FtpAccessors#upload" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStreamChunk[R,Throwable,Byte]):zio.ZIO[R,java.io.IOException,Unit]"></a><a id="upload[R&lt;:Blocking](String,ZStreamChunk[R,Throwable,Byte]):ZIO[R,IOException,Unit]"></a>
+      <a id="upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStream[R,Throwable,Byte]):zio.ZIO[R,java.io.IOException,Unit]"></a><a id="upload[R&lt;:Blocking](String,ZStream[R,Throwable,Byte]):ZIO[R,IOException,Unit]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/FtpAccessors.html#upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStreamChunk[R,Throwable,Byte]):zio.ZIO[R,java.io.IOException,Unit]" title="Permalink">
+      <a href="../../zio/ftp/FtpAccessors.html#upload[R&lt;:zio.blocking.Blocking](path:String,source:zio.stream.ZStream[R,Throwable,Byte]):zio.ZIO[R,java.io.IOException,Unit]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -396,7 +396,7 @@ If the operation failed an error will be emitted
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">upload</span><span class="tparams">[<span name="R">R &lt;: <span class="extype" name="zio.blocking.Blocking">Blocking</span></span>]</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="source">source: <span class="extype" name="zio.stream.ZStreamChunk">ZStreamChunk</span>[<span class="extype" name="zio.ftp.FtpAccessors.upload.R">R</span>, <span class="extype" name="scala.Throwable">Throwable</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="zio.ZIO">ZIO</span>[<span class="extype" name="zio.ftp.FtpAccessors.upload.R">R</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
+        <span class="name">upload</span><span class="tparams">[<span name="R">R &lt;: <span class="extype" name="zio.blocking.Blocking">Blocking</span></span>]</span><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="source">source: <span class="extype" name="zio.stream.ZStream">ZStream</span>[<span class="extype" name="zio.ftp.FtpAccessors.upload.R">R</span>, <span class="extype" name="scala.Throwable">Throwable</span>, <span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result">: <span class="extype" name="zio.ZIO">ZIO</span>[<span class="extype" name="zio.ftp.FtpAccessors.upload.R">R</span>, <span class="extype" name="java.io.IOException">IOException</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       
       <p class="shortcomment cmt">Save a data stream.</p><div class="fullcomment"><div class="comment cmt"><p>Save a data stream. If the operation failed, an error will be emitted

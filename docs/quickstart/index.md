@@ -9,7 +9,7 @@ Setup
 ```
 //support scala 2.11 / 2.12 / 2.13
 
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.3.1"
+libraryDependencies += "dev.zio" %% "zio-ftp" % "<version>"
 ```
 
 

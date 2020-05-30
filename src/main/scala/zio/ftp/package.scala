@@ -20,7 +20,7 @@ import java.io.IOException
 
 import zio.blocking.Blocking
 import zio.nio.core.file.{ Path => ZPath }
-import zio.stream.{ ZStream, ZStreamChunk }
+import zio.stream.ZStream
 
 package object ftp {
   //Alias Unsecure Ftp dependency
@@ -55,12 +55,12 @@ package object ftp {
 
     def upload[R <: Blocking](
       path: String,
-      source: ZStreamChunk[R, Throwable, Byte]
+      source: ZStream[R, Throwable, Byte]
     ): ZIO[Ftp with R, IOException, Unit] =
       ZIO.accessM(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[Ftp with Blocking, IOException, Byte] =
-      ZStreamChunk(ZStream.accessStream(_.get.readFile(path, chunkSize).chunks))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp with Blocking, IOException, Byte] =
+      ZStream.accessStream(_.get.readFile(path, chunkSize))
   }
 
   object SFtp {
@@ -88,12 +88,12 @@ package object ftp {
 
     def upload[R <: Blocking](
       path: String,
-      source: ZStreamChunk[R, Throwable, Byte]
+      source: ZStream[R, Throwable, Byte]
     ): ZIO[SFtp with R, IOException, Unit] =
       ZIO.accessM(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[SFtp with Blocking, IOException, Byte] =
-      ZStreamChunk(ZStream.accessStream(_.get.readFile(path, chunkSize).chunks))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp with Blocking, IOException, Byte] =
+      ZStream.accessStream(_.get.readFile(path, chunkSize))
   }
 
   object StubFtp {
@@ -121,12 +121,12 @@ package object ftp {
 
     def upload[R <: Blocking](
       path: String,
-      source: ZStreamChunk[R, Throwable, Byte]
+      source: ZStream[R, Throwable, Byte]
     ): ZIO[StubFtp with R, IOException, Unit] =
       ZIO.accessM(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStreamChunk[StubFtp with Blocking, IOException, Byte] =
-      ZStreamChunk(ZStream.accessStream(_.get.readFile(path, chunkSize).chunks))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp with Blocking, IOException, Byte] =
+      ZStream.accessStream(_.get.readFile(path, chunkSize))
   }
 
   def unsecure(settings: UnsecureFtpSettings): ZLayer[Blocking, ConnectionError, Ftp] =

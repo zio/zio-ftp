@@ -82,7 +82,7 @@ object FtpSuite {
       testM("ls descendant with invalid directory")(
         for {
           files <- lsDescendant("/dont-exist").runCollect
-        } yield assert(files)(equalTo(Nil))
+        } yield assert(files)(equalTo(Chunk.empty))
       ),
       testM("stat directory") {
         for {

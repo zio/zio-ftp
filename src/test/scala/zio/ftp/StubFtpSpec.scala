@@ -69,9 +69,9 @@ object StubFtpSpec extends DefaultRunnableSpec {
       testM("readFile does not exist") {
         for {
           invalid <- readFile("/invalid.txt")
-                      .transduce(ZTransducer.utf8Decode)
-                      .runCollect
-                      .foldCause(e => e.failureOption.map(_.getMessage).mkString, _.mkString)
+                       .transduce(ZTransducer.utf8Decode)
+                       .runCollect
+                       .foldCause(e => e.failureOption.map(_.getMessage).mkString, _.mkString)
 
         } yield assert(invalid)(equalTo("File does not exist /invalid.txt"))
       },
@@ -84,19 +84,17 @@ object StubFtpSpec extends DefaultRunnableSpec {
       testM("mkdir fail when invalid path") {
         for {
           failure <- mkdir("/work/dir1/users.csv")
-                      .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
+                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
-        } yield {
-          assert(failure)(containsString("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
-        }
+        } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
       },
       testM("rm valid path") {
         val path = home / "work" / "to-delete.txt"
 
         for {
-          _ <- Files.createFile(path)
-          success <- rm("/work/to-delete.txt")
-                      .foldCause(_ => false, _ => true)
+          _         <- Files.createFile(path)
+          success   <- rm("/work/to-delete.txt")
+                         .foldCause(_ => false, _ => true)
 
           fileExist <- Files.notExists(path)
         } yield assert(success && fileExist)(equalTo(true))
@@ -104,7 +102,7 @@ object StubFtpSpec extends DefaultRunnableSpec {
       testM("rm fail when invalid path") {
         for {
           invalid <- rm("/dont-exist")
-                      .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
+                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
         } yield assert(invalid)(equalTo("Path is invalid. Cannot delete : /dont-exist"))
       },
@@ -120,7 +118,7 @@ object StubFtpSpec extends DefaultRunnableSpec {
       testM("rm fail invalid directory") {
         for {
           r <- rmdir("/dont-exist")
-                .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
+                 .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
         } yield assert(r)(equalTo("Path is invalid. Cannot delete : /dont-exist"))
       },
@@ -129,10 +127,10 @@ object StubFtpSpec extends DefaultRunnableSpec {
         val path = home / "work" / "hello-world.txt"
 
         (for {
-          _ <- upload("/work/hello-world.txt", data)
+          _      <- upload("/work/hello-world.txt", data)
           result <- Managed
-                     .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-                     .use(b => Task(b.mkString))
+                      .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                      .use(b => Task(b.mkString))
         } yield assert(result)(equalTo("Hello F World"))).tap(_ => Files.delete(path))
       },
       testM("upload fail when path is invalid") {
@@ -140,7 +138,7 @@ object StubFtpSpec extends DefaultRunnableSpec {
 
         for {
           failure <- upload("/dont-exist/hello-world.txt", data)
-                      .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
         } yield assert(failure)(equalTo("Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt"))
       }

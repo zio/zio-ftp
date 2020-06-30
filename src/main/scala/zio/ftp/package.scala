@@ -24,9 +24,9 @@ import zio.stream.ZStream
 
 package object ftp {
   //Alias Unsecure Ftp dependency
-  type Ftp = Has[FtpAccessors[UnsecureFtp.Client]]
+  type Ftp     = Has[FtpAccessors[UnsecureFtp.Client]]
   // Alias Secure Ftp dependency
-  type SFtp = Has[FtpAccessors[SecureFtp.Client]]
+  type SFtp    = Has[FtpAccessors[SecureFtp.Client]]
   // Only for testing purpose
   type StubFtp = Has[FtpAccessors[Unit]]
 

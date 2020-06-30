@@ -25,19 +25,19 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("invalid credentials")(
         for {
           succeed <- SecureFtp
-                      .connect(settings.copy(credentials = FtpCredentials("test", "test")))
-                      .use(_ => IO.succeed(""))
-                      .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
+                       .connect(settings.copy(credentials = FtpCredentials("test", "test")))
+                       .use(_ => IO.succeed(""))
+                       .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
         } yield assert(succeed)(containsString("Fail to connect to server"))
       ),
       testM("invalid proxy")(
         for {
           failure <- SecureFtp
-                      .connect(
-                        settings.copy(proxy = Some(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("invalid", 9999))))
-                      )
-                      .use(_ => IO.succeed(""))
-                      .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
+                       .connect(
+                         settings.copy(proxy = Some(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("invalid", 9999))))
+                       )
+                       .use(_ => IO.succeed(""))
+                       .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
         } yield assert(failure)(containsString("Fail to connect to server"))
       ),
       testM("valid credentials")(
@@ -48,24 +48,24 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("connect with ssh key file") {
         for {
           privatekey <- Managed
-                         .make(
-                           IO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
-                         )(s => IO(s.close()).ignore)
-                         .use(b => Task(b.mkString))
-          settings = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
-          succeed  <- SecureFtp.connect(settings).use(_ => IO.succeed(true))
+                          .make(
+                            IO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
+                          )(s => IO(s.close()).ignore)
+                          .use(b => Task(b.mkString))
+          settings    = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
+          succeed    <- SecureFtp.connect(settings).use(_ => IO.succeed(true))
         } yield assert(succeed)(equalTo(true))
       },
       testM("connect with ssh key") {
         for {
           privatekey <- Task(Paths.get(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
-          settings = SecureFtpSettings(
-            "127.0.0.1",
-            3333,
-            FtpCredentials("fooz", ""),
-            KeyFileSftpIdentity(privatekey, None)
-          )
-          succeed <- SecureFtp.connect(settings).use(_ => IO.succeed(true))
+          settings    = SecureFtpSettings(
+                          "127.0.0.1",
+                          3333,
+                          FtpCredentials("fooz", ""),
+                          KeyFileSftpIdentity(privatekey, None)
+                        )
+          succeed    <- SecureFtp.connect(settings).use(_ => IO.succeed(true))
         } yield assert(succeed)(equalTo(true))
       },
       testM("ls")(
@@ -113,17 +113,17 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("readFile") {
         for {
           content <- readFile("/work/notes.txt")
-                      .transduce(ZTransducer.utf8Decode)
-                      .runCollect
+                       .transduce(ZTransducer.utf8Decode)
+                       .runCollect
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
       testM("readFile does not exist") {
         for {
           invalid <- readFile("/work/invalid.txt")
-                      .transduce(ZTransducer.utf8Decode)
-                      .runCollect
-                      .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
+                       .transduce(ZTransducer.utf8Decode)
+                       .runCollect
+                       .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
 
         } yield assert(invalid)(equalTo("No such file"))
       },
@@ -136,19 +136,17 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("mkdir fail when invalid path") {
         for {
           failure <- mkdir("/work/dir1/users.csv")
-                      .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
-        } yield {
-          assert(failure)(containsString("/work/dir1/users.csv exists but is not a directory"))
-        }
+        } yield assert(failure)(containsString("/work/dir1/users.csv exists but is not a directory"))
       },
       testM("rm valid path") {
         val path = home.resolve("to-delete.txt")
         Files.createFile(path)
 
         for {
-          success <- rm("/work/to-delete.txt")
-                      .foldCause(_ => false, _ => true)
+          success   <- rm("/work/to-delete.txt")
+                         .foldCause(_ => false, _ => true)
 
           fileExist <- Task(Files.notExists(path))
         } yield assert(success && fileExist)(equalTo(true))
@@ -156,7 +154,7 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("rm fail when invalid path") {
         for {
           invalid <- rm("/work/dont-exist")
-                      .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
         } yield assert(invalid)(equalTo("No such file"))
       },
@@ -172,7 +170,7 @@ object SFtpTest extends DefaultRunnableSpec {
       testM("rm fail invalid directory") {
         for {
           r <- rmdir("/work/dont-exist")
-                .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                 .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
         } yield assert(r)(equalTo("No such file"))
       },
@@ -181,10 +179,10 @@ object SFtpTest extends DefaultRunnableSpec {
         val path = home.resolve("hello-world.txt")
 
         (for {
-          _ <- upload("/work/hello-world.txt", data)
+          _      <- upload("/work/hello-world.txt", data)
           result <- Managed
-                     .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-                     .use(b => Task(b.mkString))
+                      .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                      .use(b => Task(b.mkString))
         } yield assert(result)(equalTo("Hello F World"))).tap(_ => Task(Files.delete(path)))
       },
       testM("upload fail when path is invalid") {
@@ -192,7 +190,7 @@ object SFtpTest extends DefaultRunnableSpec {
 
         for {
           failure <- upload("/work/dont-exist/hello-world.txt", data)
-                      .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
         } yield assert(failure)(equalTo("No such file"))
       },

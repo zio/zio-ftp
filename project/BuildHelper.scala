@@ -3,13 +3,14 @@ import sbt.Keys._
 
 object BuildHelper {
 
-  def stdSettings(prjName: String) = Seq(
-    name := s"$prjName",
-    crossScalaVersions := Seq(Scala211, Scala212, Scala213),
-    scalaVersion in ThisBuild := Scala212,
-    scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
-    incOptions ~= (_.withLogRecompileOnMacro(false))
-  )
+  def stdSettings(prjName: String) =
+    Seq(
+      name := s"$prjName",
+      crossScalaVersions := Seq(Scala211, Scala212, Scala213),
+      scalaVersion in ThisBuild := Scala212,
+      scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
+      incOptions ~= (_.withLogRecompileOnMacro(false))
+    )
 
   final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.10"
@@ -77,6 +78,6 @@ object BuildHelper {
           "-Xmax-classfile-name",
           "242"
         )
-      case _ => Seq.empty
+      case _             => Seq.empty
     }
 }

@@ -28,7 +28,6 @@ import zio.{ Task, ZIO, ZManaged }
  *
  * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
  * since the underlying java client only provide blocking methods.
- *
  */
 final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
@@ -37,16 +36,16 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 
   def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] =
     for {
-      is <- ZStream.fromEffect(
-             execute(c => Option(c.retrieveFileStream(path)))
-               .flatMap(
-                 _.fold[ZIO[Any, InvalidPathError, InputStream]](
-                   ZIO.fail(InvalidPathError(s"File does not exist $path"))
-                 )(
-                   ZIO.succeed(_)
-                 )
-               )
-           )
+      is     <- ZStream.fromEffect(
+                  execute(c => Option(c.retrieveFileStream(path)))
+                    .flatMap(
+                      _.fold[ZIO[Any, InvalidPathError, InputStream]](
+                        ZIO.fail(InvalidPathError(s"File does not exist $path"))
+                      )(
+                        ZIO.succeed(_)
+                      )
+                    )
+                )
 
       safeIs <- ZStream.managed(ZManaged.fromAutoCloseable(Task(is))).mapError(e => new IOException(e.getMessage, e))
 
@@ -111,13 +110,11 @@ object UnsecureFtp {
 
         val success = ftpClient.login(settings.credentials.username, settings.credentials.password)
 
-        if (settings.binary) {
+        if (settings.binary)
           ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
-        }
 
-        if (settings.passiveMode) {
+        if (settings.passiveMode)
           ftpClient.enterLocalPassiveMode()
-        }
         new UnsecureFtp(ftpClient) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))

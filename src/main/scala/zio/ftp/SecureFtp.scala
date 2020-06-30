@@ -45,22 +45,19 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
   def readFile(path: String, chunkSize: Int): ZStream[Blocking, IOException, Byte] =
     for {
       remoteFile <- ZStream.fromEffect(
-                     execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
-                   )
+                      execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
+                    )
 
-      is <- ZStream
-             .managed(ZManaged.fromAutoCloseable(Task(new remoteFile.ReadAheadRemoteFileInputStream(64) {
+      is         <- ZStream
+                      .managed(ZManaged.fromAutoCloseable(Task(new remoteFile.ReadAheadRemoteFileInputStream(64) {
 
-               override def close(): Unit =
-                 try {
-                   super.close()
-                 } finally {
-                   remoteFile.close()
-                 }
-             })))
-             .mapError(e => new IOException(e.getMessage, e))
+                        override def close(): Unit =
+                          try super.close()
+                          finally remoteFile.close()
+                      })))
+                      .mapError(e => new IOException(e.getMessage, e))
 
-      input <- Stream.fromInputStream(is, chunkSize)
+      input      <- Stream.fromInputStream(is, chunkSize)
     } yield input
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
@@ -105,13 +102,10 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
 
       osManaged = ZManaged.fromAutoCloseable(Task(new remoteFile.RemoteFileOutputStream() {
 
-        override def close(): Unit =
-          try {
-            remoteFile.close()
-          } finally {
-            super.close()
-          }
-      }))
+                    override def close(): Unit =
+                      try remoteFile.close()
+                      finally super.close()
+                  }))
       _ <- osManaged.use(os => source.run(ZSink.fromOutputStream(os))).mapError(new IOException(_))
     } yield ()
 
@@ -155,7 +149,7 @@ object SecureFtp {
       identity.passphrase.map(pass => PasswordUtils.createOneOff(bats(pass.getBytes).toCharArray)).orNull
 
     val keyProvider = identity match {
-      case id: RawKeySftpIdentity =>
+      case id: RawKeySftpIdentity  =>
         ssh.loadKeys(bats(id.privateKey.getBytes), id.publicKey.map(p => bats(p.getBytes)).orNull, passphrase)
       case id: KeyFileSftpIdentity =>
         ssh.loadKeys(id.privateKey.toString, passphrase)

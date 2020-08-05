@@ -36,7 +36,7 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      "dev.zio"                 %% "zio-nio"                 % "1.0.0-RC8",
+      "dev.zio"                 %% "zio-nio"                 % "1.0.0-RC9",
       "com.hierynomus"           % "sshj"                    % "0.29.0",
       "commons-net"              % "commons-net"             % "3.6",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.1.6",

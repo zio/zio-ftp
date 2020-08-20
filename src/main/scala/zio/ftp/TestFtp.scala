@@ -18,6 +18,7 @@ package zio.ftp
 
 import java.io.{ FileOutputStream, IOException }
 import java.nio.file.NoSuchFileException
+import java.nio.file.attribute.PosixFilePermission
 
 import zio.blocking.Blocking
 import zio.nio.core.file.{ Path => ZPath }
@@ -76,7 +77,10 @@ object TestFtp {
 
       private def get(p: ZPath): ZIO[Blocking, IOException, FtpResource] =
         (for {
-          permissions  <- Files.getPosixFilePermissions(p)
+          permissions  <- Files.getPosixFilePermissions(p).catchSome {
+                            //Windows don't support this operations
+                            case _: UnsupportedOperationException => ZIO.succeed(Set.empty[PosixFilePermission])
+                          }
           isDir        <- Files.isDirectory(p).map(Some(_))
           lastModified <- Files.getLastModifiedTime(p).map(_.toMillis)
           size         <- Files.size(p)

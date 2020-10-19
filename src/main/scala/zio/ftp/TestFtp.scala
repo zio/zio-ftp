@@ -79,7 +79,7 @@ object TestFtp {
         (for {
           permissions  <- Files.getPosixFilePermissions(p).catchSome {
                             //Windows don't support this operations
-                            case _: UnsupportedOperationException => ZIO.succeed(Set.empty[PosixFilePermission])
+                            case _: IOException => ZIO.succeed(Set.empty[PosixFilePermission])
                           }
           isDir        <- Files.isDirectory(p).map(Some(_))
           lastModified <- Files.getLastModifiedTime(p).map(_.toMillis)

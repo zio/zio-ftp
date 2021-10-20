@@ -27,7 +27,7 @@ inThisBuild(
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-val zioVersion = "1.0.8"
+val zioVersion = "1.0.12"
 
 lazy val `zio-ftp` = project
   .in(file("."))
@@ -37,7 +37,7 @@ lazy val `zio-ftp` = project
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
       "dev.zio"                 %% "zio-nio"                 % "1.0.0-RC11",
-      "com.hierynomus"           % "sshj"                    % "0.31.0",
+      "com.hierynomus"           % "sshj"                    % "0.32.0",
       "commons-net"              % "commons-net"             % "3.8.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.5.0",
       "org.apache.logging.log4j" % "log4j-api"               % "2.13.1"   % Test,

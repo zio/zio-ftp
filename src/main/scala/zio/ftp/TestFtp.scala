@@ -21,7 +21,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 
 import zio.blocking.Blocking
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
 import zio.{ Cause, ZIO, ZManaged }

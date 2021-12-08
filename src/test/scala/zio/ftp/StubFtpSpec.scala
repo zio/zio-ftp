@@ -2,7 +2,7 @@ package zio.ftp
 
 import zio.blocking.Blocking
 import zio.ftp.StubFtp._
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZStream, ZTransducer }
 import zio.test.Assertion._

@@ -32,25 +32,25 @@ package object ftp {
   object Ftp {
 
     def execute[T](f: UnsecureFtp.Client => T): ZIO[Ftp, IOException, T] =
-      ZIO.environmentWithZIO(_.get.execute(f))
+      ZIO.serviceWithZIO(_.execute(f))
 
     def stat(path: String): ZIO[Ftp, IOException, Option[FtpResource]] =
-      ZIO.environmentWithZIO(_.get.stat(path))
+      ZIO.serviceWithZIO(_.stat(path))
 
     def rm(path: String): ZIO[Ftp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rm(path))
+      ZIO.serviceWithZIO(_.rm(path))
 
     def rmdir(path: String): ZIO[Ftp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rmdir(path))
+      ZIO.serviceWithZIO(_.rmdir(path))
 
     def mkdir(path: String): ZIO[Ftp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.mkdir(path))
+      ZIO.serviceWithZIO(_.mkdir(path))
 
     def ls(path: String): ZStream[Ftp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.ls(path))
+      ZStream.serviceWithStream(_.ls(path))
 
     def lsDescendant(path: String): ZStream[Ftp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.lsDescendant(path))
+      ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
       path: String,
@@ -62,31 +62,31 @@ package object ftp {
       } yield ()
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp, IOException, Byte] =
-      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
+      ZStream.serviceWithStream(_.readFile(path, chunkSize))
   }
 
   object SFtp {
 
     def execute[T](f: SecureFtp.Client => T): ZIO[SFtp, IOException, T] =
-      ZIO.environmentWithZIO(_.get.execute(f))
+      ZIO.serviceWithZIO(_.execute(f))
 
     def stat(path: String): ZIO[SFtp, IOException, Option[FtpResource]] =
-      ZIO.environmentWithZIO(_.get.stat(path))
+      ZIO.serviceWithZIO(_.stat(path))
 
     def rm(path: String): ZIO[SFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rm(path))
+      ZIO.serviceWithZIO(_.rm(path))
 
     def rmdir(path: String): ZIO[SFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rmdir(path))
+      ZIO.serviceWithZIO(_.rmdir(path))
 
     def mkdir(path: String): ZIO[SFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.mkdir(path))
+      ZIO.serviceWithZIO(_.mkdir(path))
 
     def ls(path: String): ZStream[SFtp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.ls(path))
+      ZStream.serviceWithStream(_.ls(path))
 
     def lsDescendant(path: String): ZStream[SFtp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.lsDescendant(path))
+      ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
       path: String,
@@ -98,31 +98,31 @@ package object ftp {
       } yield ()
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp, IOException, Byte] =
-      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
+      ZStream.serviceWithStream(_.readFile(path, chunkSize))
   }
 
   object StubFtp {
 
     def execute[T](f: Unit => T): ZIO[StubFtp, IOException, T] =
-      ZIO.environmentWithZIO(_.get.execute(f))
+      ZIO.serviceWithZIO(_.execute(f))
 
     def stat(path: String): ZIO[StubFtp, IOException, Option[FtpResource]] =
-      ZIO.environmentWithZIO(_.get.stat(path))
+      ZIO.serviceWithZIO(_.stat(path))
 
     def rm(path: String): ZIO[StubFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rm(path))
+      ZIO.serviceWithZIO(_.rm(path))
 
     def rmdir(path: String): ZIO[StubFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.rmdir(path))
+      ZIO.serviceWithZIO(_.rmdir(path))
 
     def mkdir(path: String): ZIO[StubFtp, IOException, Unit] =
-      ZIO.environmentWithZIO(_.get.mkdir(path))
+      ZIO.serviceWithZIO(_.mkdir(path))
 
     def ls(path: String): ZStream[StubFtp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.ls(path))
+      ZStream.serviceWithStream(_.ls(path))
 
     def lsDescendant(path: String): ZStream[StubFtp, IOException, FtpResource] =
-      ZStream.environmentWithStream(_.get.lsDescendant(path))
+      ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
       path: String,
@@ -134,7 +134,7 @@ package object ftp {
       } yield ()
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp, IOException, Byte] =
-      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
+      ZStream.serviceWithStream(_.readFile(path, chunkSize))
   }
 
   def unsecure(settings: UnsecureFtpSettings): ZLayer[Scope, ConnectionError, Ftp] =

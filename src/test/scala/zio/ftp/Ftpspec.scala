@@ -1,17 +1,17 @@
 package zio.ftp
 
-import zio.{test => _, _}
+import zio.{ test => _, _ }
 import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 
 import zio.ftp.Ftp._
-import zio.nio.core.file.{Path => ZPath}
+import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 
-import java.net.{InetSocketAddress, Proxy}
+import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
 object FtpsTest extends ZIOSpecDefault {
@@ -87,16 +87,14 @@ object FtpSuite {
       test("stat directory") {
         for {
           file <- stat("/work/dir1")
-        } yield
-          assertTrue(file.get.path == "/work/dir1") &&
-            assertTrue(file.get.isDirectory.get)
+        } yield assertTrue(file.get.path == "/work/dir1") &&
+          assertTrue(file.get.isDirectory.get)
       },
       test("stat file") {
         for {
           file <- stat("/work/dir1/console.dump")
-        } yield
-          assertTrue(file.get.path == "/work/dir1/console.dump") &&
-            assertTrue(!file.get.isDirectory.get)
+        } yield assertTrue(file.get.path == "/work/dir1/console.dump") &&
+          assertTrue(!file.get.isDirectory.get)
       },
       test("stat file does not exist") {
         for {
@@ -111,9 +109,11 @@ object FtpSuite {
       test("readFile") {
         for {
           content <- readFile("/work/notes.txt").via(utf8Decode).runCollect
-        } yield assertTrue(content.mkString ==
-          """|Hello world !!!
-             |this is a beautiful day""".stripMargin)
+        } yield assertTrue(
+          content.mkString ==
+            """|Hello world !!!
+               |this is a beautiful day""".stripMargin
+        )
       },
       test("readFile does not exist") {
         for {
@@ -175,10 +175,10 @@ object FtpSuite {
         val path = home / "work" / "hello-world.txt"
         (
           for {
-            _ <- upload("/work/hello-world.txt", data)
+            _      <- upload("/work/hello-world.txt", data)
             result <- Managed
-              .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-              .use(b => Task(b.mkString))
+                        .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                        .use(b => Task(b.mkString))
           } yield assertTrue(result == "Hello F World")
         ) <* Files.delete(path)
       },

@@ -20,7 +20,6 @@ import java.io.{ FileOutputStream, IOException }
 import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 
-
 import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }

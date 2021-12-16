@@ -120,5 +120,5 @@ object UnsecureFtp {
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
-    )(client => client.execute(_.logout()).ignore flatMap (_ => client.execute(_.disconnect()).ignore))
+    )(client => client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore)
 }

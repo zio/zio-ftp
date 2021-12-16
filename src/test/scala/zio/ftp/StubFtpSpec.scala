@@ -1,14 +1,13 @@
 package zio.ftp
 
-
 import zio.ftp.StubFtp._
-import zio.nio.core.file.{Path => ZPath}
+import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Managed, Task, UIO}
+import zio.{ Chunk, Managed, Task, UIO }
 
 import scala.io.Source
 
@@ -44,16 +43,14 @@ object StubFtpSpec extends ZIOSpecDefault {
       test("stat directory") {
         for {
           file <- stat("/work/dir1")
-        } yield
-          assertTrue(file.get.path == "/work/dir1") &&
-            assertTrue(file.get.isDirectory.get)
+        } yield assertTrue(file.get.path == "/work/dir1") &&
+          assertTrue(file.get.isDirectory.get)
       },
       test("stat file") {
         for {
           file <- stat("/work/dir1/console.dump")
-        } yield
-          assertTrue(file.get.path == "/work/dir1/console.dump") &&
-            assertTrue(!file.get.isDirectory.get)
+        } yield assertTrue(file.get.path == "/work/dir1/console.dump") &&
+          assertTrue(!file.get.isDirectory.get)
       },
       test("stat file does not exist") {
         for {
@@ -68,9 +65,11 @@ object StubFtpSpec extends ZIOSpecDefault {
       test("readFile") {
         for {
           content <- readFile("/work/notes.txt").via(utf8Decode).runCollect
-        } yield assertTrue(content.mkString ==
-          """|Hello world !!!
-             |this is a beautiful day""".stripMargin)
+        } yield assertTrue(
+          content.mkString ==
+            """|Hello world !!!
+               |this is a beautiful day""".stripMargin
+        )
       },
       test("readFile does not exist") {
         for {
@@ -135,10 +134,10 @@ object StubFtpSpec extends ZIOSpecDefault {
 
         (
           for {
-            _ <- upload("/work/hello-world.txt", data)
+            _      <- upload("/work/hello-world.txt", data)
             result <- Managed
-              .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-              .use(b => Task(b.mkString))
+                        .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                        .use(b => Task(b.mkString))
           } yield assertTrue(result == "Hello F World")
         ) <* Files.delete(path)
       },

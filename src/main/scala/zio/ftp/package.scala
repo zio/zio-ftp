@@ -18,7 +18,6 @@ package zio
 
 import java.io.IOException
 
-
 import zio.nio.core.file.{ Path => ZPath }
 import zio.stream.ZStream
 

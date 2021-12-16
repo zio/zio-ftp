@@ -1,7 +1,7 @@
 package zio.ftp
 
-import java.net.{InetSocketAddress, Proxy}
-import java.nio.file.{Files, Paths}
+import java.net.{ InetSocketAddress, Proxy }
+import java.nio.file.{ Files, Paths }
 import zio._
 import zio.ftp.SFtp._
 import zio.stream.ZPipeline.utf8Decode
@@ -93,17 +93,15 @@ object SFtpTest extends ZIOSpecDefault {
       test("stat file") {
         for {
           file <- stat("/work/dir1/users.csv")
-        } yield
-          assertTrue(file.get.path == "/work/dir1/users.csv") &&
-            assertTrue(file.get.isDirectory.isEmpty)
+        } yield assertTrue(file.get.path == "/work/dir1/users.csv") &&
+          assertTrue(file.get.isDirectory.isEmpty)
 
       },
       test("stat directory") {
         for {
           file <- stat("/work/dir1")
-        } yield
-          assertTrue(file.get.path == "/work/dir1") &&
-            assertTrue(file.get.isDirectory.isEmpty)
+        } yield assertTrue(file.get.path == "/work/dir1") &&
+          assertTrue(file.get.isDirectory.isEmpty)
       },
       test("stat file does not exist") {
         for {
@@ -120,9 +118,11 @@ object SFtpTest extends ZIOSpecDefault {
           content <- readFile("/work/notes.txt")
                        .via(utf8Decode)
                        .runCollect
-        } yield assertTrue(content.mkString ==
-          """|Hello world !!!
-             |this is a beautiful day""".stripMargin)
+        } yield assertTrue(
+          content.mkString ==
+            """|Hello world !!!
+               |this is a beautiful day""".stripMargin
+        )
       },
       test("readFile does not exist") {
         for {
@@ -187,10 +187,10 @@ object SFtpTest extends ZIOSpecDefault {
 
         (
           for {
-            _ <- upload("/work/hello-world.txt", data)
+            _      <- upload("/work/hello-world.txt", data)
             result <- Managed
-              .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-              .use(b => Task(b.mkString))
+                        .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+                        .use(b => Task(b.mkString))
           } yield assertTrue(result == "Hello F World")
         ) <* Task(Files.delete(path))
       },

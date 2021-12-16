@@ -20,7 +20,7 @@ import java.io.{ FileOutputStream, IOException }
 import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 
-import zio.blocking.Blocking
+
 import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
@@ -30,9 +30,9 @@ object TestFtp {
 
   def create(root: ZPath): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
-      override def execute[T](f: Unit => T): ZIO[Blocking, IOException, T] = ZIO.succeed(f((): Unit))
+      override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
-      override def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] = {
+      override def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] = {
         val p = root / ZPath(path).elements.mkString("/")
         Files
           .exists(p)
@@ -43,39 +43,38 @@ object TestFtp {
           .refineToOrDie[IOException]
       }
 
-      override def readFile(path: String, chunkSize: Int): ZStream[Blocking, IOException, Byte] =
+      override def readFile(path: String, chunkSize: Int): ZStream[Any, IOException, Byte] =
         ZStream
-          .fromEffect(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
+          .fromZIO(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
           .catchAll {
             case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
             case err                    => ZStream.fail(err)
           }
           .flatMap(ZStream.fromChunk(_))
 
-      override def rm(path: String): ZIO[Blocking, IOException, Unit] =
+      override def rm(path: String): ZIO[Any, IOException, Unit] =
         Files
           .delete(root / ZPath(path).elements.mkString("/"))
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot delete : $path", err)))
 
-      override def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
+      override def rmdir(path: String): ZIO[Any, IOException, Unit] =
         rm(path)
 
-      override def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
+      override def mkdir(path: String) = // : ZIO[Any, IOException, Unit] =
         Files
           .createDirectories(root / ZPath(path).elements.mkString("/"))
-          .refineToOrDie[IOException]
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
 
-      override def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
+      override def ls(path: String): ZStream[Any, IOException, FtpResource] =
         Files
           .list(root / ZPath(path).elements.mkString("/"))
           .catchAll {
             case _: NoSuchFileException => ZStream.empty
             case err                    => ZStream.fail(new IOException(err))
           }
-          .mapM(get)
+          .mapZIO(get)
 
-      private def get(p: ZPath): ZIO[Blocking, IOException, FtpResource] =
+      private def get(p: ZPath): ZIO[Any, IOException, FtpResource] =
         (for {
           permissions  <- Files.getPosixFilePermissions(p).catchSome {
                             //Windows don't support this operations
@@ -87,16 +86,16 @@ object TestFtp {
         } yield FtpResource(root.relativize(p).elements.mkString("/", "/", ""), size, lastModified, permissions, isDir))
           .mapError(new IOException(_))
 
-      override def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
+      override def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
         Files
           .find(root / ZPath(path).elements.mkString("/"))((_, attr) => attr.isRegularFile)
           .catchAll {
             case _: NoSuchFileException => ZStream.empty
             case err                    => ZStream.fail(new IOException(err))
           }
-          .mapM(get)
+          .mapZIO(get)
 
-      override def upload[R <: Blocking](
+      override def upload[R](
         path: String,
         source: ZStream[R, Throwable, Byte]
       ): ZIO[R, IOException, Unit] = {

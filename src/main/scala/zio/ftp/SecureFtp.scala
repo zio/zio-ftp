@@ -24,12 +24,12 @@ import net.schmizz.sshj.sftp.{ SFTPClient, _ }
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 import net.schmizz.sshj.userauth.password.PasswordUtils
 import org.apache.commons.net.DefaultSocketFactory
-import zio.blocking.{ Blocking, effectBlocking }
 import zio.ftp.SecureFtp.Client
 import zio.stream.{ Stream, ZSink, ZStream }
 import zio.{ Task, URIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
+import zio.ZIO.attemptBlocking
 
 /**
  * Secure Ftp client wrapper
@@ -39,12 +39,12 @@ import scala.jdk.CollectionConverters._
  */
 final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
-  def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
+  def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
-  def readFile(path: String, chunkSize: Int): ZStream[Blocking, IOException, Byte] =
+  def readFile(path: String, chunkSize: Int): ZStream[Any, IOException, Byte] =
     for {
-      remoteFile <- ZStream.fromEffect(
+      remoteFile <- ZStream.fromZIO(
                       execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
                     )
 
@@ -60,18 +60,18 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
       input      <- Stream.fromInputStream(is, chunkSize)
     } yield input
 
-  def rm(path: String): ZIO[Blocking, IOException, Unit] =
+  def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.rm(path))
 
-  def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
+  def rmdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.rmdir(path))
 
-  def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
+  def mkdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.mkdirs(path))
 
-  def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
+  def ls(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromEffect(
+      .fromZIO(
         execute(_.ls(path).asScala)
           .catchSome {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
@@ -81,9 +81,9 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromResource)
 
-  def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
+  def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromEffect(
+      .fromZIO(
         execute(_.ls(path).asScala)
           .catchSome {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
@@ -96,7 +96,7 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
         else Stream(FtpResource.fromResource(f))
       }
 
-  def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
 
@@ -109,18 +109,18 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
       _ <- osManaged.use(os => source.run(ZSink.fromOutputStream(os))).mapError(new IOException(_))
     } yield ()
 
-  override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
-    effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
+  override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
+    attemptBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }
 
 object SecureFtp {
   type Client = SFTPClient
 
-  def connect(settings: SecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] = {
+  def connect(settings: SecureFtpSettings): ZManaged[Any, ConnectionError, FtpAccessors[Client]] = {
     val ssh = new SSHClient(settings.sshConfig)
     import settings._
-    ZManaged.make(
-      effectBlocking {
+    ZManaged.acquireReleaseWith(
+      attemptBlocking {
         settings.proxy.foreach(p => ssh.setSocketFactory(new DefaultSocketFactory(p)))
 
         if (!strictHostKeyChecking)
@@ -138,7 +138,7 @@ object SecureFtp {
         new SecureFtp(ssh.newSFTPClient())
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
     )(cli =>
-      cli.execute(_.close()).ignore >>= (_ => effectBlocking(ssh.disconnect()).whenM(URIO(ssh.isConnected)).ignore)
+      cli.execute(_.close()).ignore flatMap (_ => attemptBlocking(ssh.disconnect()).whenZIO(URIO(ssh.isConnected)).ignore)
     )
   }
 

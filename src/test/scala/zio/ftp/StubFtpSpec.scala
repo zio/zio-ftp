@@ -1,94 +1,101 @@
 package zio.ftp
 
-import zio.blocking.Blocking
+
 import zio.ftp.StubFtp._
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.core.file.{Path => ZPath}
 import zio.nio.file.Files
-import zio.stream.{ ZStream, ZTransducer }
+import zio.stream.ZPipeline.utf8Decode
+import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-import zio.{ Chunk, Managed, Task, UIO }
+import zio.{Chunk, Managed, Task, UIO}
 
 import scala.io.Source
 
-object StubFtpSpec extends DefaultRunnableSpec {
+object StubFtpSpec extends ZIOSpecDefault {
   val home = ZPath("ftp-home/stub/home")
 
   val stubFtp = stub(home).mapError(TestFailure.fail(_))
 
   override def spec =
     suite("TestFtp")(
-      testM("ls ")(
+      test("ls ")(
         for {
-          files <- ls("/").fold(List.empty[String])((s, f) => f.path +: s)
+          files <- ls("/").runFold(List.empty[String])((s, f) => f.path +: s)
         } yield assert(files.reverse)(hasSameElements(List("/empty.txt", "/work")))
       ),
-      testM("ls with invalid directory")(
+      test("ls with invalid directory")(
         for {
-          files <- ls("/dont-exist").fold(List.empty[String])((s, f) => f.path +: s)
+          files <- ls("/dont-exist").runFold(List.empty[String])((s, f) => f.path +: s)
         } yield assert(files.reverse)(hasSameElements(Nil))
       ),
-      testM("ls descendant")(
+      test("ls descendant")(
         for {
-          files <- lsDescendant("/").fold(List.empty[String])((s, f) => f.path +: s)
+          files <- lsDescendant("/").runFold(List.empty[String])((s, f) => f.path +: s)
         } yield assert(files.reverse)(
           hasSameElements(List("/empty.txt", "/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
         )
       ),
-      testM("ls descendant with invalid directory")(
+      test("ls descendant with invalid directory")(
         for {
           files <- lsDescendant("/dont-exist").runCollect
-        } yield assert(files)(equalTo(Chunk.empty))
+        } yield assertTrue(files == Chunk.empty)
       ),
-      testM("stat directory") {
+      test("stat directory") {
         for {
           file <- stat("/work/dir1")
-        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/work/dir1" -> Some(true))))
+        } yield
+          assertTrue(file.get.path == "/work/dir1") &&
+            assertTrue(file.get.isDirectory.get)
       },
-      testM("stat file") {
+      test("stat file") {
         for {
           file <- stat("/work/dir1/console.dump")
-        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/work/dir1/console.dump" -> Some(false))))
+        } yield
+          assertTrue(file.get.path == "/work/dir1/console.dump") &&
+            assertTrue(!file.get.isDirectory.get)
       },
-      testM("stat file does not exist") {
+      test("stat file does not exist") {
         for {
           file <- stat("/wrong-path.xml")
-        } yield assert(file)(equalTo(None))
+        } yield assertTrue(file.isEmpty)
       },
-      testM("stat directory does not exist") {
+      test("stat directory does not exist") {
         for {
           file <- stat("/wrong-path")
-        } yield assert(file)(equalTo(None))
+        } yield assertTrue(file.isEmpty)
       },
-      testM("readFile") {
+      test("readFile") {
         for {
-          content <- readFile("/work/notes.txt").transduce(ZTransducer.utf8Decode).runCollect
-        } yield assert(content.mkString)(equalTo("""|Hello world !!!
-                                                    |this is a beautiful day""".stripMargin))
+          content <- readFile("/work/notes.txt").via(utf8Decode).runCollect
+        } yield assertTrue(content.mkString ==
+          """|Hello world !!!
+             |this is a beautiful day""".stripMargin)
       },
-      testM("readFile does not exist") {
+      test("readFile does not exist") {
         for {
           invalid <- readFile("/invalid.txt")
-                       .transduce(ZTransducer.utf8Decode)
+                       .via(utf8Decode)
                        .runCollect
                        .foldCause(e => e.failureOption.map(_.getMessage).mkString, _.mkString)
 
-        } yield assert(invalid)(equalTo("File does not exist /invalid.txt"))
+        } yield assertTrue(invalid == "File does not exist /invalid.txt")
       },
-      testM("mkdir directory") {
-        (for {
-          result <- mkdir("/work/new-dir").map(_ => true)
-        } yield assert(result)(equalTo(true)))
-          .tap(_ => Files.delete(home / "work" / "new-dir"))
+      test("mkdir directory") {
+        (
+          for {
+            result <- mkdir("/work/new-dir").as(true)
+          } yield assertTrue(result)
+        ) <* Files.delete(home / "work" / "new-dir")
       },
-      testM("mkdir fail when invalid path") {
+      test("mkdir fail when invalid path") {
         for {
           failure <- mkdir("/work/dir1/users.csv")
                        .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
-        } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
+        } yield assertTrue(failure.contains("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
       },
-      testM("rm valid path") {
+      test("rm valid path") {
         val path = home / "work" / "to-delete.txt"
 
         for {
@@ -97,50 +104,52 @@ object StubFtpSpec extends DefaultRunnableSpec {
                          .foldCause(_ => false, _ => true)
 
           fileExist <- Files.notExists(path)
-        } yield assert(success && fileExist)(equalTo(true))
+        } yield assertTrue(success && fileExist)
       },
-      testM("rm fail when invalid path") {
+      test("rm fail when invalid path") {
         for {
           invalid <- rm("/dont-exist")
                        .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
-        } yield assert(invalid)(equalTo("Path is invalid. Cannot delete : /dont-exist"))
+        } yield assertTrue(invalid == "Path is invalid. Cannot delete : /dont-exist")
       },
-      testM("rm directory") {
+      test("rm directory") {
         val path = home / "work" / "dir-to-delete"
 
         for {
           _     <- Files.createDirectory(path)
-          r     <- rmdir("/work/dir-to-delete").map(_ => true)
+          r     <- rmdir("/work/dir-to-delete").as(true)
           exist <- Files.notExists(path)
-        } yield assert(r && exist)(equalTo(true))
+        } yield assertTrue(r && exist)
       },
-      testM("rm fail invalid directory") {
+      test("rm fail invalid directory") {
         for {
           r <- rmdir("/dont-exist")
                  .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
-        } yield assert(r)(equalTo("Path is invalid. Cannot delete : /dont-exist"))
+        } yield assertTrue(r == "Path is invalid. Cannot delete : /dont-exist")
       },
-      testM("upload a file") {
+      test("upload a file") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
         val path = home / "work" / "hello-world.txt"
 
-        (for {
-          _      <- upload("/work/hello-world.txt", data)
-          result <- Managed
-                      .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
-                      .use(b => Task(b.mkString))
-        } yield assert(result)(equalTo("Hello F World"))).tap(_ => Files.delete(path))
+        (
+          for {
+            _ <- upload("/work/hello-world.txt", data)
+            result <- Managed
+              .acquireReleaseWith(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
+              .use(b => Task(b.mkString))
+          } yield assertTrue(result == "Hello F World")
+        ) <* Files.delete(path)
       },
-      testM("upload fail when path is invalid") {
+      test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
           failure <- upload("/dont-exist/hello-world.txt", data)
                        .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
 
-        } yield assert(failure)(equalTo("Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt"))
+        } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       }
-    ).provideCustomLayerShared(stubFtp ++ Blocking.live)
+    ).provideCustomLayerShared(stubFtp)
 }

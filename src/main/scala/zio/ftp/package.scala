@@ -18,121 +18,121 @@ package zio
 
 import java.io.IOException
 
-import zio.blocking.Blocking
+
 import zio.nio.core.file.{ Path => ZPath }
 import zio.stream.ZStream
 
 package object ftp {
   //Alias Unsecure Ftp dependency
-  type Ftp     = Has[FtpAccessors[UnsecureFtp.Client]]
+  type Ftp     = FtpAccessors[UnsecureFtp.Client]
   // Alias Secure Ftp dependency
-  type SFtp    = Has[FtpAccessors[SecureFtp.Client]]
+  type SFtp    = FtpAccessors[SecureFtp.Client]
   // Only for testing purpose
-  type StubFtp = Has[FtpAccessors[Unit]]
+  type StubFtp = FtpAccessors[Unit]
 
   object Ftp {
 
-    def execute[T](f: UnsecureFtp.Client => T): ZIO[Ftp with Blocking, IOException, T] =
-      ZIO.accessM(_.get.execute(f))
+    def execute[T](f: UnsecureFtp.Client => T): ZIO[Ftp, IOException, T] =
+      ZIO.environmentWithZIO(_.get.execute(f))
 
-    def stat(path: String): ZIO[Ftp with Blocking, IOException, Option[FtpResource]] =
-      ZIO.accessM(_.get.stat(path))
+    def stat(path: String): ZIO[Ftp, IOException, Option[FtpResource]] =
+      ZIO.environmentWithZIO(_.get.stat(path))
 
-    def rm(path: String): ZIO[Ftp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rm(path))
+    def rm(path: String): ZIO[Ftp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rm(path))
 
-    def rmdir(path: String): ZIO[Ftp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rmdir(path))
+    def rmdir(path: String): ZIO[Ftp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rmdir(path))
 
-    def mkdir(path: String): ZIO[Ftp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.mkdir(path))
+    def mkdir(path: String): ZIO[Ftp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.mkdir(path))
 
-    def ls(path: String): ZStream[Ftp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.ls(path))
+    def ls(path: String): ZStream[Ftp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.ls(path))
 
-    def lsDescendant(path: String): ZStream[Ftp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.lsDescendant(path))
+    def lsDescendant(path: String): ZStream[Ftp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.lsDescendant(path))
 
-    def upload[R <: Blocking](
+    def upload(
       path: String,
-      source: ZStream[R, Throwable, Byte]
-    ): ZIO[Ftp with R, IOException, Unit] =
-      ZIO.accessM(_.get.upload(path, source))
+      source: ZStream[Any, Throwable, Byte]
+    ): ZIO[Ftp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp with Blocking, IOException, Byte] =
-      ZStream.accessStream(_.get.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp, IOException, Byte] =
+      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
   }
 
   object SFtp {
 
-    def execute[T](f: SecureFtp.Client => T): ZIO[SFtp with Blocking, IOException, T] =
-      ZIO.accessM(_.get.execute(f))
+    def execute[T](f: SecureFtp.Client => T): ZIO[SFtp, IOException, T] =
+      ZIO.environmentWithZIO(_.get.execute(f))
 
-    def stat(path: String): ZIO[SFtp with Blocking, IOException, Option[FtpResource]] =
-      ZIO.accessM(_.get.stat(path))
+    def stat(path: String): ZIO[SFtp, IOException, Option[FtpResource]] =
+      ZIO.environmentWithZIO(_.get.stat(path))
 
-    def rm(path: String): ZIO[SFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rm(path))
+    def rm(path: String): ZIO[SFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rm(path))
 
-    def rmdir(path: String): ZIO[SFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rmdir(path))
+    def rmdir(path: String): ZIO[SFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rmdir(path))
 
-    def mkdir(path: String): ZIO[SFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.mkdir(path))
+    def mkdir(path: String): ZIO[SFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.mkdir(path))
 
-    def ls(path: String): ZStream[SFtp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.ls(path))
+    def ls(path: String): ZStream[SFtp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.ls(path))
 
-    def lsDescendant(path: String): ZStream[SFtp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.lsDescendant(path))
+    def lsDescendant(path: String): ZStream[SFtp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.lsDescendant(path))
 
-    def upload[R <: Blocking](
+    def upload(
       path: String,
-      source: ZStream[R, Throwable, Byte]
-    ): ZIO[SFtp with R, IOException, Unit] =
-      ZIO.accessM(_.get.upload(path, source))
+      source: ZStream[Any, Throwable, Byte]
+    ): ZIO[SFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp with Blocking, IOException, Byte] =
-      ZStream.accessStream(_.get.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp, IOException, Byte] =
+      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
   }
 
   object StubFtp {
 
-    def execute[T](f: Unit => T): ZIO[StubFtp with Blocking, IOException, T] =
-      ZIO.accessM(_.get.execute(f))
+    def execute[T](f: Unit => T): ZIO[StubFtp, IOException, T] =
+      ZIO.environmentWithZIO(_.get.execute(f))
 
-    def stat(path: String): ZIO[StubFtp with Blocking, IOException, Option[FtpResource]] =
-      ZIO.accessM(_.get.stat(path))
+    def stat(path: String): ZIO[StubFtp, IOException, Option[FtpResource]] =
+      ZIO.environmentWithZIO(_.get.stat(path))
 
-    def rm(path: String): ZIO[StubFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rm(path))
+    def rm(path: String): ZIO[StubFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rm(path))
 
-    def rmdir(path: String): ZIO[StubFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.rmdir(path))
+    def rmdir(path: String): ZIO[StubFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.rmdir(path))
 
-    def mkdir(path: String): ZIO[StubFtp with Blocking, IOException, Unit] =
-      ZIO.accessM(_.get.mkdir(path))
+    def mkdir(path: String): ZIO[StubFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.mkdir(path))
 
-    def ls(path: String): ZStream[StubFtp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.ls(path))
+    def ls(path: String): ZStream[StubFtp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.ls(path))
 
-    def lsDescendant(path: String): ZStream[StubFtp with Blocking, IOException, FtpResource] =
-      ZStream.accessStream(_.get.lsDescendant(path))
+    def lsDescendant(path: String): ZStream[StubFtp, IOException, FtpResource] =
+      ZStream.environmentWithStream(_.get.lsDescendant(path))
 
-    def upload[R <: Blocking](
+    def upload(
       path: String,
-      source: ZStream[R, Throwable, Byte]
-    ): ZIO[StubFtp with R, IOException, Unit] =
-      ZIO.accessM(_.get.upload(path, source))
+      source: ZStream[Any, Throwable, Byte]
+    ): ZIO[StubFtp, IOException, Unit] =
+      ZIO.environmentWithZIO(_.get.upload(path, source))
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp with Blocking, IOException, Byte] =
-      ZStream.accessStream(_.get.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp, IOException, Byte] =
+      ZStream.environmentWithStream(_.get.readFile(path, chunkSize))
   }
 
-  def unsecure(settings: UnsecureFtpSettings): ZLayer[Blocking, ConnectionError, Ftp] =
+  def unsecure(settings: UnsecureFtpSettings): ZLayer[Any, ConnectionError, Ftp] =
     ZLayer.fromManaged(UnsecureFtp.connect(settings))
 
-  def secure(settings: SecureFtpSettings): ZLayer[Blocking, ConnectionError, SFtp] =
+  def secure(settings: SecureFtpSettings): ZLayer[Any, ConnectionError, SFtp] =
     ZLayer.fromManaged(SecureFtp.connect(settings))
 
   def stub(path: ZPath): Layer[Any, StubFtp] =

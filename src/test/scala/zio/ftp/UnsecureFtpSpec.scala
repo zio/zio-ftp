@@ -1,10 +1,11 @@
 package zio.ftp
 
-import zio.{test => _, _}
+import zio.{ test => _, _ }
 import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.ftp.Ftp._
+
 import zio.nio.file.{Path => ZPath}
 import zio.nio.file.Files
 import zio.stream.ZPipeline.utf8Decode
@@ -83,6 +84,7 @@ object FtpSuite {
       ),
       test("stat directory") {
         for {
+
           file <- stat("/dir1")
         } yield assertTrue(file.get.path == "/dir1") &&
           assertTrue(file.get.isDirectory.get)
@@ -167,6 +169,7 @@ object FtpSuite {
       },
       test("upload a file") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
+
         val path = home / "hello-world.txt"
 
         (for {

@@ -15,13 +15,12 @@
  */
 package zio.ftp
 
-import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
-import zio.blocking._
-import zio.ftp.UnsecureFtp.Client
-import zio.stream.{ Stream, ZStream }
-import zio.{ ZIO, ZManaged }
-
 import java.io.IOException
+import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
+import zio.ftp.UnsecureFtp.Client
+import zio.stream.ZStream
+import zio.{ &, Scope, ZIO }
+import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 
 /**
  * Unsecure Ftp client wrapper
@@ -31,74 +30,74 @@ import java.io.IOException
  */
 final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
-  def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
+  def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] = {
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte] = {
     val terminate = ZIO
       .fail(
         FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
       )
-      .unlessM(execute(_.completePendingCommand()))
+      .unlessZIO(execute(_.completePendingCommand()))
 
     val inputStream =
       execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
 
-    ZStream.fromInputStreamEffect(inputStream, chunkSize) ++ ZStream.fromEffect(terminate) *> ZStream.empty
+    ZStream.fromInputStreamZIO(inputStream, chunkSize) ++ ZStream.fromZIO(terminate) *> ZStream.empty
   }
 
-  def rm(path: String): ZIO[Blocking, IOException, Unit] =
+  def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.deleteFile(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete file : $path"))
       .unit
 
-  def rmdir(path: String): ZIO[Blocking, IOException, Unit] =
+  def rmdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.removeDirectory(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
       .unit
 
-  def mkdir(path: String): ZIO[Blocking, IOException, Unit] =
+  def mkdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.makeDirectory(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot create directory : $path"))
       .unit
 
-  def ls(path: String): ZStream[Blocking, IOException, FtpResource] =
+  def ls(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable(_))
+      .fromZIO(execute(_.listFiles(path).toList))
+      .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromFtpFile(_, Some(path)))
 
-  def lsDescendant(path: String): ZStream[Blocking, IOException, FtpResource] =
+  def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromEffect(execute(_.listFiles(path).toList))
-      .flatMap(Stream.fromIterable(_))
+      .fromZIO(execute(_.listFiles(path).toList))
+      .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
         if (f.isDirectory) {
           val dirPath = Option(path).filter(_.endsWith("/")).fold(s"$path/${f.getName}")(p => s"$p${f.getName}")
           lsDescendant(dirPath)
         } else
-          Stream(FtpResource.fromFtpFile(f, Some(path)))
+          ZStream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
-  def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R & Scope, IOException, Unit] =
     source.toInputStream
       .mapError(new IOException(_))
-      .use(is =>
+      .flatMap(is =>
         execute(_.storeFile(path, is))
           .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
           .unit
       )
 
-  override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
-    effectBlockingIO(f(unsafeClient))
+  override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
+    attemptBlockingIO(f(unsafeClient))
 }
 
 object UnsecureFtp {
   type Client = JFTPClient
 
-  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] =
-    ZManaged.make(
-      effectBlockingIO {
+  def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
+    acquireRelease(
+      attemptBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
 
         settings.controlEncoding match {
@@ -123,5 +122,5 @@ object UnsecureFtp {
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
-    )(client => client.execute(_.logout()).ignore >>= (_ => client.execute(_.disconnect()).ignore))
+    )(client => client.execute(_.logout()).ignore.flatMap(_ => client.execute(_.disconnect()).ignore))
 }

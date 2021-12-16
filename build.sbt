@@ -10,7 +10,7 @@ inThisBuild(
       Developer("regis-leray", "Regis Leray", "regis.leray@gmail.com", url("https://github.com/regis-leray"))
     ),
     Test / fork := true,
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
     pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
     pgpPublicRing := file("/tmp/public.asc"),
     pgpSecretRing := file("/tmp/secret.asc"),
@@ -25,8 +25,9 @@ inThisBuild(
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 
-val zioVersion = "1.0.14"
+val zioVersion = "2.0.0-RC6"
 
 lazy val `zio-ftp` = project
   .in(file("."))
@@ -35,7 +36,7 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      "dev.zio"                 %% "zio-nio"                 % "1.0.0-RC12",
+      "dev.zio"                 %% "zio-nio"                 % "2.0.0-RC7",
       "com.hierynomus"           % "sshj"                    % "0.33.0",
       "commons-net"              % "commons-net"             % "3.8.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.7.0",
@@ -51,18 +52,15 @@ lazy val `zio-ftp` = project
 lazy val docs = project
   .in(file("zio-ftp-docs"))
   .settings(
-    skip.in(publish) := true,
+    publish / skip := true,
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion
-    ),
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(`zio-ftp`),
-    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
-    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(unidoc in Compile).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(unidoc in Compile).value
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(`zio-ftp`),
+    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
+    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
   .dependsOn(`zio-ftp`)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)

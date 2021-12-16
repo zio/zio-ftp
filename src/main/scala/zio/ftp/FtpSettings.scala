@@ -19,7 +19,7 @@ package zio.ftp
 import java.net.Proxy
 import java.nio.file.Path
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
-import zio.duration.Duration
+import zio.Duration
 
 /**
  * Credential used during ftp authentication

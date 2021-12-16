@@ -1,12 +1,12 @@
 package zio.ftp
 
-
 import zio.ftp.StubFtp._
 import zio.nio.file.{Files, Path => ZPath}
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
+
 import zio.{Chunk, Scope, ZIO}
 
 import scala.io.Source
@@ -42,6 +42,7 @@ object StubFtpSpec extends ZIOSpecDefault {
       ),
       test("stat directory") {
         for {
+
           file <- stat("/dir1")
         } yield assertTrue(file.get.path == "/dir1") &&
           assertTrue(file.get.isDirectory.get)

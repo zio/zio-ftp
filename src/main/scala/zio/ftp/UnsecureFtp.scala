@@ -16,12 +16,11 @@
 package zio.ftp
 
 import java.io.{ IOException, InputStream }
-
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.blocking._
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream }
-import zio.{ Task, ZIO, ZManaged }
+import zio.{ Task, UIO, ZIO, ZManaged }
 
 /**
  * Unsecure Ftp client wrapper
@@ -34,23 +33,34 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] =
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] = {
+    val terminate = execute(_.completePendingCommand()).flatMap {
+      case false =>
+        ZIO.fail(new IOException(s"Cannot finalize the file transfer and complete to read the entire file $path."))
+      case _     => ZIO.unit
+    }.orDie
+
     for {
-      is     <- ZStream.fromEffect(
-                  execute(c => Option(c.retrieveFileStream(path)))
-                    .flatMap(
-                      _.fold[ZIO[Any, InvalidPathError, InputStream]](
-                        ZIO.fail(InvalidPathError(s"File does not exist $path"))
-                      )(
-                        ZIO.succeed(_)
-                      )
+      is   <- ZStream.fromEffect(
+                execute(c => Option(c.retrieveFileStream(path)))
+                  .flatMap(
+                    _.fold[ZIO[Any, InvalidPathError, InputStream]](
+                      ZIO.fail(InvalidPathError(s"File does not exist $path"))
+                    )(
+                      ZIO.succeed(_)
                     )
-                )
+                  )
+              )
 
-      safeIs <- ZStream.managed(ZManaged.fromAutoCloseable(Task(is))).mapError(e => new IOException(e.getMessage, e))
+      data <- ZStream.fromInputStreamManaged(
+                ZManaged
+                  .make(Task(is))(a => UIO(a.close()) *> terminate)
+                  .mapError(e => new IOException(e.getMessage, e)),
+                chunkSize
+              )
 
-      data <- ZStream.fromInputStream(safeIs, chunkSize)
     } yield data
+  }
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.deleteFile(path))

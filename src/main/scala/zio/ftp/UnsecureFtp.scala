@@ -17,6 +17,7 @@ package zio.ftp
 
 import java.io.{ IOException, InputStream }
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
+import zio.Cause.Die
 import zio.blocking._
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream }
@@ -34,11 +35,13 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] = {
-    val terminate = execute(_.completePendingCommand()).flatMap {
-      case false =>
-        ZIO.fail(new IOException(s"Cannot finalize the file transfer and complete to read the entire file $path."))
-      case _     => ZIO.unit
-    }.orDie
+    val terminate = execute(_.completePendingCommand())
+      .flatMap {
+        case false =>
+          ZIO.fail(new IOException(s"Cannot finalize the file transfer and complete to read the entire file $path."))
+        case _     => ZIO.unit
+      }
+      .orDieWith(ex => FileTransferIncompleteError(ex.getMessage, ex))
 
     for {
       is   <- ZStream.fromEffect(
@@ -55,7 +58,10 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       data <- ZStream.fromInputStreamManaged(
                 ZManaged
                   .make(Task(is))(a => UIO(a.close()) *> terminate)
-                  .mapError(e => new IOException(e.getMessage, e)),
+                  .mapError(e => new IOException(e.getMessage, e))
+                  .catchSomeCause {
+                    case Die(e: FileTransferIncompleteError) => ZManaged.fail(e)
+                  },
                 chunkSize
               )
 

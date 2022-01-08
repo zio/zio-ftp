@@ -137,7 +137,7 @@ object SecureFtp {
 
         new SecureFtp(ssh.newSFTPClient())
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
-    )(cli => { cli.execute(_.close()) >>= (_ => effectBlocking(ssh.disconnect()).whenM(URIO(ssh.isConnected))) }.ignore)
+    )(cli => { cli.execute(_.close()) *> effectBlocking(ssh.disconnect()).whenM(URIO(ssh.isConnected)) }.ignore)
   }
 
   private[this] def setIdentity(identity: SftpIdentity, username: String)(ssh: SSHClient): Unit = {

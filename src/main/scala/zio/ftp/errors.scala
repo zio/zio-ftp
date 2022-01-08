@@ -26,4 +26,4 @@ object ConnectionError {
 
 final case class InvalidPathError(message: String) extends IOException(message)
 
-final case class FileTransferIncompleteError(message: String, cause: Throwable) extends IOException(message)
+final case class FileTransferIncompleteError(message: String) extends IOException(message)

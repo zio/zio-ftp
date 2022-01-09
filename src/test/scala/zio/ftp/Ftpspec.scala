@@ -1,10 +1,9 @@
 package zio.ftp
 
-import java.net.{ InetSocketAddress, Proxy }
-
 import zio._
 import zio.blocking.Blocking
 import zio.ftp.Ftp._
+import zio.ftp.UnsecureFtpSpec.{ suite, testM }
 import zio.nio.core.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZStream, ZTransducer }
@@ -12,12 +11,12 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
+import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
 object FtpsTest extends DefaultRunnableSpec {
   val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
-
-  val ftp = Blocking.live >>> unsecure(settings).mapError(TestFailure.die(_))
+  val ftp      = Blocking.live >>> unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
     FtpSuite.spec("FtpsSpec", settings).provideCustomLayer(ftp) @@ sequential

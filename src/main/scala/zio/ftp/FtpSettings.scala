@@ -19,6 +19,7 @@ package zio.ftp
 import java.net.Proxy
 import java.nio.file.Path
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
+import zio.duration.Duration
 
 /**
  * Credential used during ftp authentication
@@ -132,6 +133,8 @@ object KeyFileSftpIdentity {
  * @param binary specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)
  * @param passiveMode specifies whether to use passive mode connections. Default is active mode (false)
  * @param proxy An optional proxy to use when connecting with these settings
+ * @param secure Use FTP over SSL
+ * @param dataTimeout Sets the timeout to use when reading from the data connection.
  */
 final case class UnsecureFtpSettings(
   host: String,
@@ -140,7 +143,8 @@ final case class UnsecureFtpSettings(
   binary: Boolean,
   passiveMode: Boolean,
   proxy: Option[Proxy],
-  secure: Boolean
+  secure: Boolean,
+  dataTimeout: Option[Duration] = None
 )
 
 object UnsecureFtpSettings {

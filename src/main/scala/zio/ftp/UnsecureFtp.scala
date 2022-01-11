@@ -110,6 +110,9 @@ object UnsecureFtp {
 
         if (settings.passiveMode)
           ftpClient.enterLocalPassiveMode()
+
+        settings.dataTimeout.map(_.toMillis.toInt).foreach(ftpClient.setDataTimeout)
+
         new UnsecureFtp(ftpClient) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))

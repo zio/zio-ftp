@@ -100,6 +100,12 @@ object UnsecureFtp {
     ZManaged.make(
       effectBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
+
+        settings.controlEncoding match {
+          case Some(enc) => ftpClient.setControlEncoding(enc)
+          case None      => ftpClient.setAutodetectUTF8(true)
+        }
+
         settings.proxy.foreach(ftpClient.setProxy)
         ftpClient.connect(settings.host, settings.port)
 

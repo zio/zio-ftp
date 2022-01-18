@@ -135,6 +135,7 @@ object KeyFileSftpIdentity {
  * @param proxy An optional proxy to use when connecting with these settings
  * @param secure Use FTP over SSL
  * @param dataTimeout Sets the timeout to use when reading from the data connection.
+ * @param controlEncoding character encoding to be used by the FTP control connection, auto-detects UTF-8 if None
  */
 final case class UnsecureFtpSettings(
   host: String,
@@ -144,7 +145,8 @@ final case class UnsecureFtpSettings(
   passiveMode: Boolean,
   proxy: Option[Proxy],
   secure: Boolean,
-  dataTimeout: Option[Duration] = None
+  dataTimeout: Option[Duration] = None,
+  controlEncoding: Option[String] = None
 )
 
 object UnsecureFtpSettings {

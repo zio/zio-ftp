@@ -14,7 +14,7 @@ object BuildHelper {
 
   final private val Scala211 = "2.11.12"
   final private val Scala212 = "2.12.15"
-  final private val Scala213 = "2.13.7"
+  final private val Scala213 = "2.13.8"
 
   final private val stdOptions = Seq(
     "-encoding",

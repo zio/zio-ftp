@@ -21,10 +21,10 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 
 import zio.blocking.Blocking
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
-import zio.{ ZIO, ZManaged }
+import zio.{ Cause, ZIO, ZManaged }
 
 object TestFtp {
 
@@ -77,9 +77,10 @@ object TestFtp {
 
       private def get(p: ZPath): ZIO[Blocking, IOException, FtpResource] =
         (for {
-          permissions  <- Files.getPosixFilePermissions(p).catchSome {
+          permissions  <- Files.getPosixFilePermissions(p).mapErrorCause(_.untraced).catchSomeCause {
                             //Windows don't support this operations
-                            case _: IOException => ZIO.succeed(Set.empty[PosixFilePermission])
+                            case Cause.Die(_: UnsupportedOperationException) =>
+                              ZIO.succeed(Set.empty[PosixFilePermission])
                           }
           isDir        <- Files.isDirectory(p).map(Some(_))
           lastModified <- Files.getLastModifiedTime(p).map(_.toMillis)

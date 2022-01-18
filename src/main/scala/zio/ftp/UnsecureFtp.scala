@@ -15,13 +15,13 @@
  */
 package zio.ftp
 
-import java.io.{ IOException, InputStream }
-
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.blocking._
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream }
-import zio.{ Task, ZIO, ZManaged }
+import zio.{ ZIO, ZManaged }
+
+import java.io.IOException
 
 /**
  * Unsecure Ftp client wrapper
@@ -34,23 +34,18 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] =
-    for {
-      is     <- ZStream.fromEffect(
-                  execute(c => Option(c.retrieveFileStream(path)))
-                    .flatMap(
-                      _.fold[ZIO[Any, InvalidPathError, InputStream]](
-                        ZIO.fail(InvalidPathError(s"File does not exist $path"))
-                      )(
-                        ZIO.succeed(_)
-                      )
-                    )
-                )
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Blocking, IOException, Byte] = {
+    val terminate = ZIO
+      .fail(
+        FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
+      )
+      .unlessM(execute(_.completePendingCommand()))
 
-      safeIs <- ZStream.managed(ZManaged.fromAutoCloseable(Task(is))).mapError(e => new IOException(e.getMessage, e))
+    val inputStream =
+      execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
 
-      data <- ZStream.fromInputStream(safeIs, chunkSize)
-    } yield data
+    ZStream.fromInputStreamEffect(inputStream, chunkSize) ++ ZStream.fromEffect(terminate) *> ZStream.empty
+  }
 
   def rm(path: String): ZIO[Blocking, IOException, Unit] =
     execute(_.deleteFile(path))
@@ -105,6 +100,12 @@ object UnsecureFtp {
     ZManaged.make(
       effectBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
+
+        settings.controlEncoding match {
+          case Some(enc) => ftpClient.setControlEncoding(enc)
+          case None      => ftpClient.setAutodetectUTF8(true)
+        }
+
         settings.proxy.foreach(ftpClient.setProxy)
         ftpClient.connect(settings.host, settings.port)
 
@@ -115,6 +116,9 @@ object UnsecureFtp {
 
         if (settings.passiveMode)
           ftpClient.enterLocalPassiveMode()
+
+        settings.dataTimeout.map(_.toMillis.toInt).foreach(ftpClient.setDataTimeout)
+
         new UnsecureFtp(ftpClient) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))

@@ -19,7 +19,7 @@ package zio
 import java.io.IOException
 
 import zio.blocking.Blocking
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.file.{ Path => ZPath }
 import zio.stream.ZStream
 
 package object ftp {

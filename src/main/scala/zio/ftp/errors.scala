@@ -18,10 +18,12 @@ package zio.ftp
 
 import java.io.IOException
 
-case class ConnectionError(message: String, cause: Throwable) extends IOException(message, cause)
+final case class ConnectionError(message: String, cause: Throwable) extends IOException(message, cause)
 
 object ConnectionError {
   def apply(message: String): ConnectionError = new ConnectionError(message, new Throwable(message))
 }
 
-case class InvalidPathError(message: String) extends IOException(message)
+final case class InvalidPathError(message: String) extends IOException(message)
+
+final case class FileTransferIncompleteError(message: String) extends IOException(message)

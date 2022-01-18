@@ -5,7 +5,7 @@ import java.net.{ InetSocketAddress, Proxy }
 import zio._
 import zio.blocking.Blocking
 import zio.ftp.Ftp._
-import zio.nio.core.file.{ Path => ZPath }
+import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZStream, ZTransducer }
 import zio.test.Assertion._

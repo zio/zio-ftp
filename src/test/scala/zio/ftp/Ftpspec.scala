@@ -4,6 +4,7 @@ import java.net.{ InetSocketAddress, Proxy }
 
 import zio._
 import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.ftp.Ftp._
 import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
@@ -17,7 +18,7 @@ import scala.io.Source
 object FtpsTest extends DefaultRunnableSpec {
   val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
 
-  val ftp = Blocking.live >>> unsecure(settings).mapError(TestFailure.die(_))
+  val ftp = unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
     FtpSuite.spec("FtpsSpec", settings).provideCustomLayer(ftp) @@ sequential
@@ -25,7 +26,7 @@ object FtpsTest extends DefaultRunnableSpec {
 
 object FtpTest extends DefaultRunnableSpec {
   val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
-  val ftp      = Blocking.live >>> unsecure(settings).mapError(TestFailure.die(_))
+  val ftp      = unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
     FtpSuite.spec("FtpSpec", settings).provideCustomLayer(ftp) @@ sequential
@@ -37,7 +38,7 @@ object FtpSuite {
   def spec(
     labelSuite: String,
     settings: UnsecureFtpSettings
-  ): Spec[Ftp with Blocking, TestFailure[Throwable], TestSuccess] =
+  ): Spec[Ftp with Blocking with Clock, TestFailure[Throwable], TestSuccess] =
     suite(labelSuite)(
       testM("invalid credentials")(
         for {

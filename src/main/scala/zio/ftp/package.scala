@@ -19,6 +19,7 @@ package zio
 import java.io.IOException
 
 import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.nio.file.{ Path => ZPath }
 import zio.stream.ZStream
 
@@ -129,7 +130,7 @@ package object ftp {
       ZStream.accessStream(_.get.readFile(path, chunkSize))
   }
 
-  def unsecure(settings: UnsecureFtpSettings): ZLayer[Blocking, ConnectionError, Ftp] =
+  def unsecure(settings: UnsecureFtpSettings): ZLayer[Blocking with Clock, ConnectionError, Ftp] =
     ZLayer.fromManaged(UnsecureFtp.connect(settings))
 
   def secure(settings: SecureFtpSettings): ZLayer[Blocking, ConnectionError, SFtp] =

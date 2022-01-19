@@ -17,9 +17,11 @@ package zio.ftp
 
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.blocking._
+import zio.clock.Clock
+import zio.duration.Duration
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.{ Stream, ZStream }
-import zio.{ ZIO, ZManaged }
+import zio.{ ZIO, ZLayer, ZManaged }
 
 import java.io.IOException
 
@@ -29,7 +31,9 @@ import java.io.IOException
  * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
  * since the underlying java client only provide blocking methods.
  */
-final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
+final private class UnsecureFtp(unsafeClient: Client, dataTimeout: Option[Duration], clock: Clock.Service)
+    extends FtpAccessors[Client] {
+  private val env = ZLayer.succeed(clock)
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
@@ -39,7 +43,14 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .fail(
         FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
       )
-      .unlessM(execute(_.completePendingCommand()))
+      .unlessM {
+        val complete = execute(_.completePendingCommand())
+        dataTimeout match {
+          case None          => complete // if the server never responds to the complete, this will freeze forever
+          case Some(timeout) => complete.timeout(timeout).someOrElse(false)
+        }
+      }
+      .provideSomeLayer[Blocking](env)
 
     val inputStream =
       execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
@@ -96,7 +107,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 object UnsecureFtp {
   type Client = JFTPClient
 
-  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking, ConnectionError, FtpAccessors[Client]] =
+  private def connect(clock: Clock.Service, settings: UnsecureFtpSettings) =
     ZManaged.make(
       effectBlockingIO {
         val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
@@ -119,9 +130,12 @@ object UnsecureFtp {
 
         settings.dataTimeout.map(_.toMillis.toInt).foreach(ftpClient.setDataTimeout)
 
-        new UnsecureFtp(ftpClient) -> success
+        new UnsecureFtp(ftpClient, settings.dataTimeout, clock) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
     )(client => client.execute(_.logout()).ignore >>= (_ => client.execute(_.disconnect()).ignore))
+
+  def connect(settings: UnsecureFtpSettings): ZManaged[Blocking with Clock, ConnectionError, FtpAccessors[Client]] =
+    ZManaged.service[Clock.Service].flatMap(connect(_, settings))
 }

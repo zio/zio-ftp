@@ -194,6 +194,18 @@ object SFtpTest extends DefaultRunnableSpec {
 
         } yield assert(failure)(equalTo("No such file"))
       },
+      testM("rename valid path") {
+        val oldPath = home.resolve("to-rename.txt")
+        val newPath = home.resolve("renamed.txt")
+        Files.createFile(oldPath)
+
+        for {
+          success             <- rename("/work/to-rename.txt", "/work/renamed.txt")
+                                   .foldCause(_ => false, _ => true)
+          oldFileDoesNotExist <- Task(Files.notExists(oldPath))
+          newFileExist        <- Task(Files.notExists(newPath))
+        } yield assert(success && oldFileDoesNotExist && newFileExist)(equalTo(true))
+      },
       testM("call version() underlying client") {
         for {
           version <- execute(_.version())

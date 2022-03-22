@@ -109,6 +109,9 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
       _ <- osManaged.use(os => source.run(ZSink.fromOutputStream(os))).mapError(new IOException(_))
     } yield ()
 
+  def rename(oldPath: String, newPath: String): ZIO[Blocking, IOException, Unit] =
+    execute(_.rename(oldPath, newPath))
+
   override def execute[T](f: Client => T): ZIO[Blocking, IOException, T] =
     effectBlocking(f(unsafeClient)).refineToOrDie[IOException]
 }

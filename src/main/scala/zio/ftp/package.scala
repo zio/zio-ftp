@@ -61,6 +61,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp with Blocking, IOException, Byte] =
       ZStream.accessStream(_.get.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[Ftp with Blocking, IOException, Unit] =
+      ZIO.accessM(_.get.rename(oldPath, newPath))
   }
 
   object SFtp {
@@ -94,6 +97,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp with Blocking, IOException, Byte] =
       ZStream.accessStream(_.get.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[SFtp with Blocking, IOException, Unit] =
+      ZIO.accessM(_.get.rename(oldPath, newPath))
   }
 
   object StubFtp {
@@ -127,6 +133,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp with Blocking, IOException, Byte] =
       ZStream.accessStream(_.get.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[StubFtp with Blocking, IOException, Unit] =
+      ZIO.accessM(_.get.rename(oldPath, newPath))
   }
 
   def unsecure(settings: UnsecureFtpSettings): ZLayer[Blocking, ConnectionError, Ftp] =

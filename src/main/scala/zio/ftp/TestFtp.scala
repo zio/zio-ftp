@@ -115,7 +115,8 @@ object TestFtp {
       }
 
       override def rename(oldPath: String, newPath: String): ZIO[Blocking, IOException, Unit] =
-        Files.move(root / ZPath(oldPath).elements.mkString("/"), root / ZPath(newPath).elements.mkString("/"))
+        Files
+          .move(root / ZPath(oldPath).elements.mkString("/"), root / ZPath(newPath).elements.mkString("/"))
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot rename : $oldPath into $newPath", err)))
     }
 }

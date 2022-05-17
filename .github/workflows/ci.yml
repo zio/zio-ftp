@@ -94,7 +94,7 @@ jobs:
         run: |
           chmod -R 777 ./ftp-home/
           docker-compose -f "docker-compose.yml" up -d --build
-          chmod -R 777 ./ftp-home/sftp/home/foo/dir1          
+          chmod -R 777 ./ftp-home/sftp/home/foo/dir1
       - name: Test
         run: ./sbt test
 

@@ -17,11 +17,11 @@ object StubFtpSpec extends DefaultRunnableSpec {
   val stubFtp = stub(home).mapError(TestFailure.fail(_))
 
   override def spec =
-    suite("TestFtp")(
+    suite("StubFtpSpec")(
       testM("ls ")(
         for {
           files <- ls("/").fold(List.empty[String])((s, f) => f.path +: s)
-        } yield assert(files.reverse)(hasSameElements(List("/empty.txt", "/work")))
+        } yield assert(files.reverse)(hasSameElements(List("/notes.txt", "/dir1")))
       ),
       testM("ls with invalid directory")(
         for {
@@ -32,7 +32,7 @@ object StubFtpSpec extends DefaultRunnableSpec {
         for {
           files <- lsDescendant("/").fold(List.empty[String])((s, f) => f.path +: s)
         } yield assert(files.reverse)(
-          hasSameElements(List("/empty.txt", "/work/notes.txt", "/work/dir1/users.csv", "/work/dir1/console.dump"))
+          hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump"))
         )
       ),
       testM("ls descendant with invalid directory")(
@@ -42,13 +42,13 @@ object StubFtpSpec extends DefaultRunnableSpec {
       ),
       testM("stat directory") {
         for {
-          file <- stat("/work/dir1")
-        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/work/dir1" -> Some(true))))
+          file <- stat("/dir1")
+        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/dir1" -> Some(true))))
       },
       testM("stat file") {
         for {
-          file <- stat("/work/dir1/console.dump")
-        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/work/dir1/console.dump" -> Some(false))))
+          file <- stat("/dir1/console.dump")
+        } yield assert(file.map(f => f.path -> f.isDirectory))(equalTo(Some("/dir1/console.dump" -> Some(false))))
       },
       testM("stat file does not exist") {
         for {
@@ -62,7 +62,7 @@ object StubFtpSpec extends DefaultRunnableSpec {
       },
       testM("readFile") {
         for {
-          content <- readFile("/work/notes.txt").transduce(ZTransducer.utf8Decode).runCollect
+          content <- readFile("/notes.txt").transduce(ZTransducer.utf8Decode).runCollect
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
@@ -77,23 +77,23 @@ object StubFtpSpec extends DefaultRunnableSpec {
       },
       testM("mkdir directory") {
         (for {
-          result <- mkdir("/work/new-dir").map(_ => true)
+          result <- mkdir("/new-dir").map(_ => true)
         } yield assert(result)(equalTo(true)))
-          .tap(_ => Files.delete(home / "work" / "new-dir"))
+          .tap(_ => Files.delete(home / "new-dir"))
       },
       testM("mkdir fail when invalid path") {
         for {
-          failure <- mkdir("/work/dir1/users.csv")
+          failure <- mkdir("/dir1/users.csv")
                        .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
 
-        } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /work/dir1/users.csv"))
+        } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /dir1/users.csv"))
       },
       testM("rm valid path") {
-        val path = home / "work" / "to-delete.txt"
+        val path = home / "to-delete.txt"
 
         for {
           _         <- Files.createFile(path)
-          success   <- rm("/work/to-delete.txt")
+          success   <- rm("/to-delete.txt")
                          .foldCause(_ => false, _ => true)
 
           fileExist <- Files.notExists(path)
@@ -107,11 +107,11 @@ object StubFtpSpec extends DefaultRunnableSpec {
         } yield assert(invalid)(equalTo("Path is invalid. Cannot delete : /dont-exist"))
       },
       testM("rm directory") {
-        val path = home / "work" / "dir-to-delete"
+        val path = home / "dir-to-delete"
 
         for {
           _     <- Files.createDirectory(path)
-          r     <- rmdir("/work/dir-to-delete").map(_ => true)
+          r     <- rmdir("/dir-to-delete").map(_ => true)
           exist <- Files.notExists(path)
         } yield assert(r && exist)(equalTo(true))
       },
@@ -124,10 +124,10 @@ object StubFtpSpec extends DefaultRunnableSpec {
       },
       testM("upload a file") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
-        val path = home / "work" / "hello-world.txt"
+        val path = home / "hello-world.txt"
 
         (for {
-          _      <- upload("/work/hello-world.txt", data)
+          _      <- upload("/hello-world.txt", data)
           result <- Managed
                       .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
                       .use(b => Task(b.mkString))

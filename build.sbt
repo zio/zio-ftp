@@ -11,7 +11,6 @@ inThisBuild(
     ),
     Test / fork := true,
     parallelExecution in Test := false,
-    publishMavenStyle := true,
     pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
     pgpPublicRing := file("/tmp/public.asc"),
     pgpSecretRing := file("/tmp/secret.asc"),

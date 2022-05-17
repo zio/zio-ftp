@@ -129,9 +129,9 @@ object SecureFtpSpec extends DefaultRunnableSpec {
       },
       testM("mkdir directory") {
         (for {
-          result <- mkdir("/new-dir").map(_ => true)
+          result <- mkdir("/dir1/new-dir").map(_ => true)
         } yield assert(result)(equalTo(true)))
-          .tap(_ => Task(Files.delete(home.resolve("new-dir"))))
+          .tap(_ => Task(Files.delete(home.resolve("dir1/new-dir"))))
       },
       testM("mkdir fail when invalid path") {
         for {
@@ -141,11 +141,11 @@ object SecureFtpSpec extends DefaultRunnableSpec {
         } yield assert(failure)(containsString("/dir1/users.csv exists but is not a directory"))
       },
       testM("rm valid path") {
-        val path = home.resolve("to-delete.txt")
+        val path = home.resolve("dir1/to-delete.txt")
         Files.createFile(path)
 
         for {
-          success   <- rm("/to-delete.txt")
+          success   <- rm("/dir1/to-delete.txt")
                          .foldCause(_ => false, _ => true)
 
           fileExist <- Task(Files.notExists(path))
@@ -159,11 +159,11 @@ object SecureFtpSpec extends DefaultRunnableSpec {
         } yield assert(invalid)(equalTo("No such file"))
       },
       testM("rm directory") {
-        val path = home.resolve("dir-to-delete")
+        val path = home.resolve("dir1/dir-to-delete")
         Files.createDirectory(path)
 
         for {
-          r     <- rmdir("/dir-to-delete").map(_ => true)
+          r     <- rmdir("/dir1/dir-to-delete").map(_ => true)
           exist <- Task(Files.notExists(path))
         } yield assert(r && exist)(equalTo(true))
       },
@@ -176,10 +176,10 @@ object SecureFtpSpec extends DefaultRunnableSpec {
       },
       testM("upload a file") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
-        val path = home.resolve("hello-world.txt")
+        val path = home.resolve("dir1/hello-world.txt")
 
         (for {
-          _      <- upload("/hello-world.txt", data)
+          _      <- upload("/dir1/hello-world.txt", data)
           result <- Managed
                       .make(Task(Source.fromFile(path.toFile)))(s => UIO(s.close))
                       .use(b => Task(b.mkString))

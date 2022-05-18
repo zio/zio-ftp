@@ -1,9 +1,9 @@
 package zio.ftp
 
-import zio.ZIO.{attempt, attemptBlockingIO}
+import zio.ZIO.{ attempt, attemptBlockingIO }
 
-import java.net.{InetSocketAddress, Proxy}
-import java.nio.file.{Files, Paths}
+import java.net.{ InetSocketAddress, Proxy }
+import java.nio.file.{ Files, Paths }
 import zio._
 import zio.ftp.SFtp._
 import zio.stream.ZPipeline.utf8Decode
@@ -49,9 +49,14 @@ object SFtpTest extends ZIOSpecDefault {
       ),
       test("connect with ssh key file") {
         for {
-          privatekey <- ZIO.scoped(ZIO.fromAutoCloseable(
-                            attemptBlockingIO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
-                          ).map(b => b.mkString))
+          privatekey <-
+            ZIO.scoped(
+              ZIO
+                .fromAutoCloseable(
+                  attemptBlockingIO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
+                )
+                .map(b => b.mkString)
+            )
           settings    = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
           succeed    <- SecureFtp.connect(settings).map(_ => true)
         } yield assertTrue(succeed)
@@ -184,11 +189,12 @@ object SFtpTest extends ZIOSpecDefault {
 
         (
           for {
-          _      <- upload("/dir1/hello-world.txt", data)
-          result <- ZIO.fromAutoCloseable(attemptBlockingIO(Source.fromFile(path.toFile)))
-                      .map(_.mkString)
-            } yield assert(result)(equalTo("Hello F World"))
-          ) <* attempt(Files.delete(path))
+            _      <- upload("/dir1/hello-world.txt", data)
+            result <- ZIO
+                        .fromAutoCloseable(attemptBlockingIO(Source.fromFile(path.toFile)))
+                        .map(_.mkString)
+          } yield assert(result)(equalTo("Hello F World"))
+        ) <* attempt(Files.delete(path))
       },
       test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))

@@ -25,24 +25,25 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
   private def hasIncompleteMsg(a: Assertion[String]) =
     hasField("file transfer incomplete message", (e: FileTransferIncompleteError) => e.message, a)
 
-  override def spec = suite("Download finalizer")(
-    test("complete pending command gets called") {
-      val ftpClient = createFtpclient(true)
-      for {
-        bytes <- ftpClient.readFile("/a/b/c.txt").runCollect
-      } yield assert(bytes)(hasSize(equalTo(5000)))
-    },
-    test("completion failure is exposed on error channel") {
-      val ftpClient = createFtpclient(false)
-      for {
-        exit <- ftpClient.readFile("/a/b/c.txt").runCollect.exit
-      } yield assert(exit)(
-        fails(
-          isSubtype[FileTransferIncompleteError](
-            hasIncompleteMsg(startsWithString("Cannot finalize the file transfer") && containsString("/a/b/c.txt"))
+  override def spec =
+    suite("Download finalizer")(
+      test("complete pending command gets called") {
+        val ftpClient = createFtpclient(true)
+        for {
+          bytes <- ftpClient.readFile("/a/b/c.txt").runCollect
+        } yield assert(bytes)(hasSize(equalTo(5000)))
+      },
+      test("completion failure is exposed on error channel") {
+        val ftpClient = createFtpclient(false)
+        for {
+          exit <- ftpClient.readFile("/a/b/c.txt").runCollect.exit
+        } yield assert(exit)(
+          fails(
+            isSubtype[FileTransferIncompleteError](
+              hasIncompleteMsg(startsWithString("Cannot finalize the file transfer") && containsString("/a/b/c.txt"))
+            )
           )
         )
-      )
-    }
-  )
+      }
+    )
 }

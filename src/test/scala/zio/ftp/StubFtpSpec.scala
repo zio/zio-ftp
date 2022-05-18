@@ -1,13 +1,13 @@
 package zio.ftp
 
 import zio.ftp.StubFtp._
-import zio.nio.file.{Files, Path => ZPath}
+import zio.nio.file.{ Files, Path => ZPath }
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
 
-import zio.{Chunk, Scope, ZIO}
+import zio.{ Chunk, Scope, ZIO }
 
 import scala.io.Source
 
@@ -81,8 +81,7 @@ object StubFtpSpec extends ZIOSpecDefault {
       test("mkdir directory") {
         (for {
           result <- mkdir("/new-dir").as(true)
-        } yield assert(result)(equalTo(true))
-        ) <* Files.delete(home / "new-dir")
+        } yield assert(result)(equalTo(true))) <* Files.delete(home / "new-dir")
       },
       test("mkdir fail when invalid path") {
         for {
@@ -133,8 +132,7 @@ object StubFtpSpec extends ZIOSpecDefault {
           result <- ZIO
                       .fromAutoCloseable(ZIO.attemptBlockingIO(Source.fromFile(path.toFile)))
                       .map(_.mkString)
-        } yield assert(result)(equalTo("Hello F World"))
-        ) <* Files.delete(path)
+        } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))

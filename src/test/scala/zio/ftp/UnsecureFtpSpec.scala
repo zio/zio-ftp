@@ -6,13 +6,13 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.ftp.Ftp._
 
-import zio.nio.file.{Path => ZPath}
+import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 
 import java.io.IOException
-import java.net.{InetSocketAddress, Proxy}
+import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
 object UnsecureSslFtpTest extends ZIOSpecDefault {
@@ -92,9 +92,8 @@ object FtpSuite {
       test("stat file") {
         for {
           file <- stat("/dir1/console.dump")
-        } yield
-          assertTrue(file.get.path == "/dir1/console.dump") &&
-            assertTrue(!file.get.isDirectory.get)
+        } yield assertTrue(file.get.path == "/dir1/console.dump") &&
+          assertTrue(!file.get.isDirectory.get)
       },
       test("stat file does not exist") {
         for {
@@ -174,7 +173,8 @@ object FtpSuite {
 
         (for {
           _      <- upload("/hello-world.txt", data)
-          result <- ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Source.fromFile(path.toFile)))
+          result <- ZIO
+                      .fromAutoCloseable(ZIO.attemptBlockingIO(Source.fromFile(path.toFile)))
                       .map(_.mkString)
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },

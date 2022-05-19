@@ -13,21 +13,21 @@ import zio.stream.ZStream
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
-object UnsecureSslFtpTest extends ZIOSpecDefault {
+object UnsecureSslFtpSpec extends ZIOSpecDefault {
   val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
 
   val ftp = Scope.default >+> unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
-    FtpSuite.spec("FtpsSpec", settings).provideCustomLayer(ftp) @@ sequential
+    FtpSuite.spec("UnsecureSslFtpSpec", settings).provideCustomLayer(ftp) @@ sequential
 }
 
-object UnsecureFtpTest extends ZIOSpecDefault {
+object UnsecureFtpSpec extends ZIOSpecDefault {
   val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
   val ftp      = Scope.default >+> unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
-    FtpSuite.spec("FtpSpec", settings).provideCustomLayer(ftp) @@ sequential
+    FtpSuite.spec("UnsecureFtpSpec", settings).provideCustomLayer(ftp) @@ sequential
 }
 
 object FtpSuite {
@@ -171,6 +171,7 @@ object FtpSuite {
           result <-
             acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
               .map(_.mkString)
+
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {

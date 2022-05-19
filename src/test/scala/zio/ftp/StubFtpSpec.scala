@@ -7,7 +7,7 @@ import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-import zio.{ Chunk, Scope }
+import zio.{ Chunk, Scope, ZIO }
 
 import scala.io.Source
 
@@ -124,8 +124,10 @@ object StubFtpSpec extends ZIOSpecDefault {
         (for {
           _      <- upload("/hello-world.txt", data)
           result <-
-            acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
-              .map(_.mkString)
+            ZIO.scoped(
+              acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
+                .map(_.mkString)
+            )
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {

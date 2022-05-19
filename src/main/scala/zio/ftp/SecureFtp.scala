@@ -28,7 +28,7 @@ import zio.stream.{ ZSink, ZStream }
 import zio._
 
 import scala.jdk.CollectionConverters._
-import zio.ZIO.{ acquireRelease, attemptBlockingIO }
+import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
 
 /**
  * Secure Ftp client wrapper
@@ -96,15 +96,14 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
   def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
-
-      os = new remoteFile.RemoteFileOutputStream() {
-
-             override def close(): Unit =
-               try remoteFile.close()
-               finally super.close()
-           }
-
-      _ <- source.run(ZSink.fromOutputStream(os)).mapError(new IOException(_))
+      _          <- scoped[R] {
+                      fromAutoCloseable(ZIO.succeed(new remoteFile.RemoteFileOutputStream() {
+                        override def close(): Unit =
+                          try remoteFile.close()
+                          finally super.close()
+                      }))
+                        .flatMap(os => source.run(ZSink.fromOutputStream(os)).mapError(new IOException(_)))
+                    }
     } yield ()
 
   override def execute[T](f: Client => T): ZIO[Any, IOException, T] =

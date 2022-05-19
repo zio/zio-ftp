@@ -15,7 +15,7 @@ import scala.io.Source
 
 object Load
 
-object SFtpTest extends ZIOSpecDefault {
+object SecureFtpSpec extends ZIOSpecDefault {
   val settings = SecureFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo"))
 
   val home = Paths.get("ftp-home/sftp/home/foo")
@@ -179,9 +179,10 @@ object SFtpTest extends ZIOSpecDefault {
         (
           for {
             _      <- upload("/dir1/hello-world.txt", data)
-            result <-
-              acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
-                .map(_.mkString)
+            result <- acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b =>
+                        attemptBlockingIO(b.close()).ignore
+                      ).map(_.mkString)
+
           } yield assert(result)(equalTo("Hello F World"))
         ) <* attempt(Files.delete(path))
       },

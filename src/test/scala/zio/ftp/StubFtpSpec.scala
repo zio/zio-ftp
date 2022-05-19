@@ -1,13 +1,13 @@
 package zio.ftp
 
+import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 import zio.ftp.StubFtp._
 import zio.nio.file.{ Files, Path => ZPath }
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-
-import zio.{ Chunk, Scope, ZIO }
+import zio.{ Chunk, Scope }
 
 import scala.io.Source
 
@@ -74,38 +74,34 @@ object StubFtpSpec extends ZIOSpecDefault {
           invalid <- readFile("/invalid.txt")
                        .via(utf8Decode)
                        .runCollect
-                       .foldCause(e => e.failureOption.map(_.getMessage).mkString, _.mkString)
+                       .flip
+                       .map(_.getMessage)
 
         } yield assertTrue(invalid == "File does not exist /invalid.txt")
       },
       test("mkdir directory") {
         (for {
           result <- mkdir("/new-dir").as(true)
-        } yield assert(result)(equalTo(true))) <* Files.delete(home / "new-dir")
+        } yield assertTrue(result)) <* Files.delete(home / "new-dir")
       },
       test("mkdir fail when invalid path") {
         for {
-          failure <- mkdir("/dir1/users.csv")
-                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
-
+          failure <- mkdir("/dir1/users.csv").flip.map(_.getMessage)
         } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /dir1/users.csv"))
       },
       test("rm valid path") {
         val path = home / "to-delete.txt"
 
         for {
-          _         <- Files.createFile(path)
-          success   <- rm("/to-delete.txt")
-                         .foldCause(_ => false, _ => true)
+          _       <- Files.createFile(path)
+          success <- rm("/to-delete.txt").as(true)
 
           fileExist <- Files.notExists(path)
         } yield assertTrue(success && fileExist)
       },
       test("rm fail when invalid path") {
         for {
-          invalid <- rm("/dont-exist")
-                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
-
+          invalid <- rm("/dont-exist").flip.map(_.getMessage)
         } yield assertTrue(invalid == "Path is invalid. Cannot delete : /dont-exist")
       },
       test("rm directory") {
@@ -118,9 +114,7 @@ object StubFtpSpec extends ZIOSpecDefault {
       },
       test("rm fail invalid directory") {
         for {
-          r <- rmdir("/dont-exist")
-                 .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
-
+          r <- rmdir("/dont-exist").flip.map(_.getMessage)
         } yield assertTrue(r == "Path is invalid. Cannot delete : /dont-exist")
       },
       test("upload a file") {
@@ -129,17 +123,16 @@ object StubFtpSpec extends ZIOSpecDefault {
 
         (for {
           _      <- upload("/hello-world.txt", data)
-          result <- ZIO
-                      .fromAutoCloseable(ZIO.attemptBlockingIO(Source.fromFile(path.toFile)))
-                      .map(_.mkString)
+          result <-
+            acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
+              .map(_.mkString)
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
-          failure <- upload("/dont-exist/hello-world.txt", data)
-                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
+          failure <- upload("/dont-exist/hello-world.txt", data).flip.map(_.getMessage)
 
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       }

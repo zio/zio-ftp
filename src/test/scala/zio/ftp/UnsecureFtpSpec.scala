@@ -1,17 +1,15 @@
 package zio.ftp
 
+import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 import zio.{ test => _, _ }
 import zio.test._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.ftp.Ftp._
-
 import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
-
-import java.io.IOException
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
@@ -35,14 +33,14 @@ object UnsecureFtpTest extends ZIOSpecDefault {
 object FtpSuite {
   val home = ZPath("ftp-home/ftp/home")
 
-  def spec(labelSuite: String, settings: UnsecureFtpSettings): Spec[Scope with Ftp, IOException] =
+  def spec(labelSuite: String, settings: UnsecureFtpSettings) =
     suite(labelSuite)(
       test("invalid credentials")(
         for {
           failure <- UnsecureFtp
                        .connect(settings.copy(credentials = FtpCredentials("test", "test")))
-                       .as("")
-                       .foldCause(_.failureOption.map(_.getMessage).mkString, s => s)
+                       .flip
+                       .map(_.getMessage)
         } yield assert(failure)(containsString("Fail to connect to server"))
       ),
       test("invalid proxy")(
@@ -51,8 +49,8 @@ object FtpSuite {
                        .connect(
                          settings.copy(proxy = Some(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("invalid", 9999))))
                        )
-                       .as("")
-                       .foldCause(_.failureOption.map(_.getMessage).mkString, s => s)
+                       .flip
+                       .map(_.getMessage)
         } yield assertTrue(failure.contains("invalid"))
       ),
       test("valid credentials")(
@@ -116,7 +114,8 @@ object FtpSuite {
           invalid <- readFile("/invalid.txt")
                        .via(utf8Decode)
                        .runCollect
-                       .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
+                       .flip
+                       .map(_.getMessage)
 
         } yield assertTrue(invalid == "File does not exist /invalid.txt")
       },
@@ -129,9 +128,7 @@ object FtpSuite {
       },
       test("mkdir fail when invalid path") {
         for {
-          failure <- mkdir("/dir1/users.csv")
-                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
-
+          failure <- mkdir("/dir1/users.csv").flip.map(_.getMessage)
         } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /dir1/users.csv"))
       },
       test("rm valid path") {
@@ -146,9 +143,7 @@ object FtpSuite {
       },
       test("rm fail when invalid path") {
         for {
-          invalid <- rm("/dont-exist")
-                       .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
-
+          invalid <- rm("/dont-exist").flip.map(_.getMessage)
         } yield assertTrue(invalid == "Path is invalid. Cannot delete file : /dont-exist")
       },
       test("rm directory") {
@@ -173,18 +168,16 @@ object FtpSuite {
 
         (for {
           _      <- upload("/hello-world.txt", data)
-          result <- ZIO
-                      .fromAutoCloseable(ZIO.attemptBlockingIO(Source.fromFile(path.toFile)))
-                      .map(_.mkString)
+          result <-
+            acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
+              .map(_.mkString)
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
-          failure <- upload("/dont-exist/hello-world.txt", data)
-                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
-
+          failure <- upload("/dont-exist/hello-world.txt", data).flip.map(_.getMessage)
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       },
       test("call noOp underlying client") {

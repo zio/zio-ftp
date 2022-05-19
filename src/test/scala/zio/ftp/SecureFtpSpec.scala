@@ -1,6 +1,6 @@
 package zio.ftp
 
-import zio.ZIO.{ attempt, attemptBlockingIO }
+import zio.ZIO.{ acquireRelease, attempt, attemptBlockingIO }
 
 import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Paths }
@@ -28,8 +28,8 @@ object SFtpTest extends ZIOSpecDefault {
         for {
           succeed <- SecureFtp
                        .connect(settings.copy(credentials = FtpCredentials("test", "test")))
-                       .map(_ => "")
-                       .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
+                       .flip
+                       .map(_.getMessage)
         } yield assertTrue(succeed.contains("Fail to connect to server"))
       ),
       test("invalid proxy")(
@@ -38,27 +38,24 @@ object SFtpTest extends ZIOSpecDefault {
                        .connect(
                          settings.copy(proxy = Some(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("invalid", 9999))))
                        )
-                       .map(_ => "")
-                       .foldCause(_.failureOption.map(_.getMessage).mkString, identity)
+                       .flip
+                       .map(_.getMessage)
         } yield assertTrue(failure.contains("Fail to connect to server"))
       ),
       test("valid credentials")(
         for {
-          succeed <- SecureFtp.connect(settings).map(_ => true)
+          succeed <- SecureFtp.connect(settings).as(true)
         } yield assertTrue(succeed)
       ),
       test("connect with ssh key file") {
         for {
-          privatekey <-
-            ZIO.scoped(
-              ZIO
-                .fromAutoCloseable(
-                  attemptBlockingIO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
-                )
-                .map(b => b.mkString)
-            )
+          privatekey <- acquireRelease(
+                          attemptBlockingIO(io.Source.fromFile(Load.getClass.getResource("/ssh_host_rsa_key").toURI))
+                        )(b => attemptBlockingIO(b.close()).ignore)
+                          .map(_.mkString)
+
           settings    = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
-          succeed    <- SecureFtp.connect(settings).map(_ => true)
+          succeed    <- SecureFtp.connect(settings).as(true)
         } yield assertTrue(succeed)
       },
       test("connect with ssh key") {
@@ -70,7 +67,7 @@ object SFtpTest extends ZIOSpecDefault {
                           FtpCredentials("fooz", ""),
                           KeyFileSftpIdentity(privatekey, None)
                         )
-          succeed    <- SecureFtp.connect(settings).map(_ => true)
+          succeed    <- SecureFtp.connect(settings).as(true)
         } yield assertTrue(succeed)
       },
       test("ls")(
@@ -139,14 +136,12 @@ object SFtpTest extends ZIOSpecDefault {
       },
       test("mkdir directory") {
         (for {
-          result <- mkdir("/dir1/new-dir").map(_ => true)
+          result <- mkdir("/dir1/new-dir").as(true)
         } yield assertTrue(result)) <* attempt(Files.delete(home.resolve("dir1/new-dir")))
       },
       test("mkdir fail when invalid path") {
         for {
-          failure <- mkdir("/dir1/users.csv")
-                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
-
+          failure <- mkdir("/dir1/users.csv").flip.map(_.getMessage)
         } yield assert(failure)(containsString("/dir1/users.csv exists but is not a directory"))
       },
       test("rm valid path") {
@@ -154,17 +149,13 @@ object SFtpTest extends ZIOSpecDefault {
         Files.createFile(path)
 
         for {
-          success   <- rm("/dir1/to-delete.txt")
-                         .foldCause(_ => false, _ => true)
-
+          success   <- rm("/dir1/to-delete.txt").as(true)
           fileExist <- attempt(Files.notExists(path))
         } yield assertTrue(success && fileExist)
       },
       test("rm fail when invalid path") {
         for {
-          invalid <- rm("/dont-exist")
-                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
-
+          invalid <- rm("/dont-exist").flip.map(_.getMessage)
         } yield assertTrue(invalid == "No such file")
       },
       test("rm directory") {
@@ -172,15 +163,13 @@ object SFtpTest extends ZIOSpecDefault {
         Files.createDirectory(path)
 
         for {
-          r     <- rmdir("/dir1/dir-to-delete").map(_ => true)
+          r     <- rmdir("/dir1/dir-to-delete").as(true)
           exist <- attempt(Files.notExists(path))
         } yield assertTrue(r && exist)
       },
       test("rm fail invalid directory") {
         for {
-          r <- rmdir("/dont-exist")
-                 .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
-
+          r <- rmdir("/dont-exist").flip.map(_.getMessage)
         } yield assertTrue(r == "No such file")
       },
       test("upload a file") {
@@ -190,9 +179,9 @@ object SFtpTest extends ZIOSpecDefault {
         (
           for {
             _      <- upload("/dir1/hello-world.txt", data)
-            result <- ZIO
-                        .fromAutoCloseable(attemptBlockingIO(Source.fromFile(path.toFile)))
-                        .map(_.mkString)
+            result <-
+              acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
+                .map(_.mkString)
           } yield assert(result)(equalTo("Hello F World"))
         ) <* attempt(Files.delete(path))
       },
@@ -200,9 +189,7 @@ object SFtpTest extends ZIOSpecDefault {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
-          failure <- upload("/dont-exist/hello-world.txt", data)
-                       .foldCause(_.failureOption.fold("")(_.getMessage), _ => "")
-
+          failure <- upload("/dont-exist/hello-world.txt", data).flip.map(_.getMessage)
         } yield assertTrue(failure == "No such file")
       },
       test("call version() underlying client") {

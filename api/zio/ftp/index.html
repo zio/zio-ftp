@@ -107,6 +107,10 @@
                         <a href="ConnectionError.html" title="">ConnectionError</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="FileTransferIncompleteError.html" title=""></a>
+                        <a href="FileTransferIncompleteError.html" title="">FileTransferIncompleteError</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="package$$Ftp$.html" title=""></a>
                         <a href="package$$Ftp$.html" title="">Ftp</a>
                       </li><li class="current-entities indented2">
@@ -253,11 +257,27 @@
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
         <a title="" href="ConnectionError.html"><span class="name">ConnectionError</span></a><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="cause">cause: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result"> extends <span class="extype" name="java.io.IOException">IOException</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      
+      
+    </li><li name="zio.ftp.FileTransferIncompleteError" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileTransferIncompleteErrorextendsIOExceptionwithProductwithSerializable"></a><a id="FileTransferIncompleteError:FileTransferIncompleteError"></a>
+      <span class="permalink">
+      <a href="../../zio/ftp/FileTransferIncompleteError.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="FileTransferIncompleteError.html"><span class="name">FileTransferIncompleteError</span></a><span class="params">(<span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="java.io.IOException">IOException</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       
@@ -337,7 +357,7 @@
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
@@ -459,12 +479,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Settings to connect unsecure Ftp server" href="UnsecureFtpSettings.html"><span class="name">UnsecureFtpSettings</span></a><span class="params">(<span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="credentials">credentials: <a href="FtpCredentials.html" class="extype" name="zio.ftp.FtpCredentials">FtpCredentials</a></span>, <span name="binary">binary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="passiveMode">passiveMode: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="proxy">proxy: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.net.Proxy">Proxy</span>]</span>, <span name="secure">secure: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a title="Settings to connect unsecure Ftp server" href="UnsecureFtpSettings.html"><span class="name">UnsecureFtpSettings</span></a><span class="params">(<span name="host">host: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="port">port: <span class="extype" name="scala.Int">Int</span></span>, <span name="credentials">credentials: <a href="FtpCredentials.html" class="extype" name="zio.ftp.FtpCredentials">FtpCredentials</a></span>, <span name="binary">binary: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="passiveMode">passiveMode: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="proxy">proxy: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.net.Proxy">Proxy</span>]</span>, <span name="secure">secure: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataTimeout">dataTimeout: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="zio.duration.Duration">Duration</span>] = <span class="symbol">None</span></span>, <span name="controlEncoding">controlEncoding: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       
       <p class="shortcomment cmt">Settings to connect unsecure Ftp server
 </p><div class="fullcomment"><div class="comment cmt"><p>Settings to connect unsecure Ftp server
-</p></div><dl class="paramcmts block"><dt class="param">host</dt><dd class="cmt"><p>hostname of ftp server (ipAddress / dnsName)</p></dd><dt class="param">port</dt><dd class="cmt"><p>port of communication used by the server</p></dd><dt class="param">credentials</dt><dd class="cmt"><p>credentials (username and password)</p></dd><dt class="param">binary</dt><dd class="cmt"><p>specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)</p></dd><dt class="param">passiveMode</dt><dd class="cmt"><p>specifies whether to use passive mode connections. Default is active mode (false)</p></dd><dt class="param">proxy</dt><dd class="cmt"><p>An optional proxy to use when connecting with these settings</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">host</dt><dd class="cmt"><p>hostname of ftp server (ipAddress / dnsName)</p></dd><dt class="param">port</dt><dd class="cmt"><p>port of communication used by the server</p></dd><dt class="param">credentials</dt><dd class="cmt"><p>credentials (username and password)</p></dd><dt class="param">binary</dt><dd class="cmt"><p>specifies the file transfer mode, BINARY or ASCII. Default is ASCII (false)</p></dd><dt class="param">passiveMode</dt><dd class="cmt"><p>specifies whether to use passive mode connections. Default is active mode (false)</p></dd><dt class="param">proxy</dt><dd class="cmt"><p>An optional proxy to use when connecting with these settings</p></dd><dt class="param">secure</dt><dd class="cmt"><p>Use FTP over SSL</p></dd><dt class="param">dataTimeout</dt><dd class="cmt"><p>Sets the timeout to use when reading from the data connection.</p></dd><dt class="param">controlEncoding</dt><dd class="cmt"><p>character encoding to be used by the FTP control connection, auto-detects UTF-8 if None</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -490,9 +510,9 @@
       
       
     </li><li name="zio.ftp#stub" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="stub(path:zio.nio.core.file.Path):zio.Layer[Any,zio.ftp.package.StubFtp]"></a><a id="stub(Path):Layer[Any,StubFtp]"></a>
+      <a id="stub(path:zio.nio.file.Path):zio.Layer[Any,zio.ftp.package.StubFtp]"></a><a id="stub(Path):Layer[Any,StubFtp]"></a>
       <span class="permalink">
-      <a href="../../zio/ftp/index.html#stub(path:zio.nio.core.file.Path):zio.Layer[Any,zio.ftp.package.StubFtp]" title="Permalink">
+      <a href="../../zio/ftp/index.html#stub(path:zio.nio.file.Path):zio.Layer[Any,zio.ftp.package.StubFtp]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -501,7 +521,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">stub</span><span class="params">(<span name="path">path: <span class="extype" name="zio.nio.core.file.Path">Path</span></span>)</span><span class="result">: <a href="../index.html#Layer[+E,+ROut]=zio.ZLayer[Any,E,ROut]" class="extmbr" name="zio.Layer">Layer</a>[<span class="extype" name="scala.Any">Any</span>, <a href="#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a>]</span>
+        <span class="name">stub</span><span class="params">(<span name="path">path: <span class="extype" name="zio.nio.file.Path">Path</span></span>)</span><span class="result">: <a href="../index.html#Layer[+E,+ROut]=zio.ZLayer[Any,E,ROut]" class="extmbr" name="zio.Layer">Layer</a>[<span class="extype" name="scala.Any">Any</span>, <a href="#StubFtp=zio.Has[zio.ftp.FtpAccessors[Unit]]" class="extmbr" name="zio.ftp.StubFtp">StubFtp</a>]</span>
       </span>
       
       

@@ -27,7 +27,7 @@ addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 
-val zioVersion = "2.0.0-RC6"
+val zioVersion = "2.0.0"
 
 lazy val `zio-ftp` = project
   .in(file("."))
@@ -36,7 +36,7 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      "dev.zio"                 %% "zio-nio"                 % "2.0.0-RC7",
+      "dev.zio"                 %% "zio-nio"                 % "2.0.0",
       "com.hierynomus"           % "sshj"                    % "0.33.0",
       "commons-net"              % "commons-net"             % "3.8.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.7.0",

@@ -37,7 +37,7 @@ import scala.jdk.CollectionConverters._
  * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
  * since the underlying java client only provide blocking methods.
  */
-final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
+final private class SecureFtp(unsafeClient: Client, uploadOpenModes: List[OpenMode]) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
@@ -98,7 +98,7 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
 
   def upload[R <: Blocking](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
-      remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
+      remoteFile <- execute(_.open(path, util.EnumSet.copyOf(uploadOpenModes.asJavaCollection)))
 
       osManaged = ZManaged.fromAutoCloseable(Task(new remoteFile.RemoteFileOutputStream() {
 
@@ -135,7 +135,7 @@ object SecureFtp {
             setIdentity(_, credentials.username)(ssh)
           )
 
-        new SecureFtp(ssh.newSFTPClient())
+        new SecureFtp(ssh.newSFTPClient(), settings.uploadOpenModes)
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
     )(cli => { cli.execute(_.close()) *> effectBlocking(ssh.disconnect()).whenM(URIO(ssh.isConnected)) }.ignore)
   }

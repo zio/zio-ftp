@@ -16,9 +16,11 @@
 
 package zio.ftp
 
+import net.schmizz.sshj.sftp.OpenMode
+
 import java.net.Proxy
 import java.nio.file.Path
-import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
+import net.schmizz.sshj.{Config => SshConfig, DefaultConfig => DefaultSshConfig}
 import zio.duration.Duration
 
 /**
@@ -48,7 +50,8 @@ final case class SecureFtpSettings(
   strictHostKeyChecking: Boolean,
   knownHosts: Option[String],
   proxy: Option[Proxy],
-  sshConfig: SshConfig
+  sshConfig: SshConfig,
+  uploadOpenModes: List[OpenMode] = List(OpenMode.CREAT, OpenMode.WRITE)
 )
 
 object SecureFtpSettings {

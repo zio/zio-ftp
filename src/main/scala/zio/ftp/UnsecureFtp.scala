@@ -19,31 +19,32 @@ import java.io.IOException
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
-import zio.{ &, Scope, ZIO }
+import zio.{ &, IO, Scope, ZIO, durationInt }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 
 /**
  * Unsecure Ftp client wrapper
  *
- * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
- * since the underlying java client only provide blocking methods.
+ * All ftp methods exposed are lift into ZIO or ZStream
  */
-final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
+final private class UnsecureFtp(unsafeClient: Client, timeOut: zio.Duration) extends FtpAccessors[Client] {
+
+  val isCompleted: String => IO[IOException, Unit] = path =>
+    ZIO
+      .fail(
+        FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
+      )
+      .unlessZIO(execute(_.completePendingCommand()).timeout(timeOut).someOrElse(false))
+      .as(())
 
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte] = {
-    val terminate = ZIO
-      .fail(
-        FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
-      )
-      .unlessZIO(execute(_.completePendingCommand()))
-
     val inputStream =
       execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
 
-    ZStream.fromInputStreamZIO(inputStream, chunkSize) ++ ZStream.fromZIO(terminate) *> ZStream.empty
+    ZStream.fromInputStreamZIO(inputStream, chunkSize) ++ ZStream.fromZIO(isCompleted(path)) *> ZStream.empty
   }
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
@@ -85,7 +86,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .flatMap(is =>
         execute(_.storeFile(path, is))
           .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
-          .unit
+          .unit *> isCompleted(path)
       )
 
   override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
@@ -118,7 +119,7 @@ object UnsecureFtp {
 
         settings.dataTimeout.map(_.toMillis.toInt).foreach(ftpClient.setDataTimeout)
 
-        new UnsecureFtp(ftpClient) -> success
+        new UnsecureFtp(ftpClient, settings.dataTimeout.getOrElse(1.minutes)) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)

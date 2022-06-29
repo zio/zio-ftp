@@ -1,6 +1,7 @@
 package zio.ftp
 
 import org.apache.commons.net.ftp.FTPClient
+import zio.durationInt
 import zio.test.Assertion._
 import zio.test._
 
@@ -19,7 +20,7 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
       override def completePendingCommand(): Boolean = success
     }
 
-    new UnsecureFtp(client)
+    new UnsecureFtp(client, 5.seconds)
   }
 
   private def hasIncompleteMsg(a: Assertion[String]) =

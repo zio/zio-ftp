@@ -33,8 +33,7 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
 /**
  * Secure Ftp client wrapper
  *
- * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
- * since the underlying java client only provide blocking methods.
+ * All ftp methods exposed are lift into ZIO or ZStream.
  */
 final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 

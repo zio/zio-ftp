@@ -26,7 +26,7 @@ inThisBuild(
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-val zioVersion = "1.0.14"
+val zioVersion = "1.0.15"
 
 lazy val `zio-ftp` = project
   .in(file("."))

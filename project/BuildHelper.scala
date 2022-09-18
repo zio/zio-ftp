@@ -13,7 +13,7 @@ object BuildHelper {
     )
 
   final private val Scala211 = "2.11.12"
-  final private val Scala212 = "2.12.16"
+  final private val Scala212 = "2.12.17"
   final private val Scala213 = "2.13.8"
 
   final private val stdOptions = Seq(

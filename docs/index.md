@@ -11,7 +11,7 @@ Setup
 Support Scala 2.11 / 2.12 / 2.13
 
 ```
-libraryDependencies += "dev.zio" %% "zio-ftp" % "<version>"
+libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 ```
 
 

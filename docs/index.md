@@ -1,7 +1,9 @@
 ---
-id: quickstart_index
-title: "Quick Start"
+id: index
+title: "ZIO FTP"
 ---
+
+ZIO FTP is a thin wrapper over (s)Ftp client for ZIO.
 
 Setup
 ---

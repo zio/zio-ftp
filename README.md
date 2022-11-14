@@ -11,7 +11,7 @@ Setup
 -----
 
 The library is a thin wrapper over (s)ftp java client, which give you a clean and powerful functional api.
-Please find more details in the [website](https://zio.github.io/zio-ftp/).
+Please find more details in the [website](https://zio.dev/zio-ftp/).
 
 [Badge-Circle]: https://github.com/zio/zio-ftp/actions/workflows/ci.yml/badge.svg "githubactions"
 [Link-Circle]: ttps://github.com/regis-leray/fs2-ftp/actions?query=branch%3Amaster "circleci"

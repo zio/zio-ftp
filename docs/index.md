@@ -1,7 +1,9 @@
 ---
-id: quickstart_index
-title: "Quick Start"
+id: index
+title: "ZIO FTP"
 ---
+
+ZIO FTP is a thin wrapper over (s)Ftp client for ZIO.
 
 Setup
 ---
@@ -9,7 +11,7 @@ Setup
 Support Scala 2.11 / 2.12 / 2.13
 
 ```
-libraryDependencies += "dev.zio" %% "zio-ftp" % "<version>"
+libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 ```
 
 

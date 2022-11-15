@@ -7,7 +7,7 @@ env:
 on:
   pull_request:
   push:
-    branches: ['master']
+    branches: ['series/2.x']
   release:
     types:
       - published
@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -33,13 +33,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v13
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt docs/docusaurusCreateSite
+        run: ./sbt docs/compileDocs
 
   test:
     runs-on: ubuntu-20.04
@@ -48,10 +48,10 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8']
-        scala: ['2.11.12', '2.12.15', '2.13.8']
+        scala: ['2.11.12', '2.12.16', '2.13.8']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -81,7 +81,7 @@ jobs:
         java: ['11', '17']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -112,7 +112,7 @@ jobs:
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v3.1.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java

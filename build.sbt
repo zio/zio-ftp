@@ -3,7 +3,7 @@ import BuildHelper._
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage := Some(url("https://zio.github.io/zio-ftp/")),
+    homepage := Some(url("https://zio.dev/zio-ftp/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
@@ -37,9 +37,9 @@ lazy val `zio-ftp` = project
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
       "dev.zio"                 %% "zio-nio"                 % "2.0.0",
-      "com.hierynomus"           % "sshj"                    % "0.33.0",
+      "com.hierynomus"           % "sshj"                    % "0.34.0",
       "commons-net"              % "commons-net"             % "3.8.0",
-      "org.scala-lang.modules"  %% "scala-collection-compat" % "2.7.0",
+      "org.scala-lang.modules"  %% "scala-collection-compat" % "2.8.1",
       "org.apache.logging.log4j" % "log4j-api"               % "2.13.1"   % Test,
       "org.apache.logging.log4j" % "log4j-core"              % "2.13.1"   % Test,
       "org.apache.logging.log4j" % "log4j-slf4j-impl"        % "2.13.1"   % Test,
@@ -56,11 +56,9 @@ lazy val docs = project
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(`zio-ftp`),
-    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % zioVersion
+    )
   )
   .dependsOn(`zio-ftp`)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+  .enablePlugins(WebsitePlugin)

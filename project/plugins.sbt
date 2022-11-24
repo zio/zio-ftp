@@ -5,6 +5,6 @@ addSbtPlugin("ch.epfl.scala"  % "sbt-bloop"       % "1.5.0")
 addSbtPlugin("org.scalameta"  % "sbt-mdoc"        % "2.2.24")
 addSbtPlugin("com.eed3si9n"   % "sbt-unidoc"      % "0.4.3")
 addSbtPlugin("ch.epfl.scala"  % "sbt-scalafix"    % "0.9.29")
-addSbtPlugin("dev.zio"        % "zio-sbt-website" % "0.0.0+80-e5b408eb-SNAPSHOT")
+addSbtPlugin("dev.zio"        % "zio-sbt-website" % "0.0.0+86-4319f79f-SNAPSHOT")
 
 resolvers += Resolver.sonatypeRepo("public")

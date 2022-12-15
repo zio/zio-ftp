@@ -58,7 +58,15 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio" % zioVersion
-    )
+    ),
+    projectName := "ZIO FTP",
+    badgeInfo := Some(
+      BadgeInfo(
+        artifact = "zio-ftp_2.12",
+        projectStage = ProjectStage.ProductionReady
+      )
+    ),
+    docsPublishBranch := "series/2.x"
   )
   .dependsOn(`zio-ftp`)
   .enablePlugins(WebsitePlugin)

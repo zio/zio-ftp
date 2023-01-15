@@ -29,8 +29,11 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 
 val zioVersion = "2.0.0"
 
+lazy val root =
+  project.in(file(".")).settings(publish / skip := false).aggregate(`zio-ftp`, docs)
+
 lazy val `zio-ftp` = project
-  .in(file("."))
+  .in(file("zio-ftp"))
   .settings(stdSettings("zio-ftp"))
   .settings(
     libraryDependencies ++= Seq(
@@ -60,12 +63,9 @@ lazy val docs = project
       "dev.zio" %% "zio" % zioVersion
     ),
     projectName := "ZIO FTP",
-    badgeInfo := Some(
-      BadgeInfo(
-        artifact = "zio-ftp_2.12",
-        projectStage = ProjectStage.ProductionReady
-      )
-    ),
+    mainModuleName := (`zio-ftp` / moduleName).value,
+    projectStage := ProjectStage.ProductionReady,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(`zio-ftp`),
     docsPublishBranch := "series/2.x"
   )
   .dependsOn(`zio-ftp`)

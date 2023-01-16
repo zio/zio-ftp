@@ -18,7 +18,7 @@ object Load
 object SecureFtpSpec extends ZIOSpecDefault {
   val settings = SecureFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo"))
 
-  val home = Paths.get("ftp-home/sftp/home/foo")
+  val home = Paths.get("../ftp-home/sftp/home/foo")
 
   val sftp = Scope.default >+> secure(settings).mapError(TestFailure.die(_))
 

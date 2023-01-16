@@ -31,7 +31,7 @@ object UnsecureFtpSpec extends ZIOSpecDefault {
 }
 
 object FtpSuite {
-  val home = ZPath("../ftp-home/ftp/home")
+  val home = ZPath("ftp-home/ftp/home")
 
   def spec(labelSuite: String, settings: UnsecureFtpSettings) =
     suite(labelSuite)(

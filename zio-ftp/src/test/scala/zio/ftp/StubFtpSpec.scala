@@ -12,7 +12,7 @@ import zio.{ Chunk, Scope, ZIO }
 import scala.io.Source
 
 object StubFtpSpec extends ZIOSpecDefault {
-  val home = ZPath("../ftp-home/stub/home")
+  val home = ZPath("ftp-home/stub/home")
 
   val stubFtp = Scope.default >+> stub(home).mapError(TestFailure.fail)
 

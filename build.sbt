@@ -30,7 +30,7 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 val zioVersion = "2.0.0"
 
 lazy val root =
-  project.in(file(".")).settings(publish / skip := false).aggregate(`zio-ftp`)
+  project.in(file(".")).settings(publish / skip := false).aggregate(`zio-ftp`, docs)
 
 lazy val `zio-ftp` = project
   .in(file("zio-ftp"))

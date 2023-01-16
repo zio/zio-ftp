@@ -62,9 +62,9 @@ jobs:
         uses: coursier/cache-action@v6
       - name: Start containers
         run: |
-            chmod -R 777 ./zio-ftp/ftp-home/
+            chmod -R 777 ./ftp-home/
             docker-compose -f "docker-compose.yml" up -d --build
-            chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
+            chmod -R 777 ./ftp-home/sftp/home/foo/dir1
       - name: Test 2.x
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: ./sbt ++${{ matrix.scala }}! test
@@ -92,9 +92,9 @@ jobs:
         uses: coursier/cache-action@v6
       - name: Start containers
         run: |
-          chmod -R 777 ./zio-ftp/ftp-home/
+          chmod -R 777 ./ftp-home/
           docker-compose -f "docker-compose.yml" up -d --build
-          chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
+          chmod -R 777 ./ftp-home/sftp/home/foo/dir1
       - name: Test
         run: ./sbt test
 

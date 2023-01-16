@@ -58,6 +58,7 @@ lazy val docs = project
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
     test / aggregate := false,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala212, Scala213),

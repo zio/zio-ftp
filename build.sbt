@@ -55,7 +55,6 @@ lazy val `zio-ftp` = project
 lazy val docs = project
   .in(file("zio-ftp-docs"))
   .settings(
-    publish / skip := true,
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",

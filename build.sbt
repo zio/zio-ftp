@@ -54,13 +54,13 @@ lazy val `zio-ftp` = project
 
 lazy val docs = project
   .in(file("zio-ftp-docs"))
+  .settings(stdSettings("zio-ftp-docs"))
   .settings(
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion
-    ),
+    crossScalaVersions -= Scala211,
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
     projectName := "ZIO FTP",
     mainModuleName := (`zio-ftp` / moduleName).value,
     projectStage := ProjectStage.ProductionReady,

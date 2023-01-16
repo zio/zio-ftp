@@ -58,6 +58,7 @@ lazy val docs = project
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
+    test / aggregate := false,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala212, Scala213),
     projectName := "ZIO FTP",

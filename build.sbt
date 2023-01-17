@@ -59,6 +59,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
+    update / aggregate := false,
     test / aggregate := false,
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala212, Scala213),

@@ -1,7 +1,14 @@
 const sidebars = {
   sidebar: [
-    "index",
-    "environment"
+    {
+      type: "category",
+      label: "ZIO FTP",
+      collapsed: false,
+      link: { type: "doc", id: "index" },
+      items: [
+        "environment"
+      ]
+    }
   ]
 };
 

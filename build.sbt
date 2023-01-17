@@ -68,4 +68,5 @@ lazy val docs = project
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(`zio-ftp`),
     docsPublishBranch := "series/2.x"
   )
+  .dependsOn(`zio-ftp`)
   .enablePlugins(WebsitePlugin)

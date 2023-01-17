@@ -67,7 +67,7 @@ jobs:
             chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
       - name: Test 2.x
         if: ${{ !startsWith(matrix.scala, '3.') }}
-        run: ./sbt ++${{ matrix.scala }} test
+        run: ./sbt ++${{ matrix.scala }} zio-ftp/test
 #      - name: Test 3.x
 #        if: ${{ startsWith(matrix.scala, '3.') }}
 #        run: ./sbt ++${{ matrix.scala }}! testDotty

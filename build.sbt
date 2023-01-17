@@ -30,7 +30,7 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 val zioVersion = "2.0.0"
 
 lazy val root =
-  project.in(file(".")).settings(publish / skip := false).aggregate(`zio-ftp`)
+  project.in(file(".")).settings(publish / skip := true).aggregate(`zio-ftp`, docs)
 
 lazy val `zio-ftp` = project
   .in(file("zio-ftp"))
@@ -58,7 +58,7 @@ lazy val docs = project
     moduleName := "zio-ftp-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    test / aggregate := false,
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
     scalaVersion := Scala213,
     crossScalaVersions := Seq(Scala212, Scala213),
     projectName := "ZIO FTP",

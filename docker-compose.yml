@@ -5,7 +5,7 @@ services:
     ports:
       - "2222:22"
     volumes:
-      - ./ftp-home/sftp/home/foo:/home/foo
+      - ./zio-ftp/ftp-home/sftp/home/foo:/home/foo
     command: foo:foo:1001:1002
 
   sftp-sshkey:
@@ -13,7 +13,7 @@ services:
     ports:
       - "3333:22"
     volumes:
-      - ./src/test/resources/ssh_host_rsa_key.pub:/home/fooz/.ssh/keys/id_rsa.pub:ro
+      - ./zio-ftp/src/test/resources/ssh_host_rsa_key.pub:/home/fooz/.ssh/keys/id_rsa.pub:ro
     command: fooz::1001
 
   ftp:
@@ -22,8 +22,8 @@ services:
       - "2121:21"
       - "30000-30009:30000-30009"
     volumes:
-      - ./ftp-home/ftp/home:/home/username/
-      - ./ftp-home/ftp/ssl:/etc/ssl/private/
+      - ./zio-ftp/ftp-home/ftp/home:/home/username/
+      - ./zio-ftp/ftp-home/ftp/ssl:/etc/ssl/private/
     environment:
       PUBLICHOST: "localhost"
       FTP_USER_NAME: username

@@ -39,7 +39,7 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      "dev.zio"                 %% "zio-nio"                 % "2.0.0",
+      ("dev.zio"                %% "zio-nio"                 % zioVersion).exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
       "com.hierynomus"           % "sshj"                    % "0.35.0",
       "commons-net"              % "commons-net"             % "3.8.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.8.1",
@@ -60,7 +60,7 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
     scalaVersion := Scala213,
-    crossScalaVersions := Seq(Scala212, Scala213),
+    crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     projectName := "ZIO FTP",
     mainModuleName := (`zio-ftp` / moduleName).value,
     projectStage := ProjectStage.ProductionReady,

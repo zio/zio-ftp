@@ -12,10 +12,10 @@ object BuildHelper {
       incOptions ~= (_.withLogRecompileOnMacro(false))
     )
 
-  final val Scala211 = "2.11.12"
-  final val Scala212 = "2.12.16"
-  final val Scala213 = "2.13.8"
-  final val Scala3: String   = "3.2.2"
+  final val Scala211       = "2.11.12"
+  final val Scala212       = "2.12.16"
+  final val Scala213       = "2.13.8"
+  final val Scala3: String = "3.2.2"
 
   final private val stdOptions = Seq(
     "-deprecation",
@@ -35,12 +35,12 @@ object BuildHelper {
     "-Xsource:2.13",
     "-Ywarn-dead-code",
     "-Ywarn-numeric-widen",
-    "-Ywarn-value-discard",
+    "-Ywarn-value-discard"
   )
 
   private def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((3, 2)) =>
+      case Some((3, 2))  =>
         Seq.empty
       case Some((2, 13)) =>
         Seq(

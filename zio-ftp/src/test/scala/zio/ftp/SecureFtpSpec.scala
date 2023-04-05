@@ -120,7 +120,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
                        .via(utf8Decode)
                        .runCollect
         } yield assertTrue(
-          content.mkString ==
+          content.mkString("") ==
             """|Hello world !!!
                |this is a beautiful day""".stripMargin
         )

@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v14
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout current branch
         uses: actions/checkout@v3.3.0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v14
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
@@ -48,14 +48,14 @@ jobs:
       fail-fast: false
       matrix:
         java: ['adopt@1.8']
-        scala: ['2.11.12', '2.12.16', '2.13.8']
+        scala: ['2.11.12', '2.12.16', '2.13.8', '3.2.2']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v14
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
@@ -65,12 +65,8 @@ jobs:
             chmod -R 777 ./zio-ftp/ftp-home/
             docker-compose -f "docker-compose.yml" up -d --build
             chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
-      - name: Test 2.x
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+      - name: Test
         run: ./sbt ++${{ matrix.scala }} zio-ftp/test
-#      - name: Test 3.x
-#        if: ${{ startsWith(matrix.scala, '3.') }}
-#        run: ./sbt ++${{ matrix.scala }}! testDotty
 
   testJvms:
     runs-on: ubuntu-20.04
@@ -85,7 +81,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v14
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
@@ -116,7 +112,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v13
+        uses: olafurpg/setup-scala@v14
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Release artifacts

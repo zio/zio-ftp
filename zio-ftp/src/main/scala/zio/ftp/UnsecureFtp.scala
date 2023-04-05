@@ -19,7 +19,7 @@ import java.io.IOException
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
-import zio.{ &, Scope, ZIO }
+import zio.{ Scope, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 
 /**
@@ -79,7 +79,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
           ZStream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R & Scope, IOException, Unit] =
+  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R with Scope, IOException, Unit] =
     source.toInputStream
       .mapError(new IOException(_))
       .flatMap(is =>

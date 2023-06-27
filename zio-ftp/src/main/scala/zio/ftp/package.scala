@@ -63,6 +63,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[Ftp, Exception, Unit] =
+      ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
   object SFtp {
@@ -99,6 +102,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[SFtp, Exception, Unit] =
+      ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
   object StubFtp {
@@ -135,6 +141,9 @@ package object ftp {
 
     def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize))
+
+    def rename(oldPath: String, newPath: String): ZIO[StubFtp, Exception, Unit] =
+      ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
   def unsecure(settings: UnsecureFtpSettings): ZLayer[Scope, ConnectionError, Ftp] =

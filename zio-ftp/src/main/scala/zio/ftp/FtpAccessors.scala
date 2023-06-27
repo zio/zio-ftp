@@ -75,4 +75,12 @@ trait FtpAccessors[+A] {
    */
   def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R with Scope, IOException, Unit]
 
+  /**
+   * Renames a file/directory. If the operation failed, an error will be emitted
+   *
+   * @param oldPath absolute path of the file/directory to rename
+   * @param newPath absolute path of the file/directory destination.
+   */
+  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit]
+
 }

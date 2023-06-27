@@ -181,6 +181,23 @@ object FtpSuite {
           failure <- upload("/dont-exist/hello-world.txt", data).flip.map(_.getMessage)
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       },
+      test("rename valid path") {
+        val oldPath = home / "to-rename.txt"
+        val newPath = home / "to-rename-destination.txt"
+
+        (for {
+          _       <- Files.createFile(oldPath)
+          success <- rename("/to-rename.txt", "/to-rename-destination.txt").as(true)
+
+          oldFileExists <- Files.exists(oldPath)
+          newFileExists <- Files.exists(newPath)
+        } yield assertTrue(success && !oldFileExists && newFileExists)) <* Files.delete(newPath)
+      },
+      test("rename fail when invalid path") {
+        for {
+          invalid <- rename("/dont-exist", "/dont-exist-destination").flip.map(_.getMessage)
+        } yield assertTrue(invalid == "Path is invalid. Cannot rename /dont-exist to /dont-exist-destination")
+      },
       test("call noOp underlying client") {
         for {
           noOp <- execute(_.sendNoOp())

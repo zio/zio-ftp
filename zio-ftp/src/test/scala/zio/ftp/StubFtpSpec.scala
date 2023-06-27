@@ -137,6 +137,23 @@ object StubFtpSpec extends ZIOSpecDefault {
           failure <- upload("/dont-exist/hello-world.txt", data).flip.map(_.getMessage)
 
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
+      },
+      test("rename a file") {
+        val oldPath = home / "to-rename.txt"
+        val newPath = home / "to-rename-destination.txt"
+
+        (for {
+          _       <- Files.createFile(oldPath)
+          success <- rename("/to-rename.txt", "/to-rename-destination.txt").as(true)
+
+          oldFileExists <- Files.exists(oldPath)
+          newFileExists <- Files.exists(newPath)
+        } yield assertTrue(success && !oldFileExists && newFileExists)) <* Files.delete(newPath)
+      },
+      test("rename a file fails when old path doesn't exist") {
+        for {
+          failure <- rename("/dont-exist.txt", "/dont-exist-destination.txt").flip.map(_.getMessage)
+        } yield assertTrue(failure == "Path is invalid. Cannot rename /dont-exist.txt to /dont-exist-destination.txt")
       }
     ).provideCustomLayerShared(stubFtp)
 }

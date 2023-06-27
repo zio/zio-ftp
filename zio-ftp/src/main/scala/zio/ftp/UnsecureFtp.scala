@@ -88,6 +88,11 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
           .unit
       )
 
+  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
+    execute(_.rename(oldPath, newPath))
+      .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot rename $oldPath to $newPath"))
+      .unit
+
   override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
     attemptBlockingIO(f(unsafeClient))
 }

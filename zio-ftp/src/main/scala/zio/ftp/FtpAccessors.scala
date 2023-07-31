@@ -1,7 +1,7 @@
 package zio.ftp
 
 import java.io.IOException
-import zio.{ Scope, ZIO }
+import zio.ZIO
 import zio.stream.ZStream
 
 trait FtpAccessors[+A] {

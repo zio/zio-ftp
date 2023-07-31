@@ -73,6 +73,6 @@ trait FtpAccessors[+A] {
    * @param source data stream to store
    * @tparam R environment of the specified stream source, required to extend Blocking
    */
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R with Scope, IOException, Unit]
+  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit]
 
 }

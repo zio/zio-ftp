@@ -137,11 +137,11 @@ package object ftp {
       ZStream.serviceWithStream(_.readFile(path, chunkSize))
   }
 
-  def unsecure(settings: UnsecureFtpSettings): ZLayer[Scope, ConnectionError, Ftp] =
-    ZLayer.fromZIO(UnsecureFtp.connect(settings))
+  def unsecure(settings: UnsecureFtpSettings): ZLayer[Any, ConnectionError, Ftp] =
+    ZLayer.scoped(UnsecureFtp.connect(settings))
 
-  def secure(settings: SecureFtpSettings): ZLayer[Scope, ConnectionError, SFtp] =
-    ZLayer.fromZIO(SecureFtp.connect(settings))
+  def secure(settings: SecureFtpSettings): ZLayer[Any, ConnectionError, SFtp] =
+    ZLayer.scoped(SecureFtp.connect(settings))
 
   def stub(path: ZPath): Layer[Any, StubFtp] =
     ZLayer.succeed(TestFtp.create(path))

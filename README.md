@@ -94,7 +94,7 @@ object ZIOFTPExample extends ZIOAppDefault {
                     .via(ZPipeline.utf8Decode)
                     .runCollect
       _        <- Console.printLine(s"Content of $path file:")
-      _        <- Console.printLine(file.fold("")(_ + _))
+      _        <- Console.printLine(file.mkString)
     } yield ()
 
   override def run = myApp.provideSomeLayer(unsecure(settings))

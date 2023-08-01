@@ -23,7 +23,7 @@ import java.nio.file.attribute.PosixFilePermission
 import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
-import zio.{ Cause, Scope, ZIO }
+import zio.{ Cause, ZIO }
 
 object TestFtp {
 
@@ -98,18 +98,20 @@ object TestFtp {
       override def upload[R](
         path: String,
         source: ZStream[R, Throwable, Byte]
-      ): ZIO[R with Scope, IOException, Unit] = {
+      ): ZIO[R, IOException, Unit] = {
         val file = (root / ZPath(path).elements.mkString("/")).toFile
 
-        ZIO
-          .fromAutoCloseable(ZIO.attempt(new FileOutputStream(file)))
-          .flatMap { out =>
-            source
-              .run(ZSink.fromOutputStream(out))
-              .unit
-          }
-          .refineToOrDie[IOException]
-          .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot upload data to : $path", err)))
+        ZIO.scoped[R] {
+          ZIO
+            .fromAutoCloseable(ZIO.attempt(new FileOutputStream(file)))
+            .flatMap { out =>
+              source
+                .run(ZSink.fromOutputStream(out))
+                .unit
+            }
+            .refineToOrDie[IOException]
+            .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot upload data to : $path", err)))
+        }
       }
     }
 }

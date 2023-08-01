@@ -55,7 +55,7 @@ package object ftp {
     def upload[R](
       path: String,
       source: ZStream[R, Throwable, Byte]
-    ): ZIO[R & Scope with Ftp, IOException, Unit] =
+    ): ZIO[R with Ftp, IOException, Unit] =
       for {
         ftp <- ZIO.service[Ftp]
         _   <- ftp.upload(path, source)
@@ -91,7 +91,7 @@ package object ftp {
     def upload[R](
       path: String,
       source: ZStream[R, Throwable, Byte]
-    ): ZIO[SFtp with R with Scope, IOException, Unit] =
+    ): ZIO[SFtp with R, IOException, Unit] =
       for {
         ftp <- ZIO.service[SFtp]
         _   <- ftp.upload(path, source)
@@ -127,7 +127,7 @@ package object ftp {
     def upload[R](
       path: String,
       source: ZStream[R, Throwable, Byte]
-    ): ZIO[StubFtp with R with Scope, IOException, Unit] =
+    ): ZIO[StubFtp with R, IOException, Unit] =
       for {
         ftp <- ZIO.service[StubFtp]
         _   <- ftp.upload(path, source)

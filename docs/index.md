@@ -77,7 +77,7 @@ object ZIOFTPExample extends ZIOAppDefault {
   private val settings =
     UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("one", "1234"))
 
-  private val myApp: ZIO[Scope with Ftp, IOException, Unit] =
+  private val myApp: ZIO[Ftp, IOException, Unit] =
     for {
       _        <- Console.printLine("List of files at root directory:")
       resource <- ls("/").runCollect

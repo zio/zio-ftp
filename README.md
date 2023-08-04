@@ -13,7 +13,7 @@
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.0" 
+libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.1" 
 ```
 
 ## How to use it?
@@ -78,7 +78,7 @@ object ZIOFTPExample extends ZIOAppDefault {
   private val settings =
     UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("one", "1234"))
 
-  private val myApp: ZIO[Scope with Ftp, IOException, Unit] =
+  private val myApp: ZIO[Ftp, IOException, Unit] =
     for {
       _        <- Console.printLine("List of files at root directory:")
       resource <- ls("/").runCollect
@@ -94,7 +94,7 @@ object ZIOFTPExample extends ZIOAppDefault {
                     .via(ZPipeline.utf8Decode)
                     .runCollect
       _        <- Console.printLine(s"Content of $path file:")
-      _        <- Console.printLine(file.fold("")(_ + _))
+      _        <- Console.printLine(file.mkString)
     } yield ()
 
   override def run = myApp.provideSomeLayer(unsecure(settings))

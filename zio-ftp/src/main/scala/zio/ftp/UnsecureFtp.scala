@@ -79,14 +79,16 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
           ZStream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R with Scope, IOException, Unit] =
-    source.toInputStream
-      .mapError(new IOException(_))
-      .flatMap(is =>
-        execute(_.storeFile(path, is))
-          .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
-          .unit
-      )
+  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+    ZIO.scoped[R] {
+      source.toInputStream
+        .mapError(new IOException(_))
+        .flatMap(is =>
+          execute(_.storeFile(path, is))
+            .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
+            .unit
+        )
+    }
 
   override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
     attemptBlockingIO(f(unsafeClient))

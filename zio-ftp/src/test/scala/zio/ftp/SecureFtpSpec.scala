@@ -1,9 +1,6 @@
 package zio.ftp
 
 import zio.ZIO.{ acquireRelease, attempt, attemptBlockingIO }
-
-import java.net.{ InetSocketAddress, Proxy }
-import java.nio.file.{ Files, Paths }
 import zio._
 import zio.ftp.SFtp._
 import zio.stream.ZPipeline.utf8Decode
@@ -11,6 +8,8 @@ import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
 
+import java.net.{ InetSocketAddress, Proxy }
+import java.nio.file.{ Files, Paths }
 import scala.io.Source
 
 object Load
@@ -197,6 +196,24 @@ object SecureFtpSpec extends ZIOSpecDefault {
         for {
           version <- execute(_.version())
         } yield assert(version.toString)(isNonEmptyString)
+      },
+      test("rename valid path") {
+        val oldPath = home.resolve("dir1/to-rename.txt")
+        val newPath = home.resolve("dir1/to-rename-destination.txt")
+        Files.createFile(oldPath)
+
+        (
+          for {
+            success       <- rename("/dir1/to-rename.txt", "/dir1/to-rename-destination.txt").as(true)
+            oldFileExists <- attempt(Files.exists(oldPath))
+            newFileExists <- attempt(Files.exists(newPath))
+          } yield assertTrue(success && !oldFileExists && newFileExists)
+        ) <* attempt(Files.delete(newPath))
+      },
+      test("rename fail when invalid path") {
+        for {
+          invalid <- rename("/dont-exist", "dont-exist-destination").flip.map(_.getMessage)
+        } yield assertTrue(invalid == "No such file")
       }
     ).provideCustomLayerShared(sftp)
 }

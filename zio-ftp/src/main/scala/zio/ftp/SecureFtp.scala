@@ -78,6 +78,9 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromResource)
 
+  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
+    execute(_.rename(oldPath, newPath))
+
   def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(

@@ -19,7 +19,7 @@ import java.io.IOException
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
-import zio.{ Scope, ZIO }
+import zio.{ Scope, URIO, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 
 /**
@@ -101,6 +101,11 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 
 object UnsecureFtp {
   type Client = JFTPClient
+
+  def apply(unsafeClient: Client): URIO[Scope, FtpAccessors[Client]] =
+    acquireRelease(ZIO.succeed(new UnsecureFtp(unsafeClient))) { client =>
+      client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore
+    }
 
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(

@@ -16,18 +16,15 @@ import scala.io.Source
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
   val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
 
-  val ftp = Scope.default >+> unsecure(settings).mapError(TestFailure.die(_))
-
   override def spec =
-    FtpSuite.spec("UnsecureSslFtpSpec", settings).provideCustomLayer(ftp) @@ sequential
+    FtpSuite.spec("UnsecureSslFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
 }
 
 object UnsecureFtpSpec extends ZIOSpecDefault {
   val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
-  val ftp      = Scope.default >+> unsecure(settings).mapError(TestFailure.die(_))
 
   override def spec =
-    FtpSuite.spec("UnsecureFtpSpec", settings).provideCustomLayer(ftp) @@ sequential
+    FtpSuite.spec("UnsecureFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
 }
 
 object FtpSuite {

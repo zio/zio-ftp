@@ -155,5 +155,5 @@ object StubFtpSpec extends ZIOSpecDefault {
           failure <- rename("/dont-exist.txt", "/dont-exist-destination.txt").flip.map(_.getMessage)
         } yield assertTrue(failure == "Path is invalid. Cannot rename /dont-exist.txt to /dont-exist-destination.txt")
       }
-    ).provideCustomLayerShared(stubFtp)
+    ).provideLayerShared(stubFtp)
 }

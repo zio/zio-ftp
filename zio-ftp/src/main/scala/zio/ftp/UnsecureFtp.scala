@@ -105,7 +105,12 @@ object UnsecureFtp {
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(
       attemptBlockingIO {
-        val ftpClient = if (settings.secure) new JFTPSClient() else new JFTPClient()
+        val ftpClient =  settings.sslParams.fold(new JFTPClient()){ ssl =>
+          val c = new JFTPSClient(ssl.isImplicit)
+          c.execPBSZ(ssl.pbzs)
+          c.execPROT(ssl.prot.s)
+          c
+        }
 
         settings.controlEncoding match {
           case Some(enc) => ftpClient.setControlEncoding(enc)

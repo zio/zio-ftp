@@ -19,9 +19,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
 
   val home = Paths.get("ftp-home/sftp/home/foo")
 
-  val sftp = Scope.default >+> secure(settings).mapError(TestFailure.die(_))
-
-  override def spec =
+  override def spec: Spec[TestEnvironment & Scope, Any] =
     suite("SecureFtpSpec")(
       test("invalid credentials")(
         for {
@@ -215,5 +213,5 @@ object SecureFtpSpec extends ZIOSpecDefault {
           invalid <- rename("/dont-exist", "dont-exist-destination").flip.map(_.getMessage)
         } yield assertTrue(invalid == "No such file")
       }
-    ).provideCustomLayerShared(sftp)
+    ).provideSomeLayerShared[Scope](secure(settings))
 }

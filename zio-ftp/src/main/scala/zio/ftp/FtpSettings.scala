@@ -124,6 +124,31 @@ object KeyFileSftpIdentity {
     KeyFileSftpIdentity(privateKey, None)
 }
 
+sealed abstract class ProtectionLevel(val s: String)
+
+object ProtectionLevel {
+  case object Clear        extends ProtectionLevel("C")
+  case object Private      extends ProtectionLevel("P")
+  //S - Safe(SSL protocol only)
+  case object Safe         extends ProtectionLevel("S")
+  //E - Confidential(SSL protocol only)
+  case object Confidential extends ProtectionLevel("E")
+}
+
+/**
+ * @param isImplicit // security mode (Implicit/Explicit)
+ * @param pbzs // Protection Buffer SiZe default value 0
+ * @param prot // data channel PROTection level default value C
+ *
+ * More informations regarding these settings
+ * https://enterprisedt.com/products/edtftpjssl/doc/manual/html/ftpscommands.html
+ */
+final case class SslParams(isImplicit: Boolean, pbzs: Long, prot: ProtectionLevel)
+
+object SslParams {
+  val default: SslParams = SslParams(false, 0L, ProtectionLevel.Clear)
+}
+
 /**
  * Settings to connect unsecure Ftp server
  *
@@ -144,7 +169,7 @@ final case class UnsecureFtpSettings(
   binary: Boolean,
   passiveMode: Boolean,
   proxy: Option[Proxy],
-  secure: Boolean,
+  sslParams: Option[SslParams] = None,
   dataTimeout: Option[Duration] = None,
   controlEncoding: Option[String] = None
 )
@@ -152,8 +177,8 @@ final case class UnsecureFtpSettings(
 object UnsecureFtpSettings {
 
   def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-    new UnsecureFtpSettings(host, port, creds, true, true, None, false)
+    new UnsecureFtpSettings(host, port, creds, true, true, None, None)
 
   def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-    new UnsecureFtpSettings(host, port, creds, true, true, None, true)
+    new UnsecureFtpSettings(host, port, creds, true, true, None, Some(SslParams.default))
 }

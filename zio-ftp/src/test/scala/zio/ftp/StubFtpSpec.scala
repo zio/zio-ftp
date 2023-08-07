@@ -7,14 +7,12 @@ import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-import zio.{ Chunk, Scope, ZIO }
+import zio.{ Chunk, Scope }
 
 import scala.io.Source
 
 object StubFtpSpec extends ZIOSpecDefault {
   val home = ZPath("ftp-home/stub/home")
-
-  val stubFtp = Scope.default >+> stub(home).mapError(TestFailure.fail)
 
   override def spec =
     suite("StubFtpSpec")(
@@ -124,10 +122,9 @@ object StubFtpSpec extends ZIOSpecDefault {
         (for {
           _      <- upload("/hello-world.txt", data)
           result <-
-            ZIO.scoped(
-              acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
-                .map(_.mkString)
-            )
+            acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
+              .map(_.mkString)
+
         } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
       },
       test("upload fail when path is invalid") {
@@ -155,5 +152,5 @@ object StubFtpSpec extends ZIOSpecDefault {
           failure <- rename("/dont-exist.txt", "/dont-exist-destination.txt").flip.map(_.getMessage)
         } yield assertTrue(failure == "Path is invalid. Cannot rename /dont-exist.txt to /dont-exist-destination.txt")
       }
-    ).provideCustomLayerShared(stubFtp)
+    ).provideSomeLayerShared[Scope](stub(home))
 }

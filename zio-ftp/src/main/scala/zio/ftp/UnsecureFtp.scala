@@ -102,10 +102,13 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 object UnsecureFtp {
   type Client = JFTPClient
 
-  def apply(unsafeClient: Client): URIO[Scope, FtpAccessors[Client]] =
-    acquireRelease(ZIO.succeed(new UnsecureFtp(unsafeClient))) { client =>
-      client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore
-    }
+  def connect(unsafeClient: Client, credentials: FtpCredentials): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
+    acquireRelease(for{
+      client <- ZIO.succeed(new UnsecureFtp(unsafeClient))
+      _ <- client.execute(_.login(credentials.username, credentials.password))
+        .mapError(error => ConnectionError(error.getMessage, error))
+        .filterOrFail(identity)(ConnectionError("Cannot connect to the server"))
+    } yield client)(client => client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore)
 
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(

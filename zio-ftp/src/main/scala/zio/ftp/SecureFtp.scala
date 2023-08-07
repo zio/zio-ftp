@@ -116,12 +116,12 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
 object SecureFtp {
   type Client = SFTPClient
 
-  def apply(unsafeClient: Client): URIO[Scope, FtpAccessors[Client]] =
-    acquireRelease(ZIO.succeed(new SecureFtp(unsafeClient)))(cli =>
-      cli
-        .execute(_.close())
-        .ignore
-    )
+  def connect(unsafeSsh: SSHClient): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
+    acquireRelease(
+      attemptBlockingIO(
+        new SecureFtp(unsafeSsh.newSFTPClient())
+      ).mapError(error => ConnectionError(error.getMessage, error))
+    )(_.execute(_.close()).ignore)
 
   def connect(settings: SecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] = {
     val ssh = new SSHClient(settings.sshConfig)

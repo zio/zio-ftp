@@ -105,11 +105,8 @@ object UnsecureFtp {
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(
       attemptBlockingIO {
-        val ftpClient =  settings.sslParams.fold(new JFTPClient()){ ssl =>
-          val c = new JFTPSClient(ssl.isImplicit)
-          c.execPBSZ(ssl.pbzs)
-          c.execPROT(ssl.prot.s)
-          c
+        val ftpClient = settings.sslParams.fold(new JFTPClient()) { ssl =>
+          new JFTPSClient(ssl.isImplicit)
         }
 
         settings.controlEncoding match {
@@ -128,7 +125,15 @@ object UnsecureFtp {
         if (settings.passiveMode)
           ftpClient.enterLocalPassiveMode()
 
-        settings.dataTimeout.map(_.toMillis.toInt).foreach(ftpClient.setDataTimeout)
+        //https://enterprisedt.com/products/edtftpjssl/doc/manual/html/ftpscommands.html
+        (ftpClient, settings.sslParams) match {
+          case (c: JFTPSClient, Some(ssl)) =>
+            c.execPBSZ(ssl.pbzs)
+            c.execPROT(ssl.prot.s)
+          case _                           => ()
+        }
+
+        settings.dataTimeout.foreach(ftpClient.setDataTimeout)
 
         new UnsecureFtp(ftpClient) -> success
       }.mapError(e => ConnectionError(e.getMessage, e))

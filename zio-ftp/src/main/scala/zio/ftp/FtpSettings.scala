@@ -124,15 +124,18 @@ object KeyFileSftpIdentity {
     KeyFileSftpIdentity(privateKey, None)
 }
 
-
 sealed abstract class ProtectionLevel(val s: String)
-object ProtectionLevel{
-  final case object Clear extends ProtectionLevel("C")
-  final case object Private extends ProtectionLevel("P")
+
+object ProtectionLevel {
+  case object Clear        extends ProtectionLevel("C")
+  case object Private      extends ProtectionLevel("P")
+  //S - Safe(SSL protocol only)
+  case object Safe         extends ProtectionLevel("S")
+  //E - Confidential(SSL protocol only)
+  case object Confidential extends ProtectionLevel("E")
 }
 
 /**
- *
  * @param isImplicit // security mode (Implicit/Explicit)
  * @param pbzs // Protection Buffer SiZe default value 0
  * @param prot // data channel PROTection level default value C
@@ -142,7 +145,7 @@ object ProtectionLevel{
  */
 final case class SslParams(isImplicit: Boolean, pbzs: Long, prot: ProtectionLevel)
 
-object SslParams{
+object SslParams {
   val default: SslParams = SslParams(false, 0L, ProtectionLevel.Clear)
 }
 

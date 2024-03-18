@@ -25,8 +25,8 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 /**
  * Unsecure Ftp client wrapper
  *
- * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
- * since the underlying java client only provide blocking methods.
+ * All ftp methods exposed are lift into ZIO or ZStream
+ * The underlying java client only provide blocking methods.
  */
 final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
@@ -125,6 +125,9 @@ object UnsecureFtp {
         if (settings.passiveMode)
           ftpClient.enterLocalPassiveMode()
 
+        if (settings.remoteVerificationEnabled)
+          ftpClient.setRemoteVerificationEnabled(settings.remoteVerificationEnabled)
+
         //https://enterprisedt.com/products/edtftpjssl/doc/manual/html/ftpscommands.html
         (ftpClient, settings.sslParams) match {
           case (c: JFTPSClient, Some(ssl)) =>
@@ -140,4 +143,5 @@ object UnsecureFtp {
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
     )(client => client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore)
+
 }

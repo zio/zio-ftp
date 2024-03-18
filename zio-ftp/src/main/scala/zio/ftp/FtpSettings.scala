@@ -146,7 +146,7 @@ object ProtectionLevel {
 final case class SslParams(isImplicit: Boolean, pbzs: Long, prot: ProtectionLevel)
 
 object SslParams {
-  val default: SslParams = SslParams(false, 0L, ProtectionLevel.Clear)
+  val default: SslParams = SslParams(isImplicit = false, 0L, ProtectionLevel.Clear)
 }
 
 /**
@@ -168,6 +168,7 @@ final case class UnsecureFtpSettings(
   credentials: FtpCredentials,
   binary: Boolean,
   passiveMode: Boolean,
+  remoteVerificationEnabled: Boolean,
   proxy: Option[Proxy],
   sslParams: Option[SslParams] = None,
   dataTimeout: Option[Duration] = None,
@@ -177,8 +178,26 @@ final case class UnsecureFtpSettings(
 object UnsecureFtpSettings {
 
   def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-    new UnsecureFtpSettings(host, port, creds, true, true, None, None)
+    new UnsecureFtpSettings(
+      host,
+      port,
+      creds,
+      binary = true,
+      passiveMode = true,
+      remoteVerificationEnabled = true,
+      None,
+      None
+    )
 
   def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
-    new UnsecureFtpSettings(host, port, creds, true, true, None, Some(SslParams.default))
+    new UnsecureFtpSettings(
+      host,
+      port,
+      creds,
+      binary = true,
+      passiveMode = true,
+      remoteVerificationEnabled = true,
+      None,
+      Some(SslParams.default)
+    )
 }

@@ -138,10 +138,8 @@ object SecureFtp {
 
         new SecureFtp(ssh.newSFTPClient())
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
-    )(cli =>
-      cli
-        .execute(_.close())
-        .ignore
+    )(
+      _.execute(_.close()).ignore
         .flatMap(_ => attemptBlockingIO(ssh.disconnect()).whenZIO(ZIO.attempt(ssh.isConnected)).ignore)
     )
   }

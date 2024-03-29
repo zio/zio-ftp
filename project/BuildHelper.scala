@@ -14,7 +14,7 @@ object BuildHelper {
 
   final val Scala212 = "2.12.18"
   final val Scala213 = "2.13.13"
-  final val Scala3   = "3.3.3" // LTS
+  final val Scala3   = "3.4.1" // LTS
 
   final private val stdOptions = Seq(
     "-deprecation",

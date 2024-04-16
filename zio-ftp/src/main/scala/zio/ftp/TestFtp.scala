@@ -42,7 +42,7 @@ object TestFtp {
           .refineToOrDie[IOException]
       }
 
-      override def readFile(path: String, chunkSize: Int): ZStream[Any, IOException, Byte] =
+      override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
         ZStream
           .fromZIO(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
           .catchAll {
@@ -50,6 +50,7 @@ object TestFtp {
             case err                    => ZStream.fail(err)
           }
           .flatMap(ZStream.fromChunk(_))
+          .drop(fileOffset.toInt)
 
       override def rm(path: String): ZIO[Any, IOException, Unit] =
         Files

@@ -27,8 +27,9 @@ trait FtpAccessors[+A] {
    *
    * @param path absolute path of a file
    * @param chunkSize default chunk size is 2048 bytes
+   * @param fileOffset optional initial offset in bytes
    */
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte]
+  def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Any, IOException, Byte]
 
   /**
    * Delete a file on a server. If the operation failed, an error will be emitted

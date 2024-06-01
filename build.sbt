@@ -41,7 +41,7 @@ lazy val `zio-ftp` = project
       "dev.zio"                 %% "zio-streams"             % zioVersion,
       ("dev.zio"                %% "zio-nio"                 % "2.0.2").exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
       "com.hierynomus"           % "sshj"                    % "0.38.0",
-      "commons-net"              % "commons-net"             % "3.10.0",
+      "commons-net"              % "commons-net"             % "3.11.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.11.0",
       "org.apache.logging.log4j" % "log4j-api"               % "2.22.1"   % Test,
       "org.apache.logging.log4j" % "log4j-core"              % "2.22.1"   % Test,

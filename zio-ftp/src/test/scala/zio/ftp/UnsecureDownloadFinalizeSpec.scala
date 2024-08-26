@@ -9,7 +9,7 @@ import scala.util.Random
 
 object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
 
-  private def createFtpclient(success: Boolean) = {
+  private def createFtpclient(success: => Boolean) = {
     val client = new FTPClient {
       override def retrieveFileStream(remote: String): InputStream = {
         val it = Random.alphanumeric.take(5000).map(_.toByte).iterator
@@ -25,13 +25,18 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
   private def hasIncompleteMsg(a: Assertion[String]) =
     hasField("file transfer incomplete message", (e: FileTransferIncompleteError) => e.message, a)
 
+  val FileSize = 5000
   override def spec =
     suite("Download finalizer")(
       test("complete pending command gets called") {
-        val ftpClient = createFtpclient(true)
+        var completePendingCommandWasCalled = false
+        val ftpClient = createFtpclient {
+          completePendingCommandWasCalled = true
+          true
+        }
         for {
           bytes <- ftpClient.readFile("/a/b/c.txt").runCollect
-        } yield assert(bytes)(hasSize(equalTo(5000)))
+        } yield assert(bytes)(hasSize(equalTo(FileSize))) && assertTrue(completePendingCommandWasCalled)
       },
       test("completion failure is exposed on error channel") {
         val ftpClient = createFtpclient(false)

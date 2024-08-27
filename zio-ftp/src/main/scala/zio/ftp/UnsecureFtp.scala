@@ -25,7 +25,7 @@ import org.apache.commons.net.ftp.FTPReply
 
 sealed private trait CommandCompletionState
 
-object CommandCompletionState {
+private object CommandCompletionState {
   case class Pending(path: String, finalized: Boolean) extends CommandCompletionState
   case object NotPending                               extends CommandCompletionState
 }
@@ -48,7 +48,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       execute { c =>
         val r = Option(c.retrieveFileStream(path))
         if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
-          commandCompletionPending = CommandCompletionState.Pending(path, false)
+          commandCompletionPending = CommandCompletionState.Pending(path, finalized = false)
           ZStream
             .fromInputStreamZIO(
               ZIO
@@ -61,7 +61,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
             )
             .ensuring {
               ZIO.succeed {
-                commandCompletionPending = CommandCompletionState.Pending(path, true)
+                commandCompletionPending = CommandCompletionState.Pending(path, finalized = true)
               }
             }
         } else {
@@ -123,7 +123,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   override def execute[T](f: Client => T): ZIO[Any, IOException, T] = {
     val doExecute = attemptBlockingIO(f(unsafeClient))
     ZIO.succeed(commandCompletionPending).flatMap {
-      case CommandCompletionState.Pending(path, false) =>
+      case CommandCompletionState.Pending(_, false) =>
         ZIO.die(new Exception("bad zio-ftp client state: must call completePendingCommand first!"))
       case CommandCompletionState.Pending(path, true)  =>
         attemptBlockingIO(unsafeClient.completePendingCommand()).flatMap {

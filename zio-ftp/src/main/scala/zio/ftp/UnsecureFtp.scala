@@ -43,14 +43,11 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
         val r = Option(c.retrieveFileStream(path))
         if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
           pendingExit =
-            Some(Exit.die(new Exception("bad zio-ftp client state: must call completePendingCommand first!")))
+            Some(Exit.die(new IllegalStateException("The ZStream returned by `readFile` must be finalized before further interactions with the FTP client")))
           ZStream
-            .fromInputStreamZIO(
-              ZIO
-                .fromOption(r)
-                .mapError { _ =>
-                  new Exception("FTP client reported preliminary success but returned null. This shouldn't happen...")
-                }
+            .fromInputStreamZIO(  
+              ZIO.succeed(r)
+                .someOrFail(new IllegalStateException("FTP client reported preliminary success but returned null. This shouldn't happen..."))
                 .orDie,
               chunkSize
             )
@@ -66,7 +63,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
                 .exit
                 .flatMap { e =>
                   ZIO.succeed {
-                    pendingExit = Some(e)
+                    pendingExit = Some(e) 
                   }
                 }
             }
@@ -126,18 +123,15 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot rename $oldPath to $newPath"))
       .unit
 
-  override def execute[T](f: Client => T): ZIO[Any, IOException, T] = {
-    val doExecute = attemptBlockingIO(f(unsafeClient))
+  override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
     ZIO.succeed(pendingExit).flatMap {
-      case Some(exit) =>
+      ZIO.foreach(_) { exit =>
         ZIO.done(exit) *>
           ZIO.succeed {
             pendingExit = None
-          } *> doExecute
-      case None       =>
-        doExecute
+          }
+      } *> attemptBlockingIO(f(unsafeClient))
     }
-  }
 }
 
 object UnsecureFtp {

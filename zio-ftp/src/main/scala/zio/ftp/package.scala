@@ -61,8 +61,8 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[Ftp, IOException, Byte] =
-      ZStream.serviceWithStream(_.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Ftp, IOException, Byte] =
+      ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
     def rename(oldPath: String, newPath: String): ZIO[Ftp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))
@@ -100,8 +100,8 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[SFtp, IOException, Byte] =
-      ZStream.serviceWithStream(_.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[SFtp, IOException, Byte] =
+      ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
     def rename(oldPath: String, newPath: String): ZIO[SFtp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))
@@ -139,8 +139,8 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048): ZStream[StubFtp, IOException, Byte] =
-      ZStream.serviceWithStream(_.readFile(path, chunkSize))
+    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[StubFtp, IOException, Byte] =
+      ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
     def rename(oldPath: String, newPath: String): ZIO[StubFtp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))

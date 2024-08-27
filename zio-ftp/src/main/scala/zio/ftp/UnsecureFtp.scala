@@ -37,8 +37,9 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte] =
+  def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] =
     ZStream.unwrap {
+      execute(_.setRestartOffset(fileOffset)) *>
       execute { c =>
         val r = Option(c.retrieveFileStream(path))
         if (FTPReply.isPositivePreliminary(c.getReplyCode())) {

@@ -106,6 +106,11 @@ object FtpSuite {
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
+      test("readFile with offset") {
+        for {
+          content <- readFile("/notes.txt", fileOffset = 16).via(utf8Decode).runCollect
+        } yield assert(content.mkString)(equalTo("this is a beautiful day"))
+      },
       test("readFile, not trying to read beyond the end") {
         for {
           size    <- stat("/notes.txt").someOrFail("ouch")

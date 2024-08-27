@@ -67,6 +67,11 @@ object StubFtpSpec extends ZIOSpecDefault {
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
+      test("readFile with offset") {
+        for {
+          content <- readFile("/notes.txt", fileOffset = 16).via(utf8Decode).runCollect
+        } yield assert(content.mkString)(equalTo("this is a beautiful day"))
+      },
       test("readFile does not exist") {
         for {
           invalid <- readFile("/invalid.txt")

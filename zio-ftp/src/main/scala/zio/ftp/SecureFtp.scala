@@ -41,13 +41,13 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
-  def readFile(path: String, chunkSize: Int): ZStream[Any, IOException, Byte] =
+  def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
     for {
       remoteFile             <- ZStream.fromZIO(
                                   execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
                                 )
 
-      is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64) {
+      is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64, fileOffset) {
 
                                   override def close(): Unit =
                                     try super.close()

@@ -39,9 +39,6 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
         }
         for {
           bytes <- ftpClient.readFile("/a/b/c.txt").runCollect
-          _     <- ftpClient
-                     .readFile("/a/b/c.txt")
-                     .runCollect // completePendingCommand is only called when the next command is executed
         } yield assert(bytes)(hasSize(equalTo(FileSize))) && assertTrue(completePendingCommandWasCalled)
       },
       test("completion failure is exposed on error channel") {

@@ -21,6 +21,14 @@ import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
 import zio.{ Scope, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
+import org.apache.commons.net.ftp.FTPReply
+
+sealed private trait CommandCompletionState
+
+object CommandCompletionState {
+  case class Pending(path: String, finalized: Boolean) extends CommandCompletionState
+  case object NotPending                               extends CommandCompletionState
+}
 
 /**
  * Unsecure Ftp client wrapper
@@ -30,21 +38,38 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO }
  */
 final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
+  var commandCompletionPending: CommandCompletionState = CommandCompletionState.NotPending
+
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte] = {
-    val terminate = ZIO
-      .fail(
-        FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
-      )
-      .unlessZIO(execute(_.completePendingCommand()))
-
-    val inputStream =
-      execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
-
-    ZStream.fromInputStreamZIO(inputStream, chunkSize) ++ ZStream.fromZIO(terminate) *> ZStream.empty
-  }
+  def readFile(path: String, chunkSize: Int = 2048): ZStream[Any, IOException, Byte] =
+    ZStream.unwrap {
+      execute { c =>
+        val r = Option(c.retrieveFileStream(path))
+        if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
+          commandCompletionPending = CommandCompletionState.Pending(path, false)
+          ZStream
+            .fromInputStreamZIO(
+              ZIO
+                .fromOption(r)
+                .mapError { _ =>
+                  new Exception("FTP client reported preliminary success but returned null. This shouldn't happen...")
+                }
+                .orDie,
+              chunkSize
+            )
+            .ensuring {
+              ZIO.succeed {
+                commandCompletionPending = CommandCompletionState.Pending(path, true)
+              }
+            }
+        } else {
+          val msg = c.getReplyString().trim
+          ZStream.fail(new IOException(msg))
+        }
+      }
+    }
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.deleteFile(path))
@@ -95,8 +120,28 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot rename $oldPath to $newPath"))
       .unit
 
-  override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
-    attemptBlockingIO(f(unsafeClient))
+  override def execute[T](f: Client => T): ZIO[Any, IOException, T] = {
+    val doExecute = attemptBlockingIO(f(unsafeClient))
+    ZIO.succeed(commandCompletionPending).flatMap {
+      case CommandCompletionState.Pending(path, false) =>
+        ZIO.die(new Exception("bad zio-ftp client state: must call completePendingCommand first!"))
+      case CommandCompletionState.Pending(path, true)  =>
+        attemptBlockingIO(unsafeClient.completePendingCommand()).flatMap {
+          if (_)
+            ZIO.succeed {
+              commandCompletionPending = CommandCompletionState.NotPending
+            } *> doExecute
+          else
+            ZIO.fail(
+              FileTransferIncompleteError(
+                s"Cannot finalize the file transfer and completely read the entire file $path."
+              )
+            )
+        }
+      case CommandCompletionState.NotPending           =>
+        doExecute
+    }
+  }
 }
 
 object UnsecureFtp {

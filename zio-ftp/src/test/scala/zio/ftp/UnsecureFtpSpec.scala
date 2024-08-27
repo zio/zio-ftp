@@ -106,6 +106,18 @@ object FtpSuite {
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
+      test("readFile, not trying to read beyond the end") {
+        for {
+          size    <- stat("/notes.txt").someOrFail("ouch")
+          content <- readFile("/notes.txt").take(size.size).via(utf8Decode).runCollect
+          size2   <- stat("/notes.txt") // DO NOT REMOVE THIS LINE!!!
+          // It is here to ensure that the connection is still usable after `readFile`,
+          // which is not the case if `completePendingCommand` isn't called
+        } yield assert(content.mkString)(
+          equalTo("""|Hello world !!!
+                     |this is a beautiful day""".stripMargin)
+        ) && assertTrue(size2.nonEmpty)
+      },
       test("readFile does not exist") {
         for {
           invalid <- readFile("/invalid.txt")
@@ -114,7 +126,7 @@ object FtpSuite {
                        .flip
                        .map(_.getMessage)
 
-        } yield assertTrue(invalid == "File does not exist /invalid.txt")
+        } yield assertTrue(invalid == "550 Can't open /invalid.txt: No such file or directory")
       },
       test("mkdir directory") {
         (

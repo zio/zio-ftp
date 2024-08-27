@@ -16,6 +16,8 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
         () => if (it.hasNext) it.next().toInt else -1
       }
 
+      override def getReplyCode(): Int = 150
+
       override def completePendingCommand(): Boolean = success
     }
 
@@ -26,21 +28,26 @@ object UnsecureDownloadFinalizeSpec extends ZIOSpecDefault {
     hasField("file transfer incomplete message", (e: FileTransferIncompleteError) => e.message, a)
 
   val FileSize = 5000
+
   override def spec =
     suite("Download finalizer")(
       test("complete pending command gets called") {
         var completePendingCommandWasCalled = false
-        val ftpClient = createFtpclient {
+        val ftpClient                       = createFtpclient {
           completePendingCommandWasCalled = true
           true
         }
         for {
           bytes <- ftpClient.readFile("/a/b/c.txt").runCollect
+          _     <- ftpClient
+                     .readFile("/a/b/c.txt")
+                     .runCollect // completePendingCommand is only called when the next command is executed
         } yield assert(bytes)(hasSize(equalTo(FileSize))) && assertTrue(completePendingCommandWasCalled)
       },
       test("completion failure is exposed on error channel") {
         val ftpClient = createFtpclient(false)
         for {
+          _    <- ftpClient.readFile("/a/b/c.txt").runCollect.exit
           exit <- ftpClient.readFile("/a/b/c.txt").runCollect.exit
         } yield assert(exit)(
           fails(

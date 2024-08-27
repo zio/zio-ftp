@@ -40,49 +40,49 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] =
     ZStream.unwrap {
       execute(_.setRestartOffset(fileOffset)) *>
-      execute { c =>
-        val r = Option(c.retrieveFileStream(path))
-        if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
-          pendingExit = Some(
-            Exit.die(
-              new IllegalStateException(
-                "The ZStream returned by `readFile` must be finalized before further interactions with the FTP client"
+        execute { c =>
+          val r = Option(c.retrieveFileStream(path))
+          if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
+            pendingExit = Some(
+              Exit.die(
+                new IllegalStateException(
+                  "The ZStream returned by `readFile` must be finalized before further interactions with the FTP client"
+                )
               )
             )
-          )
-          ZStream
-            .fromInputStreamZIO(
-              ZIO
-                .succeed(r)
-                .someOrFail(
-                  new IllegalStateException(
-                    "FTP client reported preliminary success but returned null. This shouldn't happen..."
+            ZStream
+              .fromInputStreamZIO(
+                ZIO
+                  .succeed(r)
+                  .someOrFail(
+                    new IllegalStateException(
+                      "FTP client reported preliminary success but returned null. This shouldn't happen..."
+                    )
                   )
-                )
-                .orDie,
-              chunkSize
-            )
-            .ensuring {
-              ZIO
-                .attemptBlockingIO(unsafeClient.completePendingCommand())
-                .filterOrFail(identity)(
-                  FileTransferIncompleteError(
-                    s"Cannot finalize the file transfer and completely read the entire file $path."
+                  .orDie,
+                chunkSize
+              )
+              .ensuring {
+                ZIO
+                  .attemptBlockingIO(unsafeClient.completePendingCommand())
+                  .filterOrFail(identity)(
+                    FileTransferIncompleteError(
+                      s"Cannot finalize the file transfer and completely read the entire file $path."
+                    )
                   )
-                )
-                .unit
-                .exit
-                .flatMap { e =>
-                  ZIO.succeed {
-                    pendingExit = Some(e)
+                  .unit
+                  .exit
+                  .flatMap { e =>
+                    ZIO.succeed {
+                      pendingExit = Some(e)
+                    }
                   }
-                }
-            }
-        } else {
-          val msg = c.getReplyString().trim
-          ZStream.fail(new IOException(msg))
+              }
+          } else {
+            val msg = c.getReplyString().trim
+            ZStream.fail(new IOException(msg))
+          }
         }
-      }
     }
 
   def rm(path: String): ZIO[Any, IOException, Unit] =

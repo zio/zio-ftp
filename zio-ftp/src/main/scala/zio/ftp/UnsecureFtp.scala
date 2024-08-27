@@ -42,12 +42,22 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       execute { c =>
         val r = Option(c.retrieveFileStream(path))
         if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
-          pendingExit =
-            Some(Exit.die(new IllegalStateException("The ZStream returned by `readFile` must be finalized before further interactions with the FTP client")))
+          pendingExit = Some(
+            Exit.die(
+              new IllegalStateException(
+                "The ZStream returned by `readFile` must be finalized before further interactions with the FTP client"
+              )
+            )
+          )
           ZStream
-            .fromInputStreamZIO(  
-              ZIO.succeed(r)
-                .someOrFail(new IllegalStateException("FTP client reported preliminary success but returned null. This shouldn't happen..."))
+            .fromInputStreamZIO(
+              ZIO
+                .succeed(r)
+                .someOrFail(
+                  new IllegalStateException(
+                    "FTP client reported preliminary success but returned null. This shouldn't happen..."
+                  )
+                )
                 .orDie,
               chunkSize
             )
@@ -63,7 +73,7 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
                 .exit
                 .flatMap { e =>
                   ZIO.succeed {
-                    pendingExit = Some(e) 
+                    pendingExit = Some(e)
                   }
                 }
             }

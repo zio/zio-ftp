@@ -63,7 +63,7 @@ jobs:
       - name: Start containers
         run: |
             chmod -R 777 ./zio-ftp/ftp-home/
-            docker-compose -f "docker-compose.yml" up -d --build
+            docker compose -f "docker-compose.yml" up -d --build
             chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
       - name: Test
         run: ./sbt ++${{ matrix.scala }} zio-ftp/test
@@ -89,7 +89,7 @@ jobs:
       - name: Start containers
         run: |
           chmod -R 777 ./zio-ftp/ftp-home/
-          docker-compose -f "docker-compose.yml" up -d --build
+          docker compose -f "docker-compose.yml" up -d --build
           chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1
       - name: Test
         run: ./sbt test

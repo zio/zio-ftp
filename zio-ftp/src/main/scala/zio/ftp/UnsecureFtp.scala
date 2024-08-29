@@ -23,6 +23,7 @@ import zio.{ Scope, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 import org.apache.commons.net.ftp.FTPReply
 import zio.Exit
+import java.io.InputStream
 
 /**
  * Unsecure Ftp client wrapper
@@ -37,53 +38,51 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] =
-    ZStream.unwrap {
-      execute(_.setRestartOffset(fileOffset)) *>
-        execute { c =>
-          val r = Option(c.retrieveFileStream(path))
-          if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
-            pendingExit = Some(
-              Exit.die(
-                new IllegalStateException(
-                  "The ZStream returned by `readFile` must be finalized before further interactions with the FTP client"
-                )
+  def readFileInputStream(path: String, fileOffset: Long): ZIO[Scope, IOException, InputStream] =
+    execute(_.setRestartOffset(fileOffset)) *>
+      execute { c =>
+        val r = Option(c.retrieveFileStream(path))
+        if (FTPReply.isPositivePreliminary(c.getReplyCode())) {
+          pendingExit = Some(
+            Exit.die(
+              new IllegalStateException(
+                "The ZStream returned by `readFile` must be finalized before further interactions with the FTP client"
               )
             )
-            ZStream
-              .fromInputStreamZIO(
-                ZIO
-                  .succeed(r)
-                  .someOrFail(
-                    new IllegalStateException(
-                      "FTP client reported preliminary success but returned null. This shouldn't happen..."
-                    )
+          )
+              ZIO
+                .succeed(r)
+                .someOrFail(
+                  new IllegalStateException(
+                    "FTP client reported preliminary success but returned null. This shouldn't happen..."
                   )
-                  .orDie,
-                chunkSize
-              )
-              .ensuring {
-                ZIO
-                  .attemptBlockingIO(unsafeClient.completePendingCommand())
-                  .filterOrFail(identity)(
-                    FileTransferIncompleteError(
-                      s"Cannot finalize the file transfer and completely read the entire file $path."
-                    )
+                )
+                .orDie.tap { inputStream =>
+            Scope.addFinalizer {
+              ZIO.succeedBlocking(inputStream.close()) *>
+              ZIO
+                .attemptBlockingIO(c.completePendingCommand())
+                .filterOrFail(identity)(
+                  FileTransferIncompleteError(
+                    s"Cannot finalize the file transfer and completely read the entire file $path."
                   )
-                  .unit
-                  .exit
-                  .flatMap { e =>
-                    ZIO.succeed {
-                      pendingExit = Some(e)
-                    }
+                )
+                .unit
+                .exit
+                .flatMap { e =>
+                  ZIO.succeed {
+                    pendingExit = Some(e)
                   }
-              }
-          } else {
-            val msg = c.getReplyString().trim
-            ZStream.fail(new IOException(msg))
-          }
+                }
+            }}
+        } else {
+          val msg = c.getReplyString().trim
+          ZIO.fail(new IOException(msg))
         }
-    }
+      }.flatten
+
+  override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
+    ZStream.fromInputStreamScoped(readFileInputStream(path, fileOffset), chunkSize)
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.deleteFile(path))

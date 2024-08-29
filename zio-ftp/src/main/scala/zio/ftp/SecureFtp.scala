@@ -29,6 +29,7 @@ import zio._
 
 import scala.jdk.CollectionConverters._
 import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
+import java.io.InputStream
 
 /**
  * Secure Ftp client wrapper
@@ -41,21 +42,13 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
+  override def readFileInputStream(path: String, fileOffset: Long): ZIO[Scope, IOException, InputStream] =
+    ZIO.fromAutoCloseable(execute(_.open(path, util.EnumSet.of(OpenMode.READ)))).flatMap { remoteFile =>
+      ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(new remoteFile.ReadAheadRemoteFileInputStream(64, fileOffset)))
+    }
+
   def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
-    for {
-      remoteFile             <- ZStream.fromZIO(
-                                  execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
-                                )
-
-      is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64, fileOffset) {
-
-                                  override def close(): Unit =
-                                    try super.close()
-                                    finally remoteFile.close()
-                                }
-
-      input <- ZStream.fromInputStream(is, chunkSize)
-    } yield input
+    ZStream.fromInputStreamScoped(readFileInputStream(path, fileOffset))
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.rm(path))

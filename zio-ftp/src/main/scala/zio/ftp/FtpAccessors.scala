@@ -1,8 +1,9 @@
 package zio.ftp
 
 import java.io.IOException
-import zio.ZIO
+import zio.{ Scope, ZIO }
 import zio.stream.ZStream
+import java.io.InputStream
 
 trait FtpAccessors[+A] {
 
@@ -30,6 +31,7 @@ trait FtpAccessors[+A] {
    * @param fileOffset optional initial offset in bytes
    */
   def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Any, IOException, Byte]
+  def readFileInputStream(path: String, fileOffset: Long): ZIO[Scope, IOException, InputStream]
 
   /**
    * Delete a file on a server. If the operation failed, an error will be emitted

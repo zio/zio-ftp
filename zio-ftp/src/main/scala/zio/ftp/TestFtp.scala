@@ -22,13 +22,23 @@ import java.nio.file.attribute.PosixFilePermission
 
 import zio.nio.file.{ Path => ZPath }
 import zio.nio.file.Files
+import java.nio.file.{ Files => JFiles }
 import zio.stream.{ ZSink, ZStream }
 import zio.{ Cause, ZIO }
+import java.io.InputStream
+import zio.Scope
 
 object TestFtp {
 
   def create(root: ZPath): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
+
+      override def readFileInputStream(path: String, fileOffset: Long): ZIO[Scope, IOException, InputStream] =
+        ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(JFiles.newInputStream((root / ZPath(path)).toFile.toPath()))).tap {
+          is =>
+            ZIO.attemptBlockingIO(is.skip(fileOffset))
+        }
+
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] = {
@@ -44,13 +54,11 @@ object TestFtp {
 
       override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
         ZStream
-          .fromZIO(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
-          .catchAll {
-            case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
-            case err                    => ZStream.fail(err)
+          .fromInputStreamScoped[Any](readFileInputStream(path, fileOffset))
+          .catchSome {
+            case _: NoSuchFileException =>
+              ZStream.fail(InvalidPathError(s"File does not exist $path")): ZStream[Any, IOException, Byte]
           }
-          .flatMap(ZStream.fromChunk(_))
-          .drop(fileOffset.toInt)
 
       override def rm(path: String): ZIO[Any, IOException, Unit] =
         Files

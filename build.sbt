@@ -43,9 +43,9 @@ lazy val `zio-ftp` = project
       "com.hierynomus"           % "sshj"                    % "0.38.0",
       "commons-net"              % "commons-net"             % "3.10.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.11.0",
-      "org.apache.logging.log4j" % "log4j-api"               % "2.22.1"   % Test,
-      "org.apache.logging.log4j" % "log4j-core"              % "2.22.1"   % Test,
-      "org.apache.logging.log4j" % "log4j-slf4j-impl"        % "2.22.1"   % Test,
+      "org.apache.logging.log4j" % "log4j-api"               % "2.24.0"   % Test,
+      "org.apache.logging.log4j" % "log4j-core"              % "2.24.0"   % Test,
+      "org.apache.logging.log4j" % "log4j-slf4j-impl"        % "2.24.0"   % Test,
       "dev.zio"                 %% "zio-test"                % zioVersion % Test,
       "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
     ),

@@ -27,7 +27,7 @@ addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 
-val zioVersion = "2.0.21"
+val zioVersion = "2.1.6"
 
 lazy val root =
   project.in(file(".")).settings(publish / skip := true).aggregate(`zio-ftp`, docs)
@@ -41,8 +41,8 @@ lazy val `zio-ftp` = project
       "dev.zio"                 %% "zio-streams"             % zioVersion,
       ("dev.zio"                %% "zio-nio"                 % "2.0.2").exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
       "com.hierynomus"           % "sshj"                    % "0.39.0",
-      "commons-net"              % "commons-net"             % "3.10.0",
-      "org.scala-lang.modules"  %% "scala-collection-compat" % "2.11.0",
+      "commons-net"              % "commons-net"             % "3.11.0",
+      "org.scala-lang.modules"  %% "scala-collection-compat" % "2.12.0",
       "org.apache.logging.log4j" % "log4j-api"               % "2.24.0"   % Test,
       "org.apache.logging.log4j" % "log4j-core"              % "2.24.0"   % Test,
       "org.apache.logging.log4j" % "log4j-slf4j-impl"        % "2.24.0"   % Test,

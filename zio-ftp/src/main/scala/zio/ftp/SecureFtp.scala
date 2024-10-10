@@ -36,7 +36,7 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
  * All ftp methods exposed are lift into ZIO or ZStream, which required a Blocking Environment
  * since the underlying java client only provide blocking methods.
  */
-final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
+sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
@@ -116,6 +116,9 @@ final private class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client]
 object SecureFtp {
   type Client = SFTPClient
 
+  def unsafe(c: Client): SecureFtp =
+    new SecureFtp(c) {}
+
   def connect(settings: SecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] = {
     val ssh = new SSHClient(settings.sshConfig)
     import settings._
@@ -136,7 +139,7 @@ object SecureFtp {
             setIdentity(_, credentials.username)(ssh)
           )
 
-        new SecureFtp(ssh.newSFTPClient())
+        new SecureFtp(ssh.newSFTPClient()) {}
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))
     )(
       _.execute(_.close()).ignore

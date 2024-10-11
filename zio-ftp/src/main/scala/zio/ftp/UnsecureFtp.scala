@@ -19,7 +19,7 @@ import java.io.IOException
 import org.apache.commons.net.ftp.{ FTP, FTPClient => JFTPClient, FTPSClient => JFTPSClient }
 import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
-import zio.{ Scope, ZIO }
+import zio.{ Ref, Scope, UIO, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 
 /**
@@ -28,25 +28,48 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO }
  * All ftp methods exposed are lift into ZIO or ZStream
  * The underlying java client only provide blocking methods.
  */
-final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
+sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] = {
+    def error(cause: Option[Exception] = None): Left[FileTransferIncompleteError, Unit] =
+      Left(
+        FileTransferIncompleteError(
+          s"Cannot finalize the file transfer and completely read the entire file $path. ${cause.fold("")(_.getMessage)}"
+        )
+      )
+    val success: Either[IOException, Unit]                                              = Right(())
+
     val initialize = execute(_.setRestartOffset(fileOffset))
 
-    val terminate = ZIO
-      .fail(
-        FileTransferIncompleteError(s"Cannot finalize the file transfer and completely read the entire file $path.")
-      )
-      .unlessZIO(execute(_.completePendingCommand()))
+    def terminate(state: Ref[Either[IOException, Unit]]): UIO[Unit] =
+      execute(_.completePendingCommand())
+        .foldZIO(
+          err => state.set(error(Some(err))),
+          resp =>
+            if (resp) state.set(success)
+            else state.set(error())
+        )
+
+    def propagate(state: Ref[Either[IOException, Unit]]) =
+      ZStream.fromZIO(state.get).flatMap {
+        case Left(ex) => ZStream.fail(ex)
+        case _        => ZStream.empty
+      }
 
     val inputStream =
       execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
 
-    (ZStream.fromZIO(initialize) *> ZStream.empty) ++ ZStream.fromInputStreamZIO(inputStream, chunkSize) ++ (ZStream
-      .fromZIO(terminate) *> ZStream.empty)
+    ZStream.unwrap {
+      for {
+        state <- Ref.make(success)
+        is    <- initialize *> inputStream
+      } yield ZStream
+        .fromInputStream(is, chunkSize)
+        .ensuring(terminate(state)) ++ propagate(state)
+    }
   }
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
@@ -105,6 +128,9 @@ final private class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
 object UnsecureFtp {
   type Client = JFTPClient
 
+  def unsafe(c: Client): UnsecureFtp                                                            =
+    new UnsecureFtp(c) {}
+
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(
       attemptBlockingIO {
@@ -141,7 +167,7 @@ object UnsecureFtp {
 
         settings.dataTimeout.foreach(ftpClient.setDataTimeout)
 
-        new UnsecureFtp(ftpClient) -> success
+        new UnsecureFtp(ftpClient) {} -> success
       }.mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)

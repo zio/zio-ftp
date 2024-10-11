@@ -14,21 +14,21 @@ import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
-  val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
+  private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
 
-  override def spec =
+  override def spec: Spec[TestEnvironment & Scope, Any] =
     FtpSuite.spec("UnsecureSslFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
 }
 
 object UnsecureFtpSpec extends ZIOSpecDefault {
-  val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
+  private val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
 
-  override def spec =
+  override def spec: Spec[TestEnvironment & Scope, Any] =
     FtpSuite.spec("UnsecureFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
 }
 
 object FtpSuite {
-  val home = ZPath("ftp-home/ftp/home")
+  private val home = ZPath("ftp-home/ftp/home")
 
   def spec(labelSuite: String, settings: UnsecureFtpSettings) =
     suite(labelSuite)(

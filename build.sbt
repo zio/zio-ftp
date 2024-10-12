@@ -27,7 +27,7 @@ addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 
-val zioVersion = "2.1.6"
+val zioVersion = "2.1.11"
 
 lazy val root =
   project.in(file(".")).settings(publish / skip := true).aggregate(`zio-ftp`, docs)

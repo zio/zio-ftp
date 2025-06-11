@@ -13,7 +13,7 @@
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.2" 
+libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.3" 
 ```
 
 ## How to use it?

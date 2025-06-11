@@ -12,6 +12,7 @@ import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Paths }
 import scala.io.Source
 import java.time.Instant
+import java.time.{ Duration => JDuration }
 
 object Load
 
@@ -74,7 +75,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
         } yield assertTrue(
           files.map(_.path).toSet == Set("/notes.txt", "/dir1") && files
             .find(_.path == "/notes.txt")
-            .exists(_.lastModified == Instant.now())
+            .exists(r => JDuration.between(r.lastModified, Instant.now()).abs.toMinutes < 10)
         )
       ),
       test("ls with invalid directory")(

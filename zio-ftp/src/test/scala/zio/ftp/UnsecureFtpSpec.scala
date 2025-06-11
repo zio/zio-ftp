@@ -12,6 +12,7 @@ import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
+import java.time.{ Instant, Duration => JDuration }
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
   private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
@@ -59,6 +60,11 @@ object FtpSuite {
         for {
           files <- ls("/").runFold(List.empty[String])((s, f) => f.path +: s)
         } yield assert(files.reverse)(hasSameElements(List("/notes.txt", "/dir1")))
+      ),
+      test("timestamp")(
+        for {
+          file <- ls("/notes.txt").runLast
+        } yield assertTrue(file.exists(r => JDuration.between(r.lastModified, Instant.now()).abs.toMinutes < 10))
       ),
       test("ls with invalid directory")(
         for {

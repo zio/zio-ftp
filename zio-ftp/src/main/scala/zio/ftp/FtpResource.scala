@@ -36,14 +36,10 @@ import scala.jdk.CollectionConverters._
 final case class FtpResource(
   path: String,
   size: Long,
-  lastModified: Long,
+  lastModified: Instant,
   permissions: Set[PosixFilePermission],
   isDirectory: Option[Boolean]
-) {
-
-  def lastModifiedInstant: Instant =
-    Instant.ofEpochMilli(lastModified)
-}
+)
 
 object FtpResource {
 
@@ -54,7 +50,7 @@ object FtpResource {
         case p   => s"$p/${f.getName}"
       },
       f.getSize,
-      f.getTimestamp.getTimeInMillis,
+      f.getTimestamp.toInstant(),
       getPosixFilePermissions(f),
       Some(f.isDirectory)
     )
@@ -63,13 +59,13 @@ object FtpResource {
     FtpResource(
       file.getPath,
       file.getAttributes.getSize,
-      file.getAttributes.getMtime * 1000,
+      Instant.ofEpochMilli(file.getAttributes.getMtime * 1000),
       posixFilePermissions(file.getAttributes),
       Some(file.isDirectory)
     )
 
   def apply(path: String, attr: FileAttributes): FtpResource =
-    FtpResource(path, attr.getSize, attr.getMtime * 1000, posixFilePermissions(attr), None)
+    FtpResource(path, attr.getSize, Instant.ofEpochMilli(attr.getMtime * 1000), posixFilePermissions(attr), None)
 
   private def getPosixFilePermissions(file: FTPFile) =
     Map(

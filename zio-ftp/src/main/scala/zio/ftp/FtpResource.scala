@@ -42,7 +42,7 @@ final case class FtpResource(
 ) {
 
   def lastModifiedInstant: Instant =
-    Instant.ofEpochSecond(lastModified)
+    Instant.ofEpochMilli(lastModified)
 }
 
 object FtpResource {
@@ -63,13 +63,13 @@ object FtpResource {
     FtpResource(
       file.getPath,
       file.getAttributes.getSize,
-      file.getAttributes.getMtime,
+      file.getAttributes.getMtime * 1000,
       posixFilePermissions(file.getAttributes),
       Some(file.isDirectory)
     )
 
   def apply(path: String, attr: FileAttributes): FtpResource =
-    FtpResource(path, attr.getSize, attr.getMtime, posixFilePermissions(attr), None)
+    FtpResource(path, attr.getSize, attr.getMtime * 1000, posixFilePermissions(attr), None)
 
   private def getPosixFilePermissions(file: FTPFile) =
     Map(

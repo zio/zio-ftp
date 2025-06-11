@@ -18,6 +18,7 @@ package zio.ftp
 
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermission._
+import java.time.Instant
 import net.schmizz.sshj.sftp.{ FileAttributes, RemoteResourceInfo }
 import net.schmizz.sshj.xfer.FilePermission._
 import org.apache.commons.net.ftp.FTPFile
@@ -38,7 +39,11 @@ final case class FtpResource(
   lastModified: Long,
   permissions: Set[PosixFilePermission],
   isDirectory: Option[Boolean]
-)
+) {
+
+  def lastModifiedInstant: Instant =
+    Instant.ofEpochSecond(lastModified)
+}
 
 object FtpResource {
 

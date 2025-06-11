@@ -59,13 +59,13 @@ object FtpResource {
     FtpResource(
       file.getPath,
       file.getAttributes.getSize,
-      Instant.ofEpochMilli(file.getAttributes.getMtime * 1000),
+      Instant.ofEpochSecond(file.getAttributes.getMtime),
       posixFilePermissions(file.getAttributes),
       Some(file.isDirectory)
     )
 
   def apply(path: String, attr: FileAttributes): FtpResource =
-    FtpResource(path, attr.getSize, Instant.ofEpochMilli(attr.getMtime * 1000), posixFilePermissions(attr), None)
+    FtpResource(path, attr.getSize, Instant.ofEpochSecond(attr.getMtime), posixFilePermissions(attr), None)
 
   private def getPosixFilePermissions(file: FTPFile) =
     Map(

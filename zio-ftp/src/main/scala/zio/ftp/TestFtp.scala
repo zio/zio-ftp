@@ -82,7 +82,7 @@ object TestFtp {
                               ZIO.succeed(Set.empty[PosixFilePermission])
                           }
           isDir        <- Files.isDirectory(p).map(Some(_))
-          lastModified <- Files.getLastModifiedTime(p).map(_.toMillis)
+          lastModified <- Files.getLastModifiedTime(p).map(_.toInstant())
           size         <- Files.size(p)
         } yield FtpResource(root.relativize(p).elements.mkString("/", "/", ""), size, lastModified, permissions, isDir))
           .mapError(new IOException(_))

@@ -18,6 +18,7 @@ package zio.ftp
 
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermission._
+import java.time.Instant
 import net.schmizz.sshj.sftp.{ FileAttributes, RemoteResourceInfo }
 import net.schmizz.sshj.xfer.FilePermission._
 import org.apache.commons.net.ftp.FTPFile
@@ -35,7 +36,7 @@ import scala.jdk.CollectionConverters._
 final case class FtpResource(
   path: String,
   size: Long,
-  lastModified: Long,
+  lastModified: Instant,
   permissions: Set[PosixFilePermission],
   isDirectory: Option[Boolean]
 )
@@ -49,7 +50,7 @@ object FtpResource {
         case p   => s"$p/${f.getName}"
       },
       f.getSize,
-      f.getTimestamp.getTimeInMillis,
+      f.getTimestamp.toInstant(),
       getPosixFilePermissions(f),
       Some(f.isDirectory)
     )
@@ -58,13 +59,13 @@ object FtpResource {
     FtpResource(
       file.getPath,
       file.getAttributes.getSize,
-      file.getAttributes.getMtime,
+      Instant.ofEpochSecond(file.getAttributes.getMtime),
       posixFilePermissions(file.getAttributes),
       Some(file.isDirectory)
     )
 
   def apply(path: String, attr: FileAttributes): FtpResource =
-    FtpResource(path, attr.getSize, attr.getMtime, posixFilePermissions(attr), None)
+    FtpResource(path, attr.getSize, Instant.ofEpochSecond(attr.getMtime), posixFilePermissions(attr), None)
 
   private def getPosixFilePermissions(file: FTPFile) =
     Map(

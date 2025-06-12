@@ -29,7 +29,7 @@ import zio._
 
 import scala.jdk.CollectionConverters._
 import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 
 /**
  * Secure Ftp client wrapper
@@ -93,7 +93,7 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       )
       .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
-        if (f.isDirectory) lsDescendant(Path.of(f.getPath))
+        if (f.isDirectory) lsDescendant(Paths.get(f.getPath))
         else ZStream.succeed(FtpResource.fromResource(f))
       }
 

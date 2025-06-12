@@ -11,7 +11,7 @@ import zio.stream.ZStream
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 import java.time.{ Duration => JDuration }
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 import java.nio.file.Files
 import scala.util.chaining._
 
@@ -30,7 +30,7 @@ object UnsecureFtpSpec extends ZIOSpecDefault {
 }
 
 object FtpSuite {
-  private val home = Path.of("ftp-home/ftp/home")
+  private val home = Paths.get("ftp-home/ftp/home")
 
   def spec(labelSuite: String, settings: UnsecureFtpSettings) =
     suite(labelSuite)(
@@ -59,13 +59,13 @@ object FtpSuite {
       ),
       test("ls ")(
         for {
-          files <- ls(Path.of("/")).runFold(List.empty[Path])((s, f) => f.path +: s)
-        } yield assert(files.reverse)(hasSameElements(List(Path.of("/notes.txt"), Path.of("/dir1"))))
+          files <- ls(Paths.get("/")).runFold(List.empty[Path])((s, f) => f.path +: s)
+        } yield assert(files.reverse)(hasSameElements(List(Paths.get("/notes.txt"), Paths.get("/dir1"))))
       ),
       test("timestamp")(
         for {
-          file     <- ls(Path.of("/notes.txt")).runLast
-          filetime <- ZIO.attempt(Files.getLastModifiedTime(Path.of("ftp-home/sftp/home/foo/notes.txt")))
+          file     <- ls(Paths.get("/notes.txt")).runLast
+          filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/sftp/home/foo/notes.txt")))
 
         } yield assertTrue(
           file.is(_.some).pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 1000)
@@ -73,58 +73,58 @@ object FtpSuite {
       ),
       test("ls with invalid directory")(
         for {
-          files <- ls(Path.of("/dont-exist")).runFold(List.empty[Path])((s, f) => f.path +: s)
+          files <- ls(Paths.get("/dont-exist")).runFold(List.empty[Path])((s, f) => f.path +: s)
         } yield assert(files.reverse)(hasSameElements(Nil))
       ),
       test("ls descendant")(
         for {
-          files <- lsDescendant(Path.of("/")).runFold(List.empty[Path])((s, f) => f.path +: s)
+          files <- lsDescendant(Paths.get("/")).runFold(List.empty[Path])((s, f) => f.path +: s)
         } yield assert(files.reverse)(
-          hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump").map(Path.of(_)))
+          hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump").map(Paths.get(_)))
         )
       ),
       test("ls descendant with invalid directory")(
         for {
-          files <- lsDescendant(Path.of("/dont-exist")).runCollect
+          files <- lsDescendant(Paths.get("/dont-exist")).runCollect
         } yield assertTrue(files == Chunk.empty)
       ),
       test("stat directory") {
         for {
 
-          file <- stat(Path.of("/dir1"))
-        } yield assertTrue(file.get.path == Path.of("/dir1")) &&
+          file <- stat(Paths.get("/dir1"))
+        } yield assertTrue(file.get.path == Paths.get("/dir1")) &&
           assertTrue(file.get.isDirectory.get)
       },
       test("stat file") {
         for {
-          file <- stat(Path.of("/dir1/console.dump"))
-        } yield assertTrue(file.get.path == Path.of("/dir1/console.dump")) &&
+          file <- stat(Paths.get("/dir1/console.dump"))
+        } yield assertTrue(file.get.path == Paths.get("/dir1/console.dump")) &&
           assertTrue(!file.get.isDirectory.get)
       },
       test("stat file does not exist") {
         for {
-          file <- stat(Path.of("/wrong-path.xml"))
+          file <- stat(Paths.get("/wrong-path.xml"))
         } yield assertTrue(file.isEmpty)
       },
       test("stat directory does not exist") {
         for {
-          file <- stat(Path.of("/wrong-path"))
+          file <- stat(Paths.get("/wrong-path"))
         } yield assertTrue(file.isEmpty)
       },
       test("readFile") {
         for {
-          content <- readFile(Path.of("/notes.txt")).via(utf8Decode).runCollect
+          content <- readFile(Paths.get("/notes.txt")).via(utf8Decode).runCollect
         } yield assert(content.mkString)(equalTo("""|Hello world !!!
                                                     |this is a beautiful day""".stripMargin))
       },
       test("readFile with offset") {
         for {
-          content <- readFile(Path.of("/notes.txt"), fileOffset = 16).via(utf8Decode).runCollect
+          content <- readFile(Paths.get("/notes.txt"), fileOffset = 16).via(utf8Decode).runCollect
         } yield assert(content.mkString)(equalTo("this is a beautiful day"))
       },
       test("readFile does not exist") {
         for {
-          invalid <- readFile(Path.of("/invalid.txt"))
+          invalid <- readFile(Paths.get("/invalid.txt"))
                        .via(utf8Decode)
                        .runCollect
                        .flip
@@ -135,13 +135,13 @@ object FtpSuite {
       test("mkdir directory") {
         (
           for {
-            result <- mkdir(Path.of("/new-dir")).as(true)
+            result <- mkdir(Paths.get("/new-dir")).as(true)
           } yield assert(result)(equalTo(true))
         ) <* ZIO.attempt(Files.delete(home.resolve("new-dir")))
       },
       test("mkdir fail when invalid path") {
         for {
-          failure <- mkdir(Path.of("/dir1/users.csv")).flip.map(_.getMessage)
+          failure <- mkdir(Paths.get("/dir1/users.csv")).flip.map(_.getMessage)
         } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /dir1/users.csv"))
       },
       test("rm valid path") {
@@ -149,14 +149,14 @@ object FtpSuite {
 
         for {
           _       <- ZIO.attempt(Files.createFile(path))
-          success <- rm(Path.of("/to-delete.txt")).as(true)
+          success <- rm(Paths.get("/to-delete.txt")).as(true)
 
           fileExist <- ZIO.attempt(Files.notExists(path))
         } yield assertTrue(success && fileExist)
       },
       test("rm fail when invalid path") {
         for {
-          invalid <- rm(Path.of("/dont-exist")).flip.map(_.getMessage)
+          invalid <- rm(Paths.get("/dont-exist")).flip.map(_.getMessage)
         } yield assertTrue(invalid == "Path is invalid. Cannot delete file : /dont-exist")
       },
       test("rm directory") {
@@ -164,13 +164,13 @@ object FtpSuite {
 
         for {
           _     <- ZIO.attempt(Files.createDirectory(path))
-          r     <- rmdir(Path.of("/dir-to-delete")).as(true)
+          r     <- rmdir(Paths.get("/dir-to-delete")).as(true)
           exist <- ZIO.attempt(Files.notExists(path))
         } yield assertTrue(r && exist)
       },
       test("rm fail invalid directory") {
         for {
-          r <- rmdir(Path.of("/dont-exist"))
+          r <- rmdir(Paths.get("/dont-exist"))
                  .foldCause(_.failureOption.map(_.getMessage).getOrElse(""), _ => "")
         } yield assertTrue(r == "Path is invalid. Cannot delete directory : /dont-exist")
       },
@@ -180,7 +180,7 @@ object FtpSuite {
         val path = home.resolve("hello-world.txt")
 
         (for {
-          _      <- upload(Path.of("/hello-world.txt"), data)
+          _      <- upload(Paths.get("/hello-world.txt"), data)
           result <-
             acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
               .map(_.mkString)
@@ -191,7 +191,7 @@ object FtpSuite {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
-          failure <- upload(Path.of("/dont-exist/hello-world.txt"), data).flip.map(_.getMessage)
+          failure <- upload(Paths.get("/dont-exist/hello-world.txt"), data).flip.map(_.getMessage)
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       },
       test("rename valid path") {
@@ -200,7 +200,7 @@ object FtpSuite {
 
         (for {
           _       <- ZIO.attempt(Files.createFile(oldPath))
-          success <- rename(Path.of("/to-rename.txt"), Path.of("/to-rename-destination.txt")).as(true)
+          success <- rename(Paths.get("/to-rename.txt"), Paths.get("/to-rename-destination.txt")).as(true)
 
           oldFileExists <- ZIO.attempt(Files.exists(oldPath))
           newFileExists <- ZIO.attempt(Files.exists(newPath))
@@ -208,7 +208,7 @@ object FtpSuite {
       },
       test("rename fail when invalid path") {
         for {
-          invalid <- rename(Path.of("/dont-exist"), Path.of("/dont-exist-destination")).flip.map(_.getMessage)
+          invalid <- rename(Paths.get("/dont-exist"), Paths.get("/dont-exist-destination")).flip.map(_.getMessage)
         } yield assertTrue(invalid == "Path is invalid. Cannot rename /dont-exist to /dont-exist-destination")
       },
       test("call noOp underlying client") {

@@ -21,7 +21,7 @@ import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 import scala.jdk.CollectionConverters._
 
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 import java.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
 import zio.{ Cause, ZIO }
@@ -30,7 +30,7 @@ object TestFtp {
 
   def create(root: Path): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
-      def inRoot(p: Path)                                             = root.resolve(Path.of("/").relativize(p))
+      def inRoot(p: Path)                                             = root.resolve(Paths.get("/").relativize(p))
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] = {
@@ -107,7 +107,7 @@ object TestFtp {
           isDir        <- ZIO.attempt(Files.isDirectory(p)).map(Some(_))
           lastModified <- ZIO.attempt(Files.getLastModifiedTime(p)).map(_.toInstant())
           size         <- ZIO.attempt(Files.size(p))
-        } yield FtpResource(Path.of("/").resolve(root.relativize(p)), size, lastModified, permissions, isDir))
+        } yield FtpResource(Paths.get("/").resolve(root.relativize(p)), size, lastModified, permissions, isDir))
           .mapError(new IOException(_))
 
       override def lsDescendant(path: Path): ZStream[Any, IOException, FtpResource] =

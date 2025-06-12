@@ -6,7 +6,7 @@ import zio.test._
 
 import java.io.{ IOException, InputStream }
 import scala.util.Random
-import java.nio.file.Path
+import java.nio.file.Paths
 
 object UnsecureFtpReadFileSpec extends ZIOSpecDefault {
 
@@ -33,13 +33,13 @@ object UnsecureFtpReadFileSpec extends ZIOSpecDefault {
       test("succeed") {
         val ftpClient = createFtpclient(Right(true))
         for {
-          bytes <- ftpClient.readFile(Path.of("/a/b/c.txt")).runCollect
+          bytes <- ftpClient.readFile(Paths.get("/a/b/c.txt")).runCollect
         } yield assert(bytes)(hasSize(equalTo(5000)))
       },
       test("fail to complete") {
         val ftpClient = createFtpclient(Right(false))
         for {
-          exit <- ftpClient.readFile(Path.of("/a/b/c.txt")).runCollect.exit
+          exit <- ftpClient.readFile(Paths.get("/a/b/c.txt")).runCollect.exit
         } yield assert(exit)(
           fails(
             isSubtype[FileTransferIncompleteError](
@@ -51,7 +51,7 @@ object UnsecureFtpReadFileSpec extends ZIOSpecDefault {
       test("error occur") {
         val ftpClient = createFtpclient(Left(new IOException("Boom")))
         for {
-          exit <- ftpClient.readFile(Path.of("/a/b/c.txt")).runCollect.exit
+          exit <- ftpClient.readFile(Paths.get("/a/b/c.txt")).runCollect.exit
         } yield assert(exit)(
           fails(
             isSubtype[FileTransferIncompleteError](

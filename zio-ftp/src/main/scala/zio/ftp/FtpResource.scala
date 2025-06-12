@@ -23,7 +23,7 @@ import net.schmizz.sshj.sftp.{ FileAttributes, RemoteResourceInfo }
 import net.schmizz.sshj.xfer.FilePermission._
 import org.apache.commons.net.ftp.FTPFile
 import scala.jdk.CollectionConverters._
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 
 /**
  * Represent a file / directory / symbolic link on a ftp server
@@ -46,7 +46,7 @@ object FtpResource {
 
   def fromFtpFile(f: FTPFile, path: Option[Path] = None): FtpResource =
     FtpResource(
-      path.foldLeft(Path.of(f.getName))((a, b) => b.resolve(a)),
+      path.foldLeft(Paths.get(f.getName))((a, b) => b.resolve(a)),
       f.getSize,
       f.getTimestamp.toInstant(),
       getPosixFilePermissions(f),
@@ -55,7 +55,7 @@ object FtpResource {
 
   def fromResource(file: RemoteResourceInfo): FtpResource =
     FtpResource(
-      Path.of(file.getPath),
+      Paths.get(file.getPath),
       file.getAttributes.getSize,
       Instant.ofEpochSecond(file.getAttributes.getMtime),
       posixFilePermissions(file.getAttributes),

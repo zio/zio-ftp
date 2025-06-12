@@ -11,7 +11,6 @@ import zio.test._
 import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Paths }
 import java.time.{ Duration => JDuration }
-import java.nio.file.Path
 import scala.io.Source
 import scala.util.chaining._
 
@@ -72,57 +71,57 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("ls")(
         for {
-          files    <- ls(Path.of("/")).runCollect
-          filetime <- ZIO.attempt(Files.getLastModifiedTime(Path.of("ftp-home/ftp/home/notes.txt")))
+          files    <- ls(Paths.get("/")).runCollect
+          filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/ftp/home/notes.txt")))
         } yield assertTrue(
-          files.map(_.path).toSet == Set(Path.of("/notes.txt"), Path.of("/dir1")) && files
-            .find(_.path == Path.of("/notes.txt"))
+          files.map(_.path).toSet == Set(Paths.get("/notes.txt"), Paths.get("/dir1")) && files
+            .find(_.path == Paths.get("/notes.txt"))
             .is(_.some)
             .pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 1000)
         )
       ),
       test("ls with invalid directory")(
         for {
-          files <- ls(Path.of("/dont-exist")).runCollect
+          files <- ls(Paths.get("/dont-exist")).runCollect
         } yield assert(files.map(_.path))(hasSameElements(Nil))
       ),
       test("ls descendant")(
         for {
-          files <- lsDescendant(Path.of("/")).runCollect
+          files <- lsDescendant(Paths.get("/")).runCollect
         } yield assert(files.map(_.path.toString))(
           hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump"))
         )
       ),
       test("ls descendant with invalid directory")(
         for {
-          files <- lsDescendant(Path.of("/dont-exist")).runCollect
+          files <- lsDescendant(Paths.get("/dont-exist")).runCollect
         } yield assert(files.map(_.path))(hasSameElements(Nil))
       ),
       test("stat file") {
         for {
-          file <- stat(Path.of("/dir1/users.csv"))
-        } yield assertTrue(file.get.path == Path.of("/dir1/users.csv")) &&
+          file <- stat(Paths.get("/dir1/users.csv"))
+        } yield assertTrue(file.get.path == Paths.get("/dir1/users.csv")) &&
           assertTrue(file.get.isDirectory.isEmpty)
       },
       test("stat directory") {
         for {
-          file <- stat(Path.of("/dir1"))
-        } yield assertTrue(file.get.path == Path.of("/dir1")) &&
+          file <- stat(Paths.get("/dir1"))
+        } yield assertTrue(file.get.path == Paths.get("/dir1")) &&
           assertTrue(file.get.isDirectory.isEmpty)
       },
       test("stat file does not exist") {
         for {
-          file <- stat(Path.of("/wrong-path.xml"))
+          file <- stat(Paths.get("/wrong-path.xml"))
         } yield assertTrue(file.isEmpty)
       },
       test("stat directory does not exist") {
         for {
-          file <- stat(Path.of("/wrong-path"))
+          file <- stat(Paths.get("/wrong-path"))
         } yield assertTrue(file.isEmpty)
       },
       test("readFile") {
         for {
-          content <- readFile(Path.of("/notes.txt"))
+          content <- readFile(Paths.get("/notes.txt"))
                        .via(utf8Decode)
                        .runCollect
         } yield assertTrue(
@@ -133,12 +132,12 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("readFile with offset") {
         for {
-          content <- readFile(Path.of("/notes.txt"), fileOffset = 16).via(utf8Decode).runCollect
+          content <- readFile(Paths.get("/notes.txt"), fileOffset = 16).via(utf8Decode).runCollect
         } yield assert(content.mkString)(equalTo("this is a beautiful day"))
       },
       test("readFile does not exist") {
         for {
-          invalid <- readFile(Path.of("/invalid.txt"))
+          invalid <- readFile(Paths.get("/invalid.txt"))
                        .via(utf8Decode)
                        .runCollect
                        .foldCause(_.failureOption.map(_.getMessage).mkString, _.mkString)
@@ -147,12 +146,12 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("mkdir directory") {
         (for {
-          result <- mkdir(Path.of("/dir1/new-dir")).as(true)
+          result <- mkdir(Paths.get("/dir1/new-dir")).as(true)
         } yield assertTrue(result)) <* attempt(Files.delete(home.resolve("dir1/new-dir")))
       },
       test("mkdir fail when invalid path") {
         for {
-          failure <- mkdir(Path.of("/dir1/users.csv")).flip.map(_.getMessage)
+          failure <- mkdir(Paths.get("/dir1/users.csv")).flip.map(_.getMessage)
         } yield assert(failure)(containsString("/dir1/users.csv exists but is not a directory"))
       },
       test("rm valid path") {
@@ -160,13 +159,13 @@ object SecureFtpSpec extends ZIOSpecDefault {
         Files.createFile(path)
 
         for {
-          success   <- rm(Path.of("/dir1/to-delete.txt")).as(true)
+          success   <- rm(Paths.get("/dir1/to-delete.txt")).as(true)
           fileExist <- attempt(Files.notExists(path))
         } yield assertTrue(success && fileExist)
       },
       test("rm fail when invalid path") {
         for {
-          invalid <- rm(Path.of("/dont-exist")).flip.map(_.getMessage)
+          invalid <- rm(Paths.get("/dont-exist")).flip.map(_.getMessage)
         } yield assertTrue(invalid == "No such file")
       },
       test("rm directory") {
@@ -174,13 +173,13 @@ object SecureFtpSpec extends ZIOSpecDefault {
         Files.createDirectory(path)
 
         for {
-          r     <- rmdir(Path.of("/dir1/dir-to-delete")).as(true)
+          r     <- rmdir(Paths.get("/dir1/dir-to-delete")).as(true)
           exist <- attempt(Files.notExists(path))
         } yield assertTrue(r && exist)
       },
       test("rm fail invalid directory") {
         for {
-          r <- rmdir(Path.of("/dont-exist")).flip.map(_.getMessage)
+          r <- rmdir(Paths.get("/dont-exist")).flip.map(_.getMessage)
         } yield assertTrue(r == "No such file")
       },
       test("upload a file") {
@@ -189,7 +188,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
 
         (
           for {
-            _      <- upload(Path.of("/dir1/hello-world.txt"), data)
+            _      <- upload(Paths.get("/dir1/hello-world.txt"), data)
             result <- acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b =>
                         attemptBlockingIO(b.close()).ignore
                       ).map(_.mkString)
@@ -201,7 +200,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
         for {
-          failure <- upload(Path.of("/dont-exist/hello-world.txt"), data).flip.map(_.getMessage)
+          failure <- upload(Paths.get("/dont-exist/hello-world.txt"), data).flip.map(_.getMessage)
         } yield assertTrue(failure == "No such file")
       },
       test("call version() underlying client") {
@@ -216,7 +215,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
 
         (
           for {
-            success       <- rename(Path.of("/dir1/to-rename.txt"), Path.of("/dir1/to-rename-destination.txt")).as(true)
+            success       <- rename(Paths.get("/dir1/to-rename.txt"), Paths.get("/dir1/to-rename-destination.txt")).as(true)
             oldFileExists <- attempt(Files.exists(oldPath))
             newFileExists <- attempt(Files.exists(newPath))
           } yield assertTrue(success && !oldFileExists && newFileExists)
@@ -224,7 +223,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("rename fail when invalid path") {
         for {
-          invalid <- rename(Path.of("/dont-exist"), Path.of("dont-exist-destination")).flip.map(_.getMessage)
+          invalid <- rename(Paths.get("/dont-exist"), Paths.get("dont-exist-destination")).flip.map(_.getMessage)
         } yield assertTrue(invalid == "No such file")
       }
     ).provideSomeLayerShared[Scope](secure(settings))

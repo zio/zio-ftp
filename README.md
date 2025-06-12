@@ -21,6 +21,7 @@ libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.3"
 * Imports
 ```scala
 import zio.ftp._
+import java.nio.file.Paths
 ```
 
 * FTP
@@ -47,7 +48,7 @@ SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
 val sftpSettings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
 
 //listing files
-SFtp.ls("/").runCollect.provideLayer(secure(sftpSettings))
+SFtp.ls(Paths.get("/")).runCollect.provideLayer(secure(sftpSettings))
 ```
 
 ## Example
@@ -81,9 +82,9 @@ object ZIOFTPExample extends ZIOAppDefault {
   private val myApp: ZIO[Ftp, IOException, Unit] =
     for {
       _        <- Console.printLine("List of files at root directory:")
-      resource <- ls("/").runCollect
+      resource <- ls(Paths.get("/")).runCollect
       _        <- ZIO.foreach(resource)(e => Console.printLine(e.path))
-      path      = "~/file.txt"
+      path      = Paths.get("~/file.txt")
       _        <- upload(
                     path,
                     ZStream.fromChunk(

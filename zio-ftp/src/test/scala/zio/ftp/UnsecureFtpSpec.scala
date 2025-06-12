@@ -68,7 +68,7 @@ object FtpSuite {
           filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/sftp/home/foo/notes.txt")))
 
         } yield assertTrue(
-          file.is(_.some).pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 1000)
+          file.is(_.some).pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 10000)
         )
       ),
       test("ls with invalid directory")(

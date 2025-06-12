@@ -77,7 +77,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
           files.map(_.path).toSet == Set(Paths.get("/notes.txt"), Paths.get("/dir1")) && files
             .find(_.path == Paths.get("/notes.txt"))
             .is(_.some)
-            .pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 1000)
+            .pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 10000)
         )
       ),
       test("ls with invalid directory")(

@@ -12,7 +12,6 @@ import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Paths }
 import java.time.{ Duration => JDuration }
 import scala.io.Source
-import scala.util.chaining._
 
 object Load
 
@@ -76,8 +75,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
         } yield assertTrue(
           files.map(_.path).toSet == Set(Paths.get("/notes.txt"), Paths.get("/dir1")) && files
             .find(_.path == Paths.get("/notes.txt"))
-            .is(_.some)
-            .pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 10000)
+            .exists(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 10000)
         )
       ),
       test("ls with invalid directory")(

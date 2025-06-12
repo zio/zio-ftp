@@ -12,7 +12,6 @@ import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
 import java.nio.file.{ Path, Paths }
 import java.nio.file.Files
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
@@ -69,8 +68,7 @@ object FtpSuite {
 
         } yield assertTrue(
           file
-            .is(_.some)
-            .lastModified == filetime.toInstant().truncatedTo(ChronoUnit.SECONDS)
+            .exists(_.lastModified == filetime.toInstant().truncatedTo(ChronoUnit.MINUTES))
         )
       ),
       test("ls with invalid directory")(

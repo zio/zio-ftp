@@ -20,7 +20,7 @@ object StubFtpSpec extends ZIOSpecDefault {
       test("ls")(
         for {
           files <- ls("/").runFold(List.empty[String])((s, f) => f.path +: s)
-        } yield assert(files.reverse)(hasSameElements(List(Paths.get("/notes.txt"), Paths.get("/dir1"))))
+        } yield assert(files.reverse)(hasSameElements(List("/notes.txt", "/dir1")))
       ),
       test("ls with invalid directory")(
         for {

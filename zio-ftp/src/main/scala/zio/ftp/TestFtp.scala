@@ -25,20 +25,19 @@ import java.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
 import scala.jdk.CollectionConverters._
 import zio.{ Cause, ZIO }
+import java.nio.file.Paths
 
 object TestFtp {
 
   def create(root: Path): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
+      def inRoot(p: String)                                           = root.resolve(Paths.get("/").relativize(Paths.get(p)))
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] = {
-        val p = root.resolve(path)
+        val p = inRoot(path)
         ZIO
-          .attempt(
-            Files
-              .exists(p)
-          )
+          .attempt(Files.exists(p))
           .flatMap {
             case true  => get(p).map(Option(_))
             case false => ZIO.succeed(Option.empty[FtpResource])
@@ -48,7 +47,7 @@ object TestFtp {
 
       override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] = {
         val a: ZStream[Any, IOException, Byte] = ZStream
-          .fromInputStreamScoped(ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Files.newInputStream(root.resolve(path)))))
+          .fromInputStreamScoped(ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Files.newInputStream(inRoot(path)))))
         a
           .catchAll {
             case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
@@ -61,7 +60,7 @@ object TestFtp {
         ZIO
           .attemptBlockingIO(
             Files
-              .delete(root.resolve(path))
+              .delete(inRoot(path))
           )
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot delete : $path", err)))
 
@@ -72,7 +71,7 @@ object TestFtp {
         ZIO
           .attemptBlockingIO(
             Files
-              .createDirectories(root.resolve(path))
+              .createDirectories(inRoot(path))
           )
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
           .unit
@@ -83,7 +82,7 @@ object TestFtp {
             ZIO.fromAutoCloseable(
               ZIO.attemptBlockingIO(
                 Files
-                  .list(root.resolve(path))
+                  .list(inRoot(path))
               )
             )
           )
@@ -104,7 +103,13 @@ object TestFtp {
           isDir        <- ZIO.attempt(Files.isDirectory(p)).map(Some(_))
           lastModified <- ZIO.attempt(Files.getLastModifiedTime(p)).map(_.toInstant())
           size         <- ZIO.attempt(Files.size(p))
-        } yield FtpResource(root.relativize(p).toString, size, lastModified, permissions, isDir))
+        } yield FtpResource(
+          Paths.get("/").resolve(root.relativize(p)).toString,
+          size,
+          lastModified,
+          permissions,
+          isDir
+        ))
           .mapError(new IOException(_))
 
       override def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
@@ -113,7 +118,7 @@ object TestFtp {
             ZIO.fromAutoCloseable(
               ZIO.attempt(
                 Files
-                  .find(root.resolve(path), Int.MaxValue, (_, attr) => attr.isRegularFile)
+                  .find(inRoot(path), Int.MaxValue, (_, attr) => attr.isRegularFile)
               )
             )
           )
@@ -127,7 +132,7 @@ object TestFtp {
         path: String,
         source: ZStream[R, Throwable, Byte]
       ): ZIO[R, IOException, Unit] = {
-        val file = (root.resolve(path)).toFile
+        val file = (inRoot(path)).toFile
 
         ZIO.scoped[R] {
           ZIO
@@ -146,7 +151,7 @@ object TestFtp {
         ZIO
           .attempt(
             Files
-              .move(root.resolve(oldPath), root.resolve(newPath)): Unit
+              .move(inRoot(oldPath), inRoot(newPath)): Unit
           )
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot rename $oldPath to $newPath", err)))
     }

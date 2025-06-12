@@ -73,7 +73,7 @@ object TestFtp {
             Files
               .createDirectories(inRoot(path))
           )
-          .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
+          .catchAll[Any, IOException, Path](err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
           .unit
 
       override def ls(path: String): ZStream[Any, IOException, FtpResource] =

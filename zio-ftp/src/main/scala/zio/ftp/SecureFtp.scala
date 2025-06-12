@@ -29,6 +29,7 @@ import zio._
 
 import scala.jdk.CollectionConverters._
 import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
+import java.nio.file.Path
 
 /**
  * Secure Ftp client wrapper
@@ -38,13 +39,13 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
  */
 sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
-  def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
-    execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
+  def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] =
+    execute(c => Option(c.statExistence(path.toString)).map(FtpResource(path, _)))
 
-  def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
+  def readFile(path: Path, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
     for {
       remoteFile             <- ZStream.fromZIO(
-                                  execute(_.open(path, util.EnumSet.of(OpenMode.READ)))
+                                  execute(_.open(path.toString, util.EnumSet.of(OpenMode.READ)))
                                 )
 
       is: java.io.InputStream = new remoteFile.ReadAheadRemoteFileInputStream(64, fileOffset) {
@@ -57,19 +58,19 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       input <- ZStream.fromInputStream(is, chunkSize)
     } yield input
 
-  def rm(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.rm(path))
+  def rm(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.rm(path.toString))
 
-  def rmdir(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.rmdir(path))
+  def rmdir(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.rmdir(path.toString))
 
-  def mkdir(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.mkdirs(path))
+  def mkdir(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.mkdirs(path.toString))
 
-  def ls(path: String): ZStream[Any, IOException, FtpResource] =
+  def ls(path: Path): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(
-        execute(_.ls(path).asScala)
+        execute(_.ls(path.toString).asScala)
           .catchSome {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
@@ -78,13 +79,13 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromResource)
 
-  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
-    execute(_.rename(oldPath, newPath))
+  def rename(oldPath: Path, newPath: Path): ZIO[Any, IOException, Unit] =
+    execute(_.rename(oldPath.toString, newPath.toString))
 
-  def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
+  def lsDescendant(path: Path): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(
-        execute(_.ls(path).asScala)
+        execute(_.ls(path.toString).asScala)
           .catchSome {
             case ex: SFTPException if ex.getStatusCode == Response.StatusCode.NO_SUCH_FILE =>
               ZIO.succeed(scala.collection.mutable.Buffer.empty[RemoteResourceInfo])
@@ -92,13 +93,13 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       )
       .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
-        if (f.isDirectory) lsDescendant(f.getPath)
+        if (f.isDirectory) lsDescendant(Path.of(f.getPath))
         else ZStream.succeed(FtpResource.fromResource(f))
       }
 
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R](path: Path, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
-      remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
+      remoteFile <- execute(_.open(path.toString, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
       _          <- scoped[R] {
                       fromAutoCloseable(ZIO.succeed(new remoteFile.RemoteFileOutputStream() {
                         override def close(): Unit =

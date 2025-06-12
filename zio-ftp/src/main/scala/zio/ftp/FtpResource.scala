@@ -23,6 +23,7 @@ import net.schmizz.sshj.sftp.{ FileAttributes, RemoteResourceInfo }
 import net.schmizz.sshj.xfer.FilePermission._
 import org.apache.commons.net.ftp.FTPFile
 import scala.jdk.CollectionConverters._
+import java.nio.file.Path
 
 /**
  * Represent a file / directory / symbolic link on a ftp server
@@ -34,7 +35,7 @@ import scala.jdk.CollectionConverters._
  * @param isDirectory boolean flag: 'true' if it is a directory, 'false' if it is a file. In some situation we cannot determine the type of the resource
  */
 final case class FtpResource(
-  path: String,
+  path: Path,
   size: Long,
   lastModified: Instant,
   permissions: Set[PosixFilePermission],
@@ -43,12 +44,9 @@ final case class FtpResource(
 
 object FtpResource {
 
-  def fromFtpFile(f: FTPFile, path: Option[String] = None): FtpResource =
+  def fromFtpFile(f: FTPFile, path: Option[Path] = None): FtpResource =
     FtpResource(
-      path.fold(f.getName) {
-        case "/" => s"/${f.getName}"
-        case p   => s"$p/${f.getName}"
-      },
+      path.foldLeft(Path.of(f.getName))(_.resolve(_)),
       f.getSize,
       f.getTimestamp.toInstant(),
       getPosixFilePermissions(f),
@@ -57,14 +55,14 @@ object FtpResource {
 
   def fromResource(file: RemoteResourceInfo): FtpResource =
     FtpResource(
-      file.getPath,
+      Path.of(file.getPath),
       file.getAttributes.getSize,
       Instant.ofEpochSecond(file.getAttributes.getMtime),
       posixFilePermissions(file.getAttributes),
       Some(file.isDirectory)
     )
 
-  def apply(path: String, attr: FileAttributes): FtpResource =
+  def apply(path: Path, attr: FileAttributes): FtpResource =
     FtpResource(path, attr.getSize, Instant.ofEpochSecond(attr.getMtime), posixFilePermissions(attr), None)
 
   private def getPosixFilePermissions(file: FTPFile) =

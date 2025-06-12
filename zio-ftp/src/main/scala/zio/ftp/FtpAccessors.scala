@@ -3,6 +3,7 @@ package zio.ftp
 import java.io.IOException
 import zio.ZIO
 import zio.stream.ZStream
+import java.nio.file.Path
 
 trait FtpAccessors[+A] {
 
@@ -20,7 +21,7 @@ trait FtpAccessors[+A] {
    *
    * @param path absolute path of the file
    */
-  def stat(path: String): ZIO[Any, IOException, Option[FtpResource]]
+  def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]]
 
   /**
    * Read a file by using stream. If the operation failed, an error will be emitted
@@ -29,14 +30,14 @@ trait FtpAccessors[+A] {
    * @param chunkSize default chunk size is 2048 bytes
    * @param fileOffset optional initial offset in bytes
    */
-  def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Any, IOException, Byte]
+  def readFile(path: Path, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Any, IOException, Byte]
 
   /**
    * Delete a file on a server. If the operation failed, an error will be emitted
    *
    * @param path absolute path of the file
    */
-  def rm(path: String): ZIO[Any, IOException, Unit]
+  def rm(path: Path): ZIO[Any, IOException, Unit]
 
   /**
    * Delete a directory. If the operation failed, an error will be emitted
@@ -44,28 +45,28 @@ trait FtpAccessors[+A] {
    * @param path absolute path of the directory
    * @return
    */
-  def rmdir(path: String): ZIO[Any, IOException, Unit]
+  def rmdir(path: Path): ZIO[Any, IOException, Unit]
 
   /**
    * Create a directory. If the operation failed, an error will be emitted
    *
    * @param path absolute path of the directory
    */
-  def mkdir(path: String): ZIO[Any, IOException, Unit]
+  def mkdir(path: Path): ZIO[Any, IOException, Unit]
 
   /**
    * List of files / directories. If the operation failed, an error will be emitted
    *
    * @param path absolute path of the directory
    */
-  def ls(path: String): ZStream[Any, IOException, FtpResource]
+  def ls(path: Path): ZStream[Any, IOException, FtpResource]
 
   /**
    * List of files from a base directory recursively. If the operation failed, an error will be emitted
    *
    * @param path absolute path of the directory
    */
-  def lsDescendant(path: String): ZStream[Any, IOException, FtpResource]
+  def lsDescendant(path: Path): ZStream[Any, IOException, FtpResource]
 
   /**
    * Save a data stream. If the operation failed, an error will be emitted
@@ -74,7 +75,7 @@ trait FtpAccessors[+A] {
    * @param source data stream to store
    * @tparam R environment of the specified stream source, required to extend Blocking
    */
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit]
+  def upload[R](path: Path, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit]
 
   /**
    * Renames a file/directory. If the operation failed, an error will be emitted
@@ -82,6 +83,6 @@ trait FtpAccessors[+A] {
    * @param oldPath absolute path of the file/directory to rename
    * @param newPath absolute path of the file/directory destination.
    */
-  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit]
+  def rename(oldPath: Path, newPath: Path): ZIO[Any, IOException, Unit]
 
 }

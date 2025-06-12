@@ -21,6 +21,7 @@ import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
 import zio.{ Ref, Scope, UIO, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
+import java.nio.file.Path
 
 /**
  * Unsecure Ftp client wrapper
@@ -30,10 +31,10 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO }
  */
 sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
-  def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
-    execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
+  def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] =
+    execute(c => Option(c.mlistFile(path.toString))).map(_.map(FtpResource.fromFtpFile(_)))
 
-  def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] = {
+  def readFile(path: Path, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] = {
     def error(cause: Option[Exception] = None): Left[FileTransferIncompleteError, Unit] =
       Left(
         FileTransferIncompleteError(
@@ -60,7 +61,8 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
       }
 
     val inputStream =
-      execute(c => Option(c.retrieveFileStream(path))).someOrFail(InvalidPathError(s"File does not exist $path"))
+      execute(c => Option(c.retrieveFileStream(path.toString)))
+        .someOrFail(InvalidPathError(s"File does not exist $path"))
 
     ZStream.unwrap {
       for {
@@ -72,52 +74,51 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
     }
   }
 
-  def rm(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.deleteFile(path))
+  def rm(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.deleteFile(path.toString))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete file : $path"))
       .unit
 
-  def rmdir(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.removeDirectory(path))
+  def rmdir(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.removeDirectory(path.toString))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
       .unit
 
-  def mkdir(path: String): ZIO[Any, IOException, Unit] =
-    execute(_.makeDirectory(path))
+  def mkdir(path: Path): ZIO[Any, IOException, Unit] =
+    execute(_.makeDirectory(path.toString))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot create directory : $path"))
       .unit
 
-  def ls(path: String): ZStream[Any, IOException, FtpResource] =
+  def ls(path: Path): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromZIO(execute(_.listFiles(path).toList))
+      .fromZIO(execute(_.listFiles(path.toString).toList))
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromFtpFile(_, Some(path)))
 
-  def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
+  def lsDescendant(path: Path): ZStream[Any, IOException, FtpResource] =
     ZStream
-      .fromZIO(execute(_.listFiles(path).toList))
+      .fromZIO(execute(_.listFiles(path.toString).toList))
       .flatMap(ZStream.fromIterable(_))
       .flatMap { f =>
-        if (f.isDirectory) {
-          val dirPath = Option(path).filter(_.endsWith("/")).fold(s"$path/${f.getName}")(p => s"$p${f.getName}")
-          lsDescendant(dirPath)
-        } else
+        if (f.isDirectory)
+          lsDescendant(path.resolve(f.getName()))
+        else
           ZStream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
-  def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
+  def upload[R](path: Path, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     ZIO.scoped[R] {
       source.toInputStream
         .mapError(new IOException(_))
         .flatMap(is =>
-          execute(_.storeFile(path, is))
+          execute(_.storeFile(path.toString, is))
             .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot upload data to : $path"))
             .unit
         )
     }
 
-  def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
-    execute(_.rename(oldPath, newPath))
+  def rename(oldPath: Path, newPath: Path): ZIO[Any, IOException, Unit] =
+    execute(_.rename(oldPath.toString, newPath.toString))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot rename $oldPath to $newPath"))
       .unit
 

@@ -18,8 +18,8 @@ package zio
 
 import java.io.IOException
 
-import zio.nio.file.{ Path => ZPath }
 import zio.stream.ZStream
+import java.nio.file.Path
 
 package object ftp {
   //Alias Unsecure Ftp dependency
@@ -34,26 +34,26 @@ package object ftp {
     def execute[T](f: UnsecureFtp.Client => T): ZIO[Ftp, IOException, T] =
       ZIO.serviceWithZIO(_.execute(f))
 
-    def stat(path: String): ZIO[Ftp, IOException, Option[FtpResource]] =
+    def stat(path: Path): ZIO[Ftp, IOException, Option[FtpResource]] =
       ZIO.serviceWithZIO(_.stat(path))
 
-    def rm(path: String): ZIO[Ftp, IOException, Unit] =
+    def rm(path: Path): ZIO[Ftp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rm(path))
 
-    def rmdir(path: String): ZIO[Ftp, IOException, Unit] =
+    def rmdir(path: Path): ZIO[Ftp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rmdir(path))
 
-    def mkdir(path: String): ZIO[Ftp, IOException, Unit] =
+    def mkdir(path: Path): ZIO[Ftp, IOException, Unit] =
       ZIO.serviceWithZIO(_.mkdir(path))
 
-    def ls(path: String): ZStream[Ftp, IOException, FtpResource] =
+    def ls(path: Path): ZStream[Ftp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.ls(path))
 
-    def lsDescendant(path: String): ZStream[Ftp, IOException, FtpResource] =
+    def lsDescendant(path: Path): ZStream[Ftp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
-      path: String,
+      path: Path,
       source: ZStream[R, Throwable, Byte]
     ): ZIO[R with Ftp, IOException, Unit] =
       for {
@@ -61,10 +61,10 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Ftp, IOException, Byte] =
+    def readFile(path: Path, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[Ftp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
-    def rename(oldPath: String, newPath: String): ZIO[Ftp, Exception, Unit] =
+    def rename(oldPath: Path, newPath: Path): ZIO[Ftp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
@@ -73,26 +73,26 @@ package object ftp {
     def execute[T](f: SecureFtp.Client => T): ZIO[SFtp, IOException, T] =
       ZIO.serviceWithZIO(_.execute(f))
 
-    def stat(path: String): ZIO[SFtp, IOException, Option[FtpResource]] =
+    def stat(path: Path): ZIO[SFtp, IOException, Option[FtpResource]] =
       ZIO.serviceWithZIO(_.stat(path))
 
-    def rm(path: String): ZIO[SFtp, IOException, Unit] =
+    def rm(path: Path): ZIO[SFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rm(path))
 
-    def rmdir(path: String): ZIO[SFtp, IOException, Unit] =
+    def rmdir(path: Path): ZIO[SFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rmdir(path))
 
-    def mkdir(path: String): ZIO[SFtp, IOException, Unit] =
+    def mkdir(path: Path): ZIO[SFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.mkdir(path))
 
-    def ls(path: String): ZStream[SFtp, IOException, FtpResource] =
+    def ls(path: Path): ZStream[SFtp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.ls(path))
 
-    def lsDescendant(path: String): ZStream[SFtp, IOException, FtpResource] =
+    def lsDescendant(path: Path): ZStream[SFtp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
-      path: String,
+      path: Path,
       source: ZStream[R, Throwable, Byte]
     ): ZIO[SFtp with R, IOException, Unit] =
       for {
@@ -100,10 +100,10 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[SFtp, IOException, Byte] =
+    def readFile(path: Path, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[SFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
-    def rename(oldPath: String, newPath: String): ZIO[SFtp, Exception, Unit] =
+    def rename(oldPath: Path, newPath: Path): ZIO[SFtp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
@@ -112,26 +112,26 @@ package object ftp {
     def execute[T](f: Unit => T): ZIO[StubFtp, IOException, T] =
       ZIO.serviceWithZIO(_.execute(f))
 
-    def stat(path: String): ZIO[StubFtp, IOException, Option[FtpResource]] =
+    def stat(path: Path): ZIO[StubFtp, IOException, Option[FtpResource]] =
       ZIO.serviceWithZIO(_.stat(path))
 
-    def rm(path: String): ZIO[StubFtp, IOException, Unit] =
+    def rm(path: Path): ZIO[StubFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rm(path))
 
-    def rmdir(path: String): ZIO[StubFtp, IOException, Unit] =
+    def rmdir(path: Path): ZIO[StubFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.rmdir(path))
 
-    def mkdir(path: String): ZIO[StubFtp, IOException, Unit] =
+    def mkdir(path: Path): ZIO[StubFtp, IOException, Unit] =
       ZIO.serviceWithZIO(_.mkdir(path))
 
-    def ls(path: String): ZStream[StubFtp, IOException, FtpResource] =
+    def ls(path: Path): ZStream[StubFtp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.ls(path))
 
-    def lsDescendant(path: String): ZStream[StubFtp, IOException, FtpResource] =
+    def lsDescendant(path: Path): ZStream[StubFtp, IOException, FtpResource] =
       ZStream.serviceWithStream(_.lsDescendant(path))
 
     def upload[R](
-      path: String,
+      path: Path,
       source: ZStream[R, Throwable, Byte]
     ): ZIO[StubFtp with R, IOException, Unit] =
       for {
@@ -139,10 +139,10 @@ package object ftp {
         _   <- ftp.upload(path, source)
       } yield ()
 
-    def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[StubFtp, IOException, Byte] =
+    def readFile(path: Path, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[StubFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
 
-    def rename(oldPath: String, newPath: String): ZIO[StubFtp, Exception, Unit] =
+    def rename(oldPath: Path, newPath: Path): ZIO[StubFtp, Exception, Unit] =
       ZIO.serviceWithZIO(_.rename(oldPath, newPath))
   }
 
@@ -152,6 +152,6 @@ package object ftp {
   def secure(settings: SecureFtpSettings): ZLayer[Any, ConnectionError, SFtp] =
     ZLayer.scoped(SecureFtp.connect(settings))
 
-  def stub(path: ZPath): Layer[Any, StubFtp] =
+  def stub(path: Path): Layer[Any, StubFtp] =
     ZLayer.succeed(TestFtp.create(path))
 }

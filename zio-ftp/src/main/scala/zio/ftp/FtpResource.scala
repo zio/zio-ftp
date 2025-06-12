@@ -46,7 +46,7 @@ object FtpResource {
 
   def fromFtpFile(f: FTPFile, path: Option[Path] = None): FtpResource =
     FtpResource(
-      path.foldLeft(Path.of(f.getName))(_.resolve(_)),
+      path.foldLeft(Path.of(f.getName))((a, b) => b.resolve(a)),
       f.getSize,
       f.getTimestamp.toInstant(),
       getPosixFilePermissions(f),

@@ -10,10 +10,10 @@ import zio.test._
 
 import java.net.{ InetSocketAddress, Proxy }
 import java.nio.file.{ Files, Paths }
-import java.time.Instant
 import java.time.{ Duration => JDuration }
 import java.nio.file.Path
 import scala.io.Source
+import scala.util.chaining._
 
 object Load
 
@@ -73,10 +73,12 @@ object SecureFtpSpec extends ZIOSpecDefault {
       test("ls")(
         for {
           files <- ls(Path.of("/")).runCollect
+          filetime <- ZIO.attempt(Files.getLastModifiedTime(Path.of("ftp-home/ftp/home/notes.txt")))
         } yield assertTrue(
           files.map(_.path).toSet == Set(Path.of("/notes.txt"), Path.of("/dir1")) && files
-            .find(_.path == "/notes.txt")
-            .exists(r => JDuration.between(r.lastModified, Instant.now()).abs.toMinutes < 10)
+            .find(_.path == Path.of("/notes.txt"))
+            .is(_.some)
+            .pipe(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 1000)
         )
       ),
       test("ls with invalid directory")(
@@ -87,7 +89,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
       test("ls descendant")(
         for {
           files <- lsDescendant(Path.of("/")).runCollect
-        } yield assert(files.map(_.path))(
+        } yield assert(files.map(_.path.toString))(
           hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump"))
         )
       ),

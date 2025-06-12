@@ -74,7 +74,9 @@ object TestFtp {
             Files
               .createDirectories(root.resolve(path))
           )
-          .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
+          .catchAll[Any, IOException, Path](err =>
+            ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err))
+          )
           .unit
 
       override def ls(path: Path): ZStream[Any, IOException, FtpResource] =
@@ -144,10 +146,10 @@ object TestFtp {
 
       override def rename(oldPath: Path, newPath: Path): ZIO[Any, IOException, Unit] =
         ZIO
-          .attempt(
-            Files
-              .move(root.resolve(oldPath), root.resolve(newPath)): Unit
-          )
+          .attempt {
+            Files.move(root.resolve(oldPath), root.resolve(newPath))
+            ()
+          }
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot rename $oldPath to $newPath", err)))
     }
 }

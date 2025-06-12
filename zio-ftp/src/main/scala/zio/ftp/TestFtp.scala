@@ -34,7 +34,7 @@ object TestFtp {
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] = {
-        val p = root.resolve(path)
+        val p = inRoot(path)
         ZIO
           .attempt(
             Files

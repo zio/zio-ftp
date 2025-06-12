@@ -30,7 +30,7 @@ import java.nio.file.Paths
 val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
 
 //listing files
-Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
+Ftp.ls(Paths.get("/")).runCollect.provideLayer(unsecure(unsecureSettings))
 ```
 
 * FTPS
@@ -39,7 +39,7 @@ Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
 val secureSettings = SecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
 
 //listing files
-SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
+SFtp.ls(Paths.get("/")).runCollect.provideLayer(secure(secureSettings))
 ```
 
 * SFTP (support ssh key)

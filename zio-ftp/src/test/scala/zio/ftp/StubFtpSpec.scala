@@ -29,9 +29,9 @@ object StubFtpSpec extends ZIOSpecDefault {
       ),
       test("ls descendant")(
         for {
-          files <- lsDescendant(Path.of("/")).runFold(List.empty[Path])((s, f) => f.path +: s)
-        } yield assert(files.reverse)(
-          hasSameElements(List(Path.of("/notes.txt"), "/dir1/users.csv", "/dir1/console.dump"))
+          files <- lsDescendant(Path.of("/")).runFold(List.empty[String])((s, f) => f.path.toString +: s)
+        } yield assert(files)(
+          hasSameElements(List("/notes.txt", "/dir1/users.csv", "/dir1/console.dump"))
         )
       ),
       test("ls descendant with invalid directory")(

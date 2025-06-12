@@ -70,11 +70,11 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("ls")(
         for {
-          files    <- ls(Paths.get("/").toString).runCollect
+          files    <- ls("/").runCollect
           filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/ftp/home/notes.txt")))
         } yield assertTrue(
           files.map(_.path).toSet == Set("/notes.txt", "/dir1") && files
-            .find(_.path == Paths.get("/notes.txt"))
+            .find(_.path == "/notes.txt")
             .exists(r => JDuration.between(r.lastModified, filetime.toInstant()).abs.toMillis < 10000)
         )
       ),

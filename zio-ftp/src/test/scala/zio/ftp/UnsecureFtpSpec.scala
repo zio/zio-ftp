@@ -3,15 +3,15 @@ package zio.ftp
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 import zio.{ test => _, _ }
 import zio.test._
+import zio.test.TestAspect.sequential
 import zio.test.Assertion._
-import zio.test.TestAspect._
 import zio.ftp.Ftp._
 import java.nio.file.{ Files, Paths }
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
-import java.time.{ Instant, Duration => JDuration }
+import java.time.temporal.ChronoUnit
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
   private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
@@ -62,8 +62,12 @@ object FtpSuite {
       ),
       test("timestamp")(
         for {
-          file <- ls("/notes.txt").runLast
-        } yield assertTrue(file.exists(r => JDuration.between(r.lastModified, Instant.now()).abs.toMinutes < 10))
+          file     <- ls("/notes.txt").runLast
+          filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/sftp/home/foo/notes.txt")))
+        } yield assertTrue(
+          file
+            .exists(_.lastModified == filetime.toInstant().truncatedTo(ChronoUnit.MINUTES))
+        )
       ),
       test("ls with invalid directory")(
         for {

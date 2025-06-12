@@ -30,6 +30,7 @@ object TestFtp {
 
   def create(root: Path): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
+      def inRoot(p: Path) = root.resolve(Path.of("/").relativize(p))
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] = {
@@ -48,7 +49,7 @@ object TestFtp {
 
       override def readFile(path: Path, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] = {
         val a: ZStream[Any, IOException, Byte] = ZStream
-          .fromInputStreamScoped(ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Files.newInputStream(root.resolve(path)))))
+          .fromInputStreamScoped(ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Files.newInputStream(inRoot(path)))))
         a
           .catchAll {
             case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
@@ -61,7 +62,7 @@ object TestFtp {
         ZIO
           .attemptBlockingIO(
             Files
-              .delete(root.resolve(path))
+              .delete(inRoot(path))
           )
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot delete : $path", err)))
 
@@ -72,7 +73,7 @@ object TestFtp {
         ZIO
           .attemptBlockingIO(
             Files
-              .createDirectories(root.resolve(path))
+              .createDirectories(inRoot(path))
           )
           .catchAll[Any, IOException, Path](err =>
             ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err))
@@ -85,7 +86,7 @@ object TestFtp {
             ZIO.fromAutoCloseable(
               ZIO.attemptBlockingIO(
                 Files
-                  .list(root.resolve(path))
+                  .list(inRoot(path))
               )
             )
           )
@@ -106,7 +107,7 @@ object TestFtp {
           isDir        <- ZIO.attempt(Files.isDirectory(p)).map(Some(_))
           lastModified <- ZIO.attempt(Files.getLastModifiedTime(p)).map(_.toInstant())
           size         <- ZIO.attempt(Files.size(p))
-        } yield FtpResource(root.relativize(p), size, lastModified, permissions, isDir))
+        } yield FtpResource(Path.of("/").resolve(root.relativize(p)), size, lastModified, permissions, isDir))
           .mapError(new IOException(_))
 
       override def lsDescendant(path: Path): ZStream[Any, IOException, FtpResource] =
@@ -115,7 +116,7 @@ object TestFtp {
             ZIO.fromAutoCloseable(
               ZIO.attempt(
                 Files
-                  .find(root.resolve(path), Int.MaxValue, (_, attr) => attr.isRegularFile)
+                  .find(inRoot(path), Int.MaxValue, (_, attr) => attr.isRegularFile)
               )
             )
           )
@@ -129,7 +130,7 @@ object TestFtp {
         path: Path,
         source: ZStream[R, Throwable, Byte]
       ): ZIO[R, IOException, Unit] = {
-        val file = (root.resolve(path)).toFile
+        val file = (inRoot(path)).toFile
 
         ZIO.scoped[R] {
           ZIO
@@ -147,7 +148,7 @@ object TestFtp {
       override def rename(oldPath: Path, newPath: Path): ZIO[Any, IOException, Unit] =
         ZIO
           .attempt {
-            Files.move(root.resolve(oldPath), root.resolve(newPath))
+            Files.move(inRoot(oldPath), inRoot(newPath))
             ()
           }
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot rename $oldPath to $newPath", err)))

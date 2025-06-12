@@ -86,7 +86,7 @@ object FtpSuite {
       test("stat directory") {
         for {
 
-          file <- stat(Path.of("/dir1)"))
+          file <- stat(Path.of("/dir1"))
         } yield assertTrue(file.get.path == Path.of("/dir1")) &&
           assertTrue(file.get.isDirectory.get)
       },

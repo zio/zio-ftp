@@ -72,7 +72,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
       },
       test("ls")(
         for {
-          files <- ls(Path.of("/")).runCollect
+          files    <- ls(Path.of("/")).runCollect
           filetime <- ZIO.attempt(Files.getLastModifiedTime(Path.of("ftp-home/ftp/home/notes.txt")))
         } yield assertTrue(
           files.map(_.path).toSet == Set(Path.of("/notes.txt"), Path.of("/dir1")) && files

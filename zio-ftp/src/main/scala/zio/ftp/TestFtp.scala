@@ -30,7 +30,7 @@ object TestFtp {
 
   def create(root: Path): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
-      def inRoot(p: Path) = root.resolve(Path.of("/").relativize(p))
+      def inRoot(p: Path)                                             = root.resolve(Path.of("/").relativize(p))
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: Path): ZIO[Any, IOException, Option[FtpResource]] = {

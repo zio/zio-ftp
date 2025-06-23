@@ -17,7 +17,7 @@ import java.time.{ Duration => JDuration }
 object Load
 
 object SecureFtpSpec extends ZIOSpecDefault {
-  val settings = SecureFtpSettings("127.0.0.1", port = 2222, FtpCredentials("foo", "foo"))
+  val settings = SecureFtpSettings("127.0.0.1", port = 2222, PasswordCredentials("foo", "foo"))
 
   val home = Paths.get("ftp-home/sftp/home/foo")
 
@@ -26,7 +26,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
       test("invalid credentials")(
         for {
           succeed <- SecureFtp
-                       .connect(settings.copy(credentials = FtpCredentials("test", "test")))
+                       .connect(settings.copy(credentials = PasswordCredentials("test", "test")))
                        .flip
                        .map(_.getMessage)
         } yield assertTrue(succeed.contains("Fail to connect to server"))
@@ -53,7 +53,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
                         )(b => attemptBlockingIO(b.close()).ignore)
                           .map(_.mkString)
 
-          settings    = SecureFtpSettings("127.0.0.1", 3333, FtpCredentials("fooz", ""), RawKeySftpIdentity(privatekey))
+          settings    = SecureFtpSettings("127.0.0.1", 3333, KeyCredentials("fooz", RawKeySftpIdentity(privatekey)))
           succeed    <- SecureFtp.connect(settings).as(true)
         } yield assertTrue(succeed)
       },
@@ -63,8 +63,7 @@ object SecureFtpSpec extends ZIOSpecDefault {
           settings    = SecureFtpSettings(
                           "127.0.0.1",
                           3333,
-                          FtpCredentials("fooz", ""),
-                          KeyFileSftpIdentity(privatekey, None)
+                          KeyCredentials("fooz", KeyFileSftpIdentity(privatekey, None))
                         )
           succeed    <- SecureFtp.connect(settings).as(true)
         } yield assertTrue(succeed)

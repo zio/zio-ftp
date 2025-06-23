@@ -15,14 +15,14 @@ import scala.io.Source
 import java.time.{ Instant, Duration => JDuration }
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
-  private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, FtpCredentials("username", "userpass"))
+  private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, PasswordCredentials("username", "userpass"))
 
   override def spec: Spec[TestEnvironment & Scope, Any] =
     FtpSuite.spec("UnsecureSslFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
 }
 
 object UnsecureFtpSpec extends ZIOSpecDefault {
-  private val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, FtpCredentials("username", "userpass"))
+  private val settings = UnsecureFtpSettings("127.0.0.1", port = 2121, PasswordCredentials("username", "userpass"))
 
   override def spec: Spec[TestEnvironment & Scope, Any] =
     FtpSuite.spec("UnsecureFtpSpec", settings).provideSomeLayer[Scope](unsecure(settings)) @@ sequential
@@ -36,7 +36,7 @@ object FtpSuite {
       test("invalid credentials")(
         for {
           failure <- UnsecureFtp
-                       .connect(settings.copy(credentials = FtpCredentials("test", "test")))
+                       .connect(settings.copy(credentials = PasswordCredentials("test", "test")))
                        .flip
                        .map(_.getMessage)
         } yield assert(failure)(containsString("Fail to connect to server"))

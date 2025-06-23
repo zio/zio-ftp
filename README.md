@@ -26,7 +26,7 @@ import zio.ftp._
 * FTP
 ```scala
 // FTP
-val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
 
 //listing files
 Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
@@ -35,7 +35,7 @@ Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
 * FTPS
 ```scala
 // FTPS
-val secureSettings = SecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val secureSettings = SecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
 
 //listing files
 SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
@@ -44,7 +44,7 @@ SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
 * SFTP (support ssh key)
 
 ```scala
-val sftpSettings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
 
 //listing files
 SFtp.ls("/").runCollect.provideLayer(secure(sftpSettings))
@@ -76,7 +76,7 @@ import java.io.IOException
 object ZIOFTPExample extends ZIOAppDefault {
 
   private val settings =
-    UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("one", "1234"))
+    UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
 
   private val myApp: ZIO[Ftp, IOException, Unit] =
     for {

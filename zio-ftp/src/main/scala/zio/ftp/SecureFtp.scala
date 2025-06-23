@@ -134,10 +134,10 @@ object SecureFtp {
 
         ssh.connect(host, port)
 
-        sftpIdentity
-          .fold(ssh.authPassword(credentials.username, credentials.password))(
-            setIdentity(_, credentials.username)(ssh)
-          )
+        credentials match {
+          case PasswordCredentials(username, password) => ssh.authPassword(username, password)
+          case KeyCredentials(username, identity)      => setIdentity(identity, username)(ssh)
+        }
 
         new SecureFtp(ssh.newSFTPClient()) {}
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))

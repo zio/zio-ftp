@@ -14,7 +14,7 @@ name: Website
 jobs:
   build:
     name: Build and Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ github.event_name == 'pull_request' }}
     steps:
     - name: Git Checkout
@@ -24,8 +24,8 @@ jobs:
     - name: Setup Scala
       uses: actions/setup-java@v3.9.0
       with:
-        distribution: temurin
-        java-version: 17
+        distribution: amazon-corretto
+        java-version: 21
         check-latest: true
     - name: Check if the README file is up to date
       run: sbt docs/checkReadme
@@ -37,7 +37,7 @@ jobs:
       run: sbt docs/clean; sbt  docs/buildWebsite
   publish-docs:
     name: Publish Docs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ ((github.event_name == 'release') && (github.event.action == 'published')) || (github.event_name == 'workflow_dispatch') }}
     steps:
     - name: Git Checkout
@@ -47,8 +47,8 @@ jobs:
     - name: Setup Scala
       uses: actions/setup-java@v3.9.0
       with:
-        distribution: temurin
-        java-version: 17
+        distribution: amazon-corretto
+        java-version: 21
         check-latest: true
     - name: Setup NodeJs
       uses: actions/setup-node@v3
@@ -61,7 +61,7 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   generate-readme:
     name: Generate README
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ (github.event_name == 'push') || ((github.event_name == 'release') && (github.event.action == 'published')) }}
     steps:
     - name: Git Checkout
@@ -72,8 +72,8 @@ jobs:
     - name: Setup Scala
       uses: actions/setup-java@v3.9.0
       with:
-        distribution: temurin
-        java-version: 17
+        distribution: amazon-corretto
+        java-version: 21
         check-latest: true
     - name: Generate Readme
       run: sbt docs/generateReadme

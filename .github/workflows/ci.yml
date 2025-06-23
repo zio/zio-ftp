@@ -14,7 +14,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
@@ -22,32 +22,36 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v14
+        uses: coursier/setup-action@v1
+        with:
+          jvm: amazon-corretto:21  # or temurin:11, zulu:8, etc. depending on your project
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Lint code
         run: sbt check
 
   mdoc:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.5.1
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v14
+        uses: coursier/setup-action@v1
+        with:
+          jvm: temurin:17  # or temurin:11, zulu:8, etc. depending on your project
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
         run: ./sbt docs/compileDocs
 
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        java: ['amazon-corretto@1.17']
+        java: ['amazon-corretto@21']
         scala: ['2.12.20', '2.13.16', '3.3.3']
     steps:
       - name: Checkout current branch
@@ -55,7 +59,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v14
+        uses: coursier/setup-action@v1
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
@@ -69,19 +73,19 @@ jobs:
         run: ./sbt ++${{ matrix.scala }} zio-ftp/test
 
   testJvms:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '17']
+        java: [17', '21']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.5.1
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v14
+        uses: coursier/setup-action@v1
         with:
           java-version: ${{ matrix.java }}
       - name: Cache scala dependencies
@@ -95,14 +99,14 @@ jobs:
         run: ./sbt test
 
   ci:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [lint, mdoc, test, testJvms]
     steps:
       - name: Report successful build
         run: echo "ci passed"
 
   publish:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: [ci]
     if: github.event_name != 'pull_request'
@@ -112,7 +116,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
-        uses: olafurpg/setup-scala@v14
+        uses: coursier/setup-action@v1
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Release artifacts

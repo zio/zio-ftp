@@ -1,0 +1,16 @@
+name: Validate-github-yml
+
+on:
+  push:
+    branches: [ series/2.x ]
+  pull_request:
+    branches: [ series/2.x ]
+
+jobs:
+  validate-yaml:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3.5.1
+      - name: Validate YAML file
+        continue-on-error: true
+        run: yamllint .github/workflows/ci.yml .github/workflows/auto-approve.yml .github/workflows/site.yml .github/workflows/release-drafter.yml

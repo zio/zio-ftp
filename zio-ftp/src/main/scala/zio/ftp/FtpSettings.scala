@@ -62,13 +62,16 @@ final case class SecureFtpSettings(
 object SecureFtpSettings {
 
   def apply(host: String, port: Int, credentials: FtpCredentials): SecureFtpSettings =
+    SecureFtpSettings.apply(host, port, credentials, None)
+
+  def apply(host: String, port: Int, credentials: FtpCredentials, proxy: Option[Proxy]): SecureFtpSettings =
     new SecureFtpSettings(
       host,
       port,
       credentials,
       strictHostKeyChecking = false,
       knownHosts = None,
-      proxy = None,
+      proxy = proxy,
       new DefaultSshConfig()
     )
 }

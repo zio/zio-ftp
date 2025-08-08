@@ -67,7 +67,7 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
         state <- Ref.make(success)
         is    <- initialize *> inputStream
       } yield ZStream
-        .fromInputStream(is, chunkSize)
+        .fromInputStreamZIO(ZIO.succeed(is), chunkSize)
         .ensuring(terminate(state)) ++ propagate(state)
     }
   }

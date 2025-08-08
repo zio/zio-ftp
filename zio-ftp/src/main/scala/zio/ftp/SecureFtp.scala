@@ -54,7 +54,7 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
                                     finally remoteFile.close()
                                 }
 
-      input <- ZStream.fromInputStream(is, chunkSize)
+      input <- ZStream.fromInputStreamZIO(ZIO.succeed(is), chunkSize)
     } yield input
 
   def rm(path: String): ZIO[Any, IOException, Unit] =

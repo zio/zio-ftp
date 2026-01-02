@@ -21,6 +21,8 @@ import zio.ftp.UnsecureFtp.Client
 import zio.stream.ZStream
 import zio.{ Ref, Scope, UIO, ZIO }
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
+import org.apache.commons.net.DefaultSocketFactory
+import javax.net.SocketFactory
 
 /**
  * Unsecure Ftp client wrapper
@@ -143,7 +145,19 @@ object UnsecureFtp {
           case None      => ftpClient.setAutodetectUTF8(true)
         }
 
-        settings.proxy.foreach(ftpClient.setProxy)
+        // Configure socket factory with proxy and/or keepalive support
+        // Note: We can't use ftpClient.setProxy because it internally sets a DefaultSocketFactory,
+        // which would discard any custom socket factory (like KeepaliveSocketFactory) we set.
+        // So we create a socket factory chain manually here.
+
+        val socketFactory = {
+          val proxySocketFactory = settings.proxy.fold(SocketFactory.getDefault())(new DefaultSocketFactory(_))
+          settings.keepalive.foldLeft(proxySocketFactory)(new KeepaliveSocketFactory(_, _))
+        }
+        ftpClient.setSocketFactory(socketFactory)
+
+        settings.defaultTimeout.foreach(duration => ftpClient.setDefaultTimeout(duration.toMillis.toInt))
+
         ftpClient.connect(settings.host, settings.port)
 
         val success = ftpClient.login(settings.credentials.username, settings.credentials.password)

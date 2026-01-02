@@ -19,7 +19,7 @@ package zio.ftp
 import java.net.Proxy
 import java.nio.file.Path
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
-import zio.Duration
+import zio._
 
 sealed trait FtpCredentials
 
@@ -158,6 +158,9 @@ object SslParams {
  * @param proxy An optional proxy to use when connecting with these settings
  * @param secure Use FTP over SSL
  * @param dataTimeout Sets the timeout to use when reading from the data connection.
+ * @param defaultTimeout Sets the default timeout for connections established with these settings,
+ *                       specifically the timeout for the control connection.
+ * @param keepalive if defined enables TCP keepalive with the provided settings
  * @param controlEncoding character encoding to be used by the FTP control connection, auto-detects UTF-8 if None
  */
 final case class UnsecureFtpSettings(
@@ -169,7 +172,9 @@ final case class UnsecureFtpSettings(
   remoteVerificationEnabled: Boolean,
   proxy: Option[Proxy],
   sslParams: Option[SslParams] = None,
-  dataTimeout: Option[Duration] = None,
+  dataTimeout: Option[Duration] = Some(1.minute),
+  defaultTimeout: Option[Duration] = Some(1.minute),
+  keepalive: Option[KeepaliveSettings] = Some(KeepaliveSettings.default),
   controlEncoding: Option[String] = None
 )
 

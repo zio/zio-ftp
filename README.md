@@ -13,7 +13,7 @@
 In order to use this library, we need to add the following line in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-ftp" % "0.4.3" 
+libraryDependencies += "dev.zio" %% "zio-ftp" % "0.5.2" 
 ```
 
 ## How to use it?
@@ -26,7 +26,7 @@ import zio.ftp._
 * FTP
 ```scala
 // FTP
-val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
 
 //listing files
 Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
@@ -35,7 +35,7 @@ Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
 * FTPS
 ```scala
 // FTPS
-val secureSettings = SecureFtpSettings("127.0.0.1", 21, FtpCredentials("foo", "bar"))
+val secureSettings = SecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
 
 //listing files
 SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
@@ -44,7 +44,7 @@ SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
 * SFTP (support ssh key)
 
 ```scala
-val sftpSettings = SecureFtpSettings("127.0.0.1", 22, FtpCredentials("foo", "bar"))
+val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
 
 //listing files
 SFtp.ls("/").runCollect.provideLayer(secure(sftpSettings))
@@ -76,7 +76,7 @@ import java.io.IOException
 object ZIOFTPExample extends ZIOAppDefault {
 
   private val settings =
-    UnsecureFtpSettings("127.0.0.1", 21, FtpCredentials("one", "1234"))
+    UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
 
   private val myApp: ZIO[Ftp, IOException, Unit] =
     for {
@@ -119,11 +119,11 @@ Learn more on the [ZIO FTP homepage](https://zio.dev/zio-ftp/)!
 
 ## Contributing
 
-For the general guidelines, see ZIO [contributor's guide](https://zio.dev/about/contributing).
+For the general guidelines, see ZIO [contributor's guide](https://zio.dev/contributor-guidelines).
 
 ## Code of Conduct
 
-See the [Code of Conduct](https://zio.dev/about/code-of-conduct)
+See the [Code of Conduct](https://zio.dev/code-of-conduct)
 
 ## Support
 

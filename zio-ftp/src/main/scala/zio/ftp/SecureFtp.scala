@@ -54,7 +54,7 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
                                     finally remoteFile.close()
                                 }
 
-      input <- ZStream.fromInputStream(is, chunkSize)
+      input <- ZStream.fromInputStreamZIO(ZIO.succeed(is), chunkSize)
     } yield input
 
   def rm(path: String): ZIO[Any, IOException, Unit] =
@@ -134,10 +134,10 @@ object SecureFtp {
 
         ssh.connect(host, port)
 
-        sftpIdentity
-          .fold(ssh.authPassword(credentials.username, credentials.password))(
-            setIdentity(_, credentials.username)(ssh)
-          )
+        credentials match {
+          case PasswordCredentials(username, password) => ssh.authPassword(username, password)
+          case KeyCredentials(username, identity)      => setIdentity(identity, username)(ssh)
+        }
 
         new SecureFtp(ssh.newSFTPClient()) {}
       }.mapError(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}", _))

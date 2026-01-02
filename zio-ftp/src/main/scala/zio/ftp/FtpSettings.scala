@@ -21,13 +21,23 @@ import java.nio.file.Path
 import net.schmizz.sshj.{ Config => SshConfig, DefaultConfig => DefaultSshConfig }
 import zio.Duration
 
+sealed trait FtpCredentials
+
 /**
- * Credential used during ftp authentication
+ * Basic credentials used during ftp authentication
  *
  * @param username identifier of the user in plain text
  * @param password secure secret of the user in plain text
  */
-final case class FtpCredentials(username: String, password: String)
+final case class PasswordCredentials(username: String, password: String) extends FtpCredentials
+
+/**
+ * Key file credentials used during ftp authentication
+ *
+ * @param username identifier of the user in plain text
+ * @param identity key file certificate used authentication
+ */
+final case class KeyCredentials(username: String, identity: SftpIdentity) extends FtpCredentials
 
 /**
  * Settings to connect to a secure Ftp server (Ftp over ssh)
@@ -37,14 +47,12 @@ final case class FtpCredentials(username: String, password: String)
  * @param credentials auth credentials
  * @param strictHostKeyChecking sets whether to use strict host key checking.
  * @param knownHosts known hosts file to be used when connecting
- * @param sftpIdentity private/public key config to use when connecting
  * @param sshConfig configuration of ssh client
  */
 final case class SecureFtpSettings(
   host: String,
   port: Int,
   credentials: FtpCredentials,
-  sftpIdentity: Option[SftpIdentity],
   strictHostKeyChecking: Boolean,
   knownHosts: Option[String],
   proxy: Option[Proxy],
@@ -54,26 +62,16 @@ final case class SecureFtpSettings(
 object SecureFtpSettings {
 
   def apply(host: String, port: Int, credentials: FtpCredentials): SecureFtpSettings =
-    new SecureFtpSettings(
-      host,
-      port,
-      credentials,
-      sftpIdentity = None,
-      strictHostKeyChecking = false,
-      knownHosts = None,
-      proxy = None,
-      new DefaultSshConfig()
-    )
+    SecureFtpSettings.apply(host, port, credentials, None)
 
-  def apply(host: String, port: Int, credentials: FtpCredentials, identity: SftpIdentity): SecureFtpSettings =
+  def apply(host: String, port: Int, credentials: FtpCredentials, proxy: Option[Proxy]): SecureFtpSettings =
     new SecureFtpSettings(
       host,
       port,
       credentials,
-      sftpIdentity = Some(identity),
       strictHostKeyChecking = false,
       knownHosts = None,
-      proxy = None,
+      proxy = proxy,
       new DefaultSshConfig()
     )
 }
@@ -165,7 +163,7 @@ object SslParams {
 final case class UnsecureFtpSettings(
   host: String,
   port: Int,
-  credentials: FtpCredentials,
+  credentials: PasswordCredentials,
   binary: Boolean,
   passiveMode: Boolean,
   remoteVerificationEnabled: Boolean,
@@ -177,7 +175,7 @@ final case class UnsecureFtpSettings(
 
 object UnsecureFtpSettings {
 
-  def apply(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+  def apply(host: String, port: Int, creds: PasswordCredentials): UnsecureFtpSettings =
     new UnsecureFtpSettings(
       host,
       port,
@@ -189,7 +187,7 @@ object UnsecureFtpSettings {
       None
     )
 
-  def secure(host: String, port: Int, creds: FtpCredentials): UnsecureFtpSettings =
+  def secure(host: String, port: Int, creds: PasswordCredentials): UnsecureFtpSettings =
     new UnsecureFtpSettings(
       host,
       port,

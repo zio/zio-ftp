@@ -135,56 +135,60 @@ object UnsecureFtp {
 
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(
-      attemptBlockingIO {
-        val ftpClient = settings.sslParams.fold(new JFTPClient()) { ssl =>
-          new JFTPSClient(ssl.isImplicit)
+      ZIO.runtime
+        .flatMap { (runtime: zio.Runtime[Any]) =>
+          attemptBlockingIO {
+            val ftpClient = settings.sslParams.fold(new JFTPClient()) { ssl =>
+              new JFTPSClient(ssl.isImplicit)
+            }
+
+            settings.controlEncoding match {
+              case Some(enc) => ftpClient.setControlEncoding(enc)
+              case None      => ftpClient.setAutodetectUTF8(true)
+            }
+
+            // Configure socket factory with proxy and/or keepalive support
+            // Note: We can't use ftpClient.setProxy because it internally sets a DefaultSocketFactory,
+            // which would discard any custom socket factory (like KeepaliveSocketFactory) we set.
+            // So we create a socket factory chain manually here.
+
+            val socketFactory = {
+              val proxySocketFactory = settings.proxy.fold(SocketFactory.getDefault())(new DefaultSocketFactory(_))
+              settings.keepalive.foldLeft(proxySocketFactory)(new KeepaliveSocketFactory(_, _, runtime))
+            }
+            ftpClient.setSocketFactory(socketFactory)
+
+            settings.defaultTimeout.foreach { duration =>
+              ftpClient.setDefaultTimeout(duration.toMillis.min(Int.MaxValue).toInt)
+            }
+
+            ftpClient.connect(settings.host, settings.port)
+
+            val success = ftpClient.login(settings.credentials.username, settings.credentials.password)
+
+            if (settings.binary)
+              ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
+
+            if (settings.passiveMode)
+              ftpClient.enterLocalPassiveMode()
+
+            if (settings.remoteVerificationEnabled)
+              ftpClient.setRemoteVerificationEnabled(settings.remoteVerificationEnabled)
+
+            //https://enterprisedt.com/products/edtftpjssl/doc/manual/html/ftpscommands.html
+            (ftpClient, settings.sslParams) match {
+              case (c: JFTPSClient, Some(ssl)) =>
+                c.execPBSZ(ssl.pbzs)
+                c.execPROT(ssl.prot.s)
+              case _                           => ()
+            }
+
+            settings.dataTimeout.foreach(ftpClient.setDataTimeout)
+
+            new UnsecureFtp(ftpClient) {} -> success
+          }
         }
-
-        settings.controlEncoding match {
-          case Some(enc) => ftpClient.setControlEncoding(enc)
-          case None      => ftpClient.setAutodetectUTF8(true)
-        }
-
-        // Configure socket factory with proxy and/or keepalive support
-        // Note: We can't use ftpClient.setProxy because it internally sets a DefaultSocketFactory,
-        // which would discard any custom socket factory (like KeepaliveSocketFactory) we set.
-        // So we create a socket factory chain manually here.
-
-        val socketFactory = {
-          val proxySocketFactory = settings.proxy.fold(SocketFactory.getDefault())(new DefaultSocketFactory(_))
-          settings.keepalive.foldLeft(proxySocketFactory)(new KeepaliveSocketFactory(_, _))
-        }
-        ftpClient.setSocketFactory(socketFactory)
-
-        settings.defaultTimeout.foreach { duration =>
-          ftpClient.setDefaultTimeout(duration.toMillis.min(Int.MaxValue).toInt)
-        }
-
-        ftpClient.connect(settings.host, settings.port)
-
-        val success = ftpClient.login(settings.credentials.username, settings.credentials.password)
-
-        if (settings.binary)
-          ftpClient.setFileType(FTP.BINARY_FILE_TYPE)
-
-        if (settings.passiveMode)
-          ftpClient.enterLocalPassiveMode()
-
-        if (settings.remoteVerificationEnabled)
-          ftpClient.setRemoteVerificationEnabled(settings.remoteVerificationEnabled)
-
-        //https://enterprisedt.com/products/edtftpjssl/doc/manual/html/ftpscommands.html
-        (ftpClient, settings.sslParams) match {
-          case (c: JFTPSClient, Some(ssl)) =>
-            c.execPBSZ(ssl.pbzs)
-            c.execPROT(ssl.prot.s)
-          case _                           => ()
-        }
-
-        settings.dataTimeout.foreach(ftpClient.setDataTimeout)
-
-        new UnsecureFtp(ftpClient) {} -> success
-      }.mapError(e => ConnectionError(e.getMessage, e))
+        .mapError(e => ConnectionError(e.getMessage, e))
         .filterOrFail(_._2)(ConnectionError(s"Fail to connect to server ${settings.host}:${settings.port}"))
         .map(_._1)
     )(client => client.execute(_.logout()).ignore *> client.execute(_.disconnect()).ignore)

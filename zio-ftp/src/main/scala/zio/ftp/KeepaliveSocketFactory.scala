@@ -3,15 +3,36 @@ package zio.ftp
 import java.net.Socket
 import javax.net.SocketFactory
 import java.net.InetAddress
+import jdk.net.ExtendedSocketOptions.{ TCP_KEEPCOUNT, TCP_KEEPIDLE, TCP_KEEPINTERVAL }
+import java.net.SocketOption
+import zio.ZIO
+import zio.Unsafe
 
-private class KeepaliveSocketFactory(underlying: SocketFactory, keepaliveSettings: KeepaliveSettings)
-    extends SocketFactory {
+private class KeepaliveSocketFactory(
+  underlying: SocketFactory,
+  keepaliveSettings: KeepaliveSettings,
+  runtime: zio.Runtime[Any]
+) extends SocketFactory {
 
   private def cfg(socket: Socket): Socket = {
     socket.setKeepAlive(true)
-    keepaliveSettings.idle.foreach(socket.setOption[Integer](jdk.net.ExtendedSocketOptions.TCP_KEEPIDLE, _))
-    keepaliveSettings.interval.foreach(socket.setOption[Integer](jdk.net.ExtendedSocketOptions.TCP_KEEPINTERVAL, _))
-    keepaliveSettings.count.foreach(socket.setOption[Integer](jdk.net.ExtendedSocketOptions.TCP_KEEPCOUNT, _))
+    Seq[(SocketOption[Integer], Option[Int])](
+      TCP_KEEPIDLE     -> keepaliveSettings.idle,
+      TCP_KEEPINTERVAL -> keepaliveSettings.interval,
+      TCP_KEEPCOUNT    -> keepaliveSettings.count
+    ).foreach {
+      case (option, valueOpt) =>
+        valueOpt.foreach { value =>
+          if (socket.supportedOptions().contains(option))
+            socket.setOption[Integer](option, value)
+          else
+            Unsafe.unsafe { implicit u =>
+              runtime.unsafe.run(
+                ZIO.logWarning(s"Socket option $option is not supported on this platform and cannot be set.")
+              )
+            }
+        }
+    }
     socket
   }
 

@@ -156,7 +156,9 @@ object UnsecureFtp {
         }
         ftpClient.setSocketFactory(socketFactory)
 
-        settings.defaultTimeout.foreach(duration => ftpClient.setDefaultTimeout(duration.toMillis.toInt))
+        settings.defaultTimeout.foreach { duration =>
+          ftpClient.setDefaultTimeout(duration.toMillis.min(Int.MaxValue).toInt)
+        }
 
         ftpClient.connect(settings.host, settings.port)
 

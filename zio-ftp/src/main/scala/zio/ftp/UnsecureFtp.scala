@@ -152,11 +152,10 @@ object UnsecureFtp {
             // overriding any previously set socket factory, like our keepalive one.
             // So we apply proxy settings via a socket factory ourselves.
 
-            val socketFactory = {
+            ftpClient.setSocketFactory {
               val proxySocketFactory = settings.proxy.fold(SocketFactory.getDefault())(new DefaultSocketFactory(_))
               settings.keepalive.foldLeft(proxySocketFactory)(new KeepaliveSocketFactory(_, _, runtime))
             }
-            ftpClient.setSocketFactory(socketFactory)
 
             settings.defaultTimeout.foreach { duration =>
               ftpClient.setDefaultTimeout(duration.toMillis.min(Int.MaxValue).toInt)

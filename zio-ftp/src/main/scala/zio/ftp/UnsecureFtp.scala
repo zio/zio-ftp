@@ -148,9 +148,9 @@ object UnsecureFtp {
             }
 
             // Configure socket factory with proxy and/or keepalive support
-            // Note: We can't use ftpClient.setProxy because it internally sets a DefaultSocketFactory,
-            // which would discard any custom socket factory (like KeepaliveSocketFactory) we set.
-            // So we create a socket factory chain manually here.
+            // Note: We can't use ftpClient.setProxy because it internally sets a socket factory,
+            // overriding any previously set socket factory, like our keepalive one.
+            // So we apply proxy settings via a socket factory ourselves.
 
             val socketFactory = {
               val proxySocketFactory = settings.proxy.fold(SocketFactory.getDefault())(new DefaultSocketFactory(_))

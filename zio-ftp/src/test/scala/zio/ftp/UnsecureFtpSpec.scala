@@ -3,16 +3,15 @@ package zio.ftp
 import zio.ZIO.{ acquireRelease, attemptBlockingIO }
 import zio.{ test => _, _ }
 import zio.test._
+import zio.test.TestAspect.sequential
 import zio.test.Assertion._
-import zio.test.TestAspect._
 import zio.ftp.Ftp._
-import zio.nio.file.{ Path => ZPath }
-import zio.nio.file.Files
+import java.nio.file.{ Files, Paths }
 import zio.stream.ZPipeline.utf8Decode
 import zio.stream.ZStream
 import java.net.{ InetSocketAddress, Proxy }
 import scala.io.Source
-import java.time.{ Instant, Duration => JDuration }
+import java.time.temporal.ChronoUnit
 
 object UnsecureSslFtpSpec extends ZIOSpecDefault {
   private val settings = UnsecureFtpSettings.secure("127.0.0.1", 2121, PasswordCredentials("username", "userpass"))
@@ -29,7 +28,7 @@ object UnsecureFtpSpec extends ZIOSpecDefault {
 }
 
 object FtpSuite {
-  private val home = ZPath("ftp-home/ftp/home")
+  private val home = Paths.get("ftp-home/ftp/home")
 
   def spec(labelSuite: String, settings: UnsecureFtpSettings) =
     suite(labelSuite)(
@@ -63,8 +62,12 @@ object FtpSuite {
       ),
       test("timestamp")(
         for {
-          file <- ls("/notes.txt").runLast
-        } yield assertTrue(file.exists(r => JDuration.between(r.lastModified, Instant.now()).abs.toMinutes < 10))
+          file     <- ls("/notes.txt").runLast
+          filetime <- ZIO.attempt(Files.getLastModifiedTime(Paths.get("ftp-home/sftp/home/foo/notes.txt")))
+        } yield assertTrue(
+          file
+            .exists(_.lastModified == filetime.toInstant().truncatedTo(ChronoUnit.MINUTES))
+        )
       ),
       test("ls with invalid directory")(
         for {
@@ -132,7 +135,7 @@ object FtpSuite {
           for {
             result <- mkdir("/new-dir").as(true)
           } yield assert(result)(equalTo(true))
-        ) <* Files.delete(home / "new-dir")
+        ) <* ZIO.attempt(Files.delete(home.resolve("new-dir")))
       },
       test("mkdir fail when invalid path") {
         for {
@@ -140,13 +143,13 @@ object FtpSuite {
         } yield assert(failure)(containsString("Path is invalid. Cannot create directory : /dir1/users.csv"))
       },
       test("rm valid path") {
-        val path = home / "to-delete.txt"
+        val path = home.resolve("to-delete.txt")
 
         for {
-          _       <- Files.createFile(path)
+          _       <- ZIO.attempt(Files.createFile(path))
           success <- rm("/to-delete.txt").as(true)
 
-          fileExist <- Files.notExists(path)
+          fileExist <- ZIO.attempt(Files.notExists(path))
         } yield assertTrue(success && fileExist)
       },
       test("rm fail when invalid path") {
@@ -155,12 +158,12 @@ object FtpSuite {
         } yield assertTrue(invalid == "Path is invalid. Cannot delete file : /dont-exist")
       },
       test("rm directory") {
-        val path = home / "dir-to-delete"
+        val path = home.resolve("dir-to-delete")
 
         for {
-          _     <- Files.createDirectory(path)
+          _     <- ZIO.attempt(Files.createDirectory(path))
           r     <- rmdir("/dir-to-delete").as(true)
-          exist <- Files.notExists(path)
+          exist <- ZIO.attempt(Files.notExists(path))
         } yield assertTrue(r && exist)
       },
       test("rm fail invalid directory") {
@@ -172,7 +175,7 @@ object FtpSuite {
       test("upload a file") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
 
-        val path = home / "hello-world.txt"
+        val path = home.resolve("hello-world.txt")
 
         (for {
           _      <- upload("/hello-world.txt", data)
@@ -180,7 +183,7 @@ object FtpSuite {
             acquireRelease(attemptBlockingIO(Source.fromFile(path.toFile)))(b => attemptBlockingIO(b.close()).ignore)
               .map(_.mkString)
 
-        } yield assert(result)(equalTo("Hello F World"))) <* Files.delete(path)
+        } yield assert(result)(equalTo("Hello F World"))) <* ZIO.attempt(Files.delete(path))
       },
       test("upload fail when path is invalid") {
         val data = ZStream.fromChunks(Chunk.fromArray("Hello F World".getBytes))
@@ -190,16 +193,16 @@ object FtpSuite {
         } yield assertTrue(failure == "Path is invalid. Cannot upload data to : /dont-exist/hello-world.txt")
       },
       test("rename valid path") {
-        val oldPath = home / "to-rename.txt"
-        val newPath = home / "to-rename-destination.txt"
+        val oldPath = home.resolve("to-rename.txt")
+        val newPath = home.resolve("to-rename-destination.txt")
 
         (for {
-          _       <- Files.createFile(oldPath)
+          _       <- ZIO.attempt(Files.createFile(oldPath))
           success <- rename("/to-rename.txt", "/to-rename-destination.txt").as(true)
 
-          oldFileExists <- Files.exists(oldPath)
-          newFileExists <- Files.exists(newPath)
-        } yield assertTrue(success && !oldFileExists && newFileExists)) <* Files.delete(newPath)
+          oldFileExists <- ZIO.attempt(Files.exists(oldPath))
+          newFileExists <- ZIO.attempt(Files.exists(newPath))
+        } yield assertTrue(success && !oldFileExists && newFileExists)) <* ZIO.attempt(Files.delete(newPath))
       },
       test("rename fail when invalid path") {
         for {

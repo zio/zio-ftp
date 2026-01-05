@@ -44,8 +44,6 @@ lazy val `zio-ftp` = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      //TODO remove dependency
-      ("dev.zio"                %% "zio-nio"                 % "2.0.2").exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
       "com.hierynomus"           % "sshj"                    % "0.40.0",
       "commons-net"              % "commons-net"             % "3.11.0",
       "org.scala-lang.modules"  %% "scala-collection-compat" % "2.13.0",

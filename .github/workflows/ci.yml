@@ -67,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['corretto@21']
+        java: ['corretto@21', 'corretto@25']
         scala: ['2.12.20', '2.13.16', '3.3.3']
     steps:
       - name: Checkout current branch
@@ -98,6 +98,14 @@ jobs:
           java-version: 21
           cache: sbt
 
+      - name: Setup Java (temurin@25)
+        if: matrix.java == 'temurin@25'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: sbt
+
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
       - uses: coursier/setup-action@v1
@@ -118,7 +126,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['17', '21']
+        java: ['17', '21', '25']
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v4
@@ -138,6 +146,14 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: sbt
+
+      - name: Setup Java (temurin@25)
+        if: matrix.java == 'temurin@25'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
           cache: sbt
 
       - name: Setup sbt

@@ -4,3 +4,7 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
 addSbtPlugin("ch.epfl.scala"  % "sbt-bloop"      % "1.5.0")
 addSbtPlugin("org.scalameta"  % "sbt-mdoc"       % "2.2.24")
 addSbtPlugin("com.eed3si9n"   % "sbt-unidoc"     % "0.4.3")
+
+addSbtPlugin("dev.zio" % "zio-sbt-ci" % "0.8.0")
+
+resolvers ++= Resolver.sonatypeOssRepos("public")

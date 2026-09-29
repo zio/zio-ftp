@@ -1,4 +1,5 @@
 import BuildHelper._
+import zio.sbt.githubactions.{ DependencyBot, Job, Step, Strategy }
 
 inThisBuild(
   List(
@@ -23,6 +24,47 @@ inThisBuild(
   )
 )
 
+ThisBuild / ciEnabledBranches := Seq("master")
+ThisBuild / ciTargetJavaVersions := Seq("8", "11", "17")
+ThisBuild / ciDefaultJavaVersion := "8"
+ThisBuild / ciTargetScalaVersions := Map("zio-ftp" -> Seq("2.11.12", "2.12.15", "2.13.8"))
+ThisBuild / ciUpdateReadmeJobs := Seq.empty
+ThisBuild / ciPostReleaseJobs := Seq.empty
+ThisBuild / ciDependencyUpdateBots := Seq(DependencyBot.Custom("scala-steward"), DependencyBot.Renovate)
+inThisBuild(List(ciTestJobs := {
+  val startContainers               = Step.SingleStep(
+    name = "Start containers",
+    run = Some(
+      """chmod -R 777 ./ftp-home/
+        |docker compose -f "docker-compose.yml" up -d --build
+        |chmod -R 777 ./ftp-home/sftp/home/foo/dir1""".stripMargin
+    )
+  )
+  def withContainers(job: Job): Job =
+    job.copy(steps = job.steps.init ++ Seq(startContainers, job.steps.last))
+
+  // Scala 2.11 does not run on Java 11+, so only Java 8 covers every Scala version
+  val allScalaVersions = ciTestJobs.value.map(job =>
+    withContainers(
+      job.copy(strategy = job.strategy.map(s => s.copy(matrix = s.matrix.updated("java", List("8")))))
+    )
+  )
+  val modernJvms       = allScalaVersions.map(job =>
+    job.copy(
+      id = "test-jvms",
+      name = "Test JVMs",
+      strategy = job.strategy.map(s =>
+        s.copy(matrix = Map("java" -> List("11", "17"), "scala-project" -> List("++2.13.8 zio-ftp")))
+      )
+    )
+  )
+  allScalaVersions ++ modernJvms
+}))
+ThisBuild / ciCheckWebsiteBuildProcess := Seq(
+  Step.SingleStep(name = "Check website build process", run = Some("sbt docs/docusaurusCreateSite"))
+)
+
+addCommandAlias("lint", "check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 

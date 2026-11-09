@@ -7,7 +7,7 @@ import zio.stream.ZStream
 trait FtpAccessors[+A] {
 
   /**
-   * Lift unsafe operation that does blocking IO into a pure value. If the operation failed an error will be emitted
+   * Lift unsafe operation that does blocking IO into a ZIO effect. If the operation failed an error will be emitted
    *
    * @param f unsafe function to lift
    * @tparam T return value
@@ -72,7 +72,7 @@ trait FtpAccessors[+A] {
    *
    * @param path absolute path of file to store
    * @param source data stream to store
-   * @tparam R environment of the specified stream source, required to extend Blocking
+   * @tparam R environment required by the specified stream source. The upload itself needs no extra environment
    */
   def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit]
 

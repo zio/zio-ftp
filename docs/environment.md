@@ -3,65 +3,95 @@ id: environment
 title: "Environment"
 ---
 
-FtpClient & Blocking
----
+ZIO FTP keeps its connection in the ZIO environment, so each operation states in its type which connection it needs. Nothing connects until you provide a layer, and the layer closes the connection when its scope ends.
 
-ZIO Ftp use Environment type parameter to required a blocking context. Since (s)ftp java client don't provide any async client, 
-we are lifting all blocking (effectful) functions into a blocking execution context by using `zio.blocking.effectBlocking()`.
+## Two Environment Types
 
+Plain FTP operations require `Ftp`, and FTP over SSH (SFTP) operations require `SFtp`. Both aliases live in the `zio.ftp` package object:
 
-Since we never expose the underlying ftp client, you can only use a ZIO wrapper `FtpAccessors[_]`
+```scala
+type Ftp  = FtpAccessors[UnsecureFtp.Client]
+type SFtp = FtpAccessors[SecureFtp.Client]
+```
 
-``` scala 
-trait FtpAccessors[+A] {
- def stat(path: String): ZIO[Blocking, IOException, Option[FtpResource]]
- def ls(path: String): ZStream[Blocking, IOException, FtpResource]
+The `FtpAccessors` trait is the common contract. Its methods need nothing from the environment, because the service is the object they belong to. The `Ftp` and `SFtp` helpers take that service from the environment and forward the call to it:
+
+```scala
+object Ftp {
+  def ls(path: String): ZStream[Ftp, IOException, FtpResource]
 }
 ```
 
-All provided functions require a `Blocking` context.
+## Providing the Environment
 
-There is already predefined Blocking context defined in ZIO `zio.blocking.Blocking.live`
-
-
-How to provide Blocking Environment ?
----
-
-Your main entrypoint should extend `zio.App` 
+Use `unsecure` for plain FTP and `secure` for SFTP. Each returns a layer that connects when it is built, fails with a `ConnectionError` if the server refuses the login, and disconnects when its scope closes:
 
 ```scala
-import zio.App
-import zio.ZIO
-import zio.blocking.Blocking
-import java.io.IOException
-
-// Provide default environment(s) context such as (Blocking, Clock, Console,...) since it is provided by zio.App which extend zio.DefaultRuntime
-object MyApp extends App {
-    val program: ZIO[Blocking, IOException, Unit] = ???
-    
-    final def run(args: List[String]): ZIO[ZEnv, Nothing, Int] = program
-  }
+package object ftp {
+  def unsecure(settings: UnsecureFtpSettings): ZLayer[Any, ConnectionError, Ftp]
+  def secure(settings: SecureFtpSettings): ZLayer[Any, ConnectionError, SFtp]
+}
 ```
 
-or you can simply provide your own blocking context 
+To remove `Ftp` from an effect's requirements, pass the layer to `ZIO#provide`:
+
+```scala mdoc:compile-only
+import zio._
+import zio.ftp._
+import zio.ftp.Ftp._
+
+val settings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
+
+val listing = ls("/").runCollect.provide(unsecure(settings))
+```
+
+For SFTP, the same pattern applies with `secure` and the `SFtp` accessors:
+
+```scala mdoc:compile-only
+import zio.ftp._
+
+val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("one", "1234"))
+
+val sftpListing = SFtp.ls("/").runCollect.provide(secure(sftpSettings))
+```
+
+## Running Java Calls Safely
+
+The FTP and SFTP Java clients only offer blocking methods. ZIO FTP runs every call to the Java client through `FtpAccessors#execute`, which wraps the call in `ZIO.attemptBlockingIO`. That moves the call onto ZIO's blocking thread pool, so the main pool keeps running other fibers. In the plain FTP client, `UnsecureFtp#execute` is implemented as:
 
 ```scala
-import zio.ZIO
-import zio.blocking.Blocking
-import java.io.IOException
-
-val program: ZIO[Blocking, IOException, Unit] = ???
-// Blocking environment is not anymore required
-val run: ZIO[Any, IOException, Unit] = program.provideLayer(Blocking.live)
+override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
+  attemptBlockingIO(f(unsafeClient))
 ```
 
-Resources
----
-- [ZIO Effect Blocking](https://zio.dev/docs/overview/overview_creating_effects#blocking-synchronous-side-effects)
-- [ZIO environment by John de goes](http://degoes.net/articles/zio-environment)
-- [ZIO environment meets constructor based-dependency injection](https://blog.softwaremill.com/zio-environment-meets-constructor-based-dependency-injection-6a13de6e000)
+You don't provide any extra layer for this. ZIO 2 dropped the old default-services environment, so every function in this library requires only `Ftp` or `SFtp`. If you call a Java client method that the library doesn't wrap, use `FtpAccessors#execute` so it runs on the blocking pool too.
 
+## Example
 
+The following program runs as a `ZIOAppDefault`. It provides `Ftp` once, at the edge of the program, and prints the root directory listing. It needs a running FTP server, so it is compile-only:
 
- 
+```scala mdoc:compile-only
+import zio._
+import zio.ftp._
+import zio.ftp.Ftp._
 
+import java.io.IOException
+
+object EnvironmentExample extends ZIOAppDefault {
+
+  private val settings =
+    UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
+
+  private val program: ZIO[Ftp, IOException, Unit] =
+    for {
+      files <- ls("/").runCollect
+      _     <- ZIO.foreachDiscard(files)(file => Console.printLine(file.path))
+    } yield ()
+
+  override def run = program.provide(unsecure(settings))
+}
+```
+
+## Further Reading
+
+For the ZIO 1 to ZIO 2 changes to the environment and default services, see the [ZIO 2.x migration guide](https://zio.dev/guides/migrate/zio-2.x-migration-guide). For how ZIO runs synchronous code that waits on the operating system, see [Creating Effects](https://zio.dev/overview/creating-effects/#blocking-synchronous-code).

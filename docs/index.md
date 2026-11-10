@@ -17,6 +17,8 @@ libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 
 ## How to use it?
 
+The examples below use the `Ftp` and `SFtp` accessors. Each one provides its connection layer to the effect, as described on the [Environment](./environment.md) page.
+
 * Imports
 ```scala mdoc:silent
 import zio.ftp._
@@ -28,16 +30,16 @@ import zio.ftp._
 val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
 
 //listing files
-Ftp.ls("/").runCollect.provideLayer(unsecure(unsecureSettings))
+Ftp.ls("/").runCollect.provide(unsecure(unsecureSettings))
 ```
 
-* FTPS
+* SFTP over SSH (password)
 ```scala mdoc:silent
-// FTPS
-val secureSettings = SecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
+// SFTP over SSH
+val secureSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
 
 //listing files
-SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
+SFtp.ls("/").runCollect.provide(secure(secureSettings))
 ```
 
 * SFTP (support ssh key)
@@ -46,8 +48,31 @@ SFtp.ls("/").runCollect.provideLayer(secure(secureSettings))
 val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
 
 //listing files
-SFtp.ls("/").runCollect.provideLayer(secure(sftpSettings))
+SFtp.ls("/").runCollect.provide(secure(sftpSettings))
 ```
+
+## Connection Settings
+
+Each settings object has defaults for the connection behavior. `UnsecureFtpSettings` adds two timeouts and a TCP keepalive option. Override them with `copy`, as in this example:
+
+```scala mdoc:compile-only
+import zio._
+import zio.ftp._
+
+val tunedSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar")).copy(
+  dataTimeout = Some(30.seconds),
+  defaultTimeout = Some(10.seconds),
+  keepalive = Some(KeepaliveSettings(idle = Some(30), interval = Some(5), count = Some(3)))
+)
+```
+
+The bullets below describe what each field controls:
+
+- The `dataTimeout` field sets how long a read on the data connection can wait. It defaults to one minute.
+- The `defaultTimeout` field sets the timeout for the control connection. It defaults to one minute.
+- The `keepalive` field enables TCP keepalive when it is `Some`, and `None` turns it off. Its `idle` and `interval` values are in seconds, and `count` is the number of unanswered probes before the connection is dropped. It defaults to `KeepaliveSettings.default`, which uses 60, 10 and 5.
+
+`SecureFtpSettings` has none of these fields, so they apply only to plain FTP connections.
 
 ## Example
 
@@ -96,7 +121,7 @@ object ZIOFTPExample extends ZIOAppDefault {
       _        <- Console.printLine(file.mkString)
     } yield ()
 
-  override def run = myApp.provideSomeLayer(unsecure(settings))
+  override def run = myApp.provide(unsecure(settings))
 }
 ```
 

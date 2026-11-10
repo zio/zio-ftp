@@ -18,7 +18,7 @@ package zio
 
 import java.io.IOException
 
-import zio.nio.file.{ Path => ZPath }
+import java.nio.file.{ Path }
 import zio.stream.ZStream
 
 package object ftp {
@@ -152,6 +152,6 @@ package object ftp {
   def secure(settings: SecureFtpSettings): ZLayer[Any, ConnectionError, SFtp] =
     ZLayer.scoped(SecureFtp.connect(settings))
 
-  def stub(path: ZPath): Layer[Any, StubFtp] =
+  def stub(path: Path): Layer[Any, StubFtp] =
     ZLayer.succeed(TestFtp.create(path))
 }

@@ -20,21 +20,24 @@ import java.io.{ FileOutputStream, IOException }
 import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.PosixFilePermission
 
-import zio.nio.file.{ Path => ZPath }
-import zio.nio.file.Files
+import java.nio.file.{ Path }
+import java.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
+import scala.jdk.CollectionConverters._
 import zio.{ Cause, ZIO }
+import java.nio.file.Paths
 
 object TestFtp {
 
-  def create(root: ZPath): FtpAccessors[Unit] =
+  def create(root: Path): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
+      def inRoot(p: String)                                           = root.resolve(Paths.get("/").relativize(Paths.get(p)))
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))
 
       override def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] = {
-        val p = root / ZPath(path).elements.mkString("/")
-        Files
-          .exists(p)
+        val p = inRoot(path)
+        ZIO
+          .attempt(Files.exists(p))
           .flatMap {
             case true  => get(p).map(Option(_))
             case false => ZIO.succeed(Option.empty[FtpResource])
@@ -42,54 +45,85 @@ object TestFtp {
           .refineToOrDie[IOException]
       }
 
-      override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
-        ZStream
-          .fromZIO(Files.readAllBytes(root / ZPath(path).elements.mkString("/")))
+      override def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] = {
+        val a: ZStream[Any, IOException, Byte] = ZStream
+          .fromInputStreamScoped(ZIO.fromAutoCloseable(ZIO.attemptBlockingIO(Files.newInputStream(inRoot(path)))))
+        a
           .catchAll {
             case _: NoSuchFileException => ZStream.fail(InvalidPathError(s"File does not exist $path"))
             case err                    => ZStream.fail(err)
           }
-          .flatMap(ZStream.fromChunk(_))
           .drop(fileOffset.toInt)
+      }
 
       override def rm(path: String): ZIO[Any, IOException, Unit] =
-        Files
-          .delete(root / ZPath(path).elements.mkString("/"))
+        ZIO
+          .attemptBlockingIO(
+            Files
+              .delete(inRoot(path))
+          )
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot delete : $path", err)))
 
       override def rmdir(path: String): ZIO[Any, IOException, Unit] =
         rm(path)
 
       override def mkdir(path: String) = // : ZIO[Any, IOException, Unit] =
-        Files
-          .createDirectories(root / ZPath(path).elements.mkString("/"))
-          .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err)))
+        ZIO
+          .attemptBlockingIO(
+            Files
+              .createDirectories(inRoot(path))
+          )
+          .catchAll[Any, IOException, Path](err =>
+            ZIO.fail(new IOException(s"Path is invalid. Cannot create directory : $path", err))
+          )
+          .unit
 
       override def ls(path: String): ZStream[Any, IOException, FtpResource] =
-        Files
-          .list(root / ZPath(path).elements.mkString("/"))
+        ZStream
+          .fromJavaStreamScoped[Any, Path](
+            ZIO.fromAutoCloseable(
+              ZIO.attemptBlockingIO(
+                Files
+                  .list(inRoot(path))
+              )
+            )
+          )
           .catchAll {
             case _: NoSuchFileException => ZStream.empty
             case err                    => ZStream.fail(new IOException(err))
           }
           .mapZIO(get)
 
-      private def get(p: ZPath): ZIO[Any, IOException, FtpResource] =
+      private def get(p: Path): ZIO[Any, IOException, FtpResource] =
         (for {
-          permissions  <- Files.getPosixFilePermissions(p).mapErrorCause(_.untraced).catchSomeCause {
-                            //Windows don't support this operations
-                            case Cause.Die(_: UnsupportedOperationException, _) =>
-                              ZIO.succeed(Set.empty[PosixFilePermission])
-                          }
-          isDir        <- Files.isDirectory(p).map(Some(_))
-          lastModified <- Files.getLastModifiedTime(p).map(_.toInstant())
-          size         <- Files.size(p)
-        } yield FtpResource(root.relativize(p).elements.mkString("/", "/", ""), size, lastModified, permissions, isDir))
+          permissions  <-
+            ZIO.attempt(Files.getPosixFilePermissions(p).asScala.toSet).mapErrorCause(_.untraced).catchSomeCause {
+              //Windows don't support this operation
+              case Cause.Die(_: UnsupportedOperationException, _) =>
+                ZIO.succeed(Set.empty[PosixFilePermission])
+            }
+          isDir        <- ZIO.attempt(Files.isDirectory(p)).map(Some(_))
+          lastModified <- ZIO.attempt(Files.getLastModifiedTime(p)).map(_.toInstant())
+          size         <- ZIO.attempt(Files.size(p))
+        } yield FtpResource(
+          Paths.get("/").resolve(root.relativize(p)).toString,
+          size,
+          lastModified,
+          permissions,
+          isDir
+        ))
           .mapError(new IOException(_))
 
       override def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
-        Files
-          .find(root / ZPath(path).elements.mkString("/"))((_, attr) => attr.isRegularFile)
+        ZStream
+          .fromJavaStreamScoped[Any, Path](
+            ZIO.fromAutoCloseable(
+              ZIO.attempt(
+                Files
+                  .find(inRoot(path), Int.MaxValue, (_, attr) => attr.isRegularFile)
+              )
+            )
+          )
           .catchAll {
             case _: NoSuchFileException => ZStream.empty
             case err                    => ZStream.fail(new IOException(err))
@@ -100,7 +134,7 @@ object TestFtp {
         path: String,
         source: ZStream[R, Throwable, Byte]
       ): ZIO[R, IOException, Unit] = {
-        val file = (root / ZPath(path).elements.mkString("/")).toFile
+        val file = (inRoot(path)).toFile
 
         ZIO.scoped[R] {
           ZIO
@@ -116,8 +150,10 @@ object TestFtp {
       }
 
       override def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
-        Files
-          .move(root / ZPath(oldPath).elements.mkString("/"), root / ZPath(newPath).elements.mkString("/"))
+        ZIO
+          .attempt {
+            val _ = Files.move(inRoot(oldPath), inRoot(newPath))
+          }
           .catchAll(err => ZIO.fail(new IOException(s"Path is invalid. Cannot rename $oldPath to $newPath", err)))
     }
 }

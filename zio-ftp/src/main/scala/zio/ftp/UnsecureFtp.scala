@@ -27,8 +27,8 @@ import javax.net.SocketFactory
 /**
  * Unsecure Ftp client wrapper
  *
- * All ftp methods exposed are lift into ZIO or ZStream
- * The underlying java client only provide blocking methods.
+ * All ftp methods exposed are lifted into ZIO or ZStream.
+ * The underlying java client only provides blocking methods, so each call runs with `ZIO.attemptBlockingIO`.
  */
 sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 

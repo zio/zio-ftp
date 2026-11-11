@@ -1,0 +1,138 @@
+---
+id: index
+title: "ZIO FTP"
+---
+
+[ZIO FTP](https://zio.dev) is a thin wrapper over (s)Ftp client for [ZIO](https://zio.dev).
+
+[![Production Ready](https://img.shields.io/badge/Project%20Stage-Production%20Ready-brightgreen.svg)](https://github.com/zio/zio/wiki/Project-Stages) ![CI Badge](https://github.com/zio/zio-ftp/workflows/CI/badge.svg) [![Sonatype Releases](https://img.shields.io/maven-central/v/dev.zio/zio-ftp_2.13.svg?label=Sonatype%20Release)](https://central.sonatype.com/artifact/dev.zio/zio-ftp_2.13) [![Sonatype Snapshots](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fdev%2Fzio%2Fzio-ftp_2.13%2Fmaven-metadata.xml&label=Sonatype%20Snapshot)](https://central.sonatype.com/repository/maven-snapshots/dev/zio/zio-ftp_2.13/) [![javadoc](https://javadoc.io/badge2/dev.zio/zio-ftp_2.13/javadoc.svg)](https://javadoc.io/doc/dev.zio/zio-ftp_2.13) [![ZIO FTP](https://img.shields.io/github/stars/zio/zio-ftp?style=social)](https://github.com/zio/zio-ftp)
+
+## Installation
+
+In order to use this library, we need to add the following line in our `build.sbt` file:
+
+```scala
+libraryDependencies += "dev.zio" %% "zio-ftp" % "0.5.3" 
+```
+
+## How to use it?
+
+The examples below use the `Ftp` and `SFtp` accessors. Each one provides its connection layer to the effect, as described on the [Environment](./environment.md) page.
+
+* Imports
+```scala
+import zio.ftp._
+```
+
+* FTP
+```scala
+// FTP
+val unsecureSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar"))
+
+//listing files
+Ftp.ls("/").runCollect.provide(unsecure(unsecureSettings))
+```
+
+* SFTP over SSH (password)
+```scala
+// SFTP over SSH
+val secureSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
+
+//listing files
+SFtp.ls("/").runCollect.provide(secure(secureSettings))
+```
+
+* SFTP (support ssh key)
+
+```scala
+val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("foo", "bar"))
+
+//listing files
+SFtp.ls("/").runCollect.provide(secure(sftpSettings))
+```
+
+## Connection Settings
+
+Each settings object has defaults for the connection behavior. `UnsecureFtpSettings` adds two timeouts and a TCP keepalive option. Override them with `copy`, as in this example:
+
+```scala
+import zio._
+import zio.ftp._
+
+val tunedSettings = UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("foo", "bar")).copy(
+  dataTimeout = Some(30.seconds),
+  defaultTimeout = Some(10.seconds),
+  keepalive = Some(KeepaliveSettings(idle = Some(30), interval = Some(5), count = Some(3)))
+)
+```
+
+The bullets below describe what each field controls:
+
+- The `dataTimeout` field sets how long a read on the data connection can wait. It defaults to one minute.
+- The `defaultTimeout` field sets the timeout for the control connection. It defaults to one minute.
+- The `keepalive` field enables TCP keepalive when it is `Some`, and `None` turns it off. Its `idle` and `interval` values are in seconds, and `count` is the number of unanswered probes before the connection is dropped. It defaults to `KeepaliveSettings.default`, which uses 60, 10 and 5.
+
+`SecureFtpSettings` has none of these fields, so they apply only to plain FTP connections.
+
+## Example
+
+First we need an FTP server, so let's create one:
+
+```bash
+docker run -d \
+    -p 21:21 \
+    -p 21000-21010:21000-21010 \
+    -e USERS="one|1234" \
+    -e ADDRESS=localhost \
+    delfer/alpine-ftp-server
+```
+
+Now we can run the example:
+
+```scala
+import zio._
+import zio.stream._
+import zio.ftp._
+import zio.ftp.Ftp._
+
+import java.io.IOException
+
+object ZIOFTPExample extends ZIOAppDefault {
+
+  private val settings =
+    UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
+
+  private val myApp: ZIO[Ftp, IOException, Unit] =
+    for {
+      _        <- Console.printLine("List of files at root directory:")
+      resource <- ls("/").runCollect
+      _        <- ZIO.foreach(resource)(e => Console.printLine(e.path))
+      path      = "~/file.txt"
+      _        <- upload(
+                    path,
+                    ZStream.fromChunk(
+                      Chunk.fromArray("Hello, ZIO FTP!\nHello, World!".getBytes)
+                    )
+                  )
+      file     <- readFile(path)
+                    .via(ZPipeline.utf8Decode)
+                    .runCollect
+      _        <- Console.printLine(s"Content of $path file:")
+      _        <- Console.printLine(file.mkString)
+    } yield ()
+
+  override def run = myApp.provide(unsecure(settings))
+}
+```
+
+## Support any commands?
+
+If you need a method which is not wrapped by the library, you can have access to underlying FTP client in a safe manner by using
+
+```scala
+import zio._
+
+trait FtpAccessors[+A] {
+  def execute[T](f: A => T): ZIO[Any, IOException, T]
+} 
+```

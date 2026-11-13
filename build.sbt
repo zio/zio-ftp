@@ -77,8 +77,8 @@ lazy val docs = project
     // snapshot repo does not publish, so it always shows "not found". Swap only that badge for
     // a static one. The @PROJECT_BADGES@ placeholder in docs/index.md stays as it is.
     mdocVariables := {
-      val generated = mdocVariables.value("PROJECT_BADGES")
-      val liveSnapshot = WebsiteUtils.snapshotBadge(organization.value, badgeArtifactId.value)
+      val generated      = mdocVariables.value("PROJECT_BADGES")
+      val liveSnapshot   = WebsiteUtils.snapshotBadge(organization.value, badgeArtifactId.value)
       val staticSnapshot =
         "[![Sonatype Snapshots](https://img.shields.io/badge/Sonatype%20Snapshot-published-blue)]" +
           "(https://central.sonatype.com/repository/maven-snapshots/dev/zio/zio-ftp_2.13/)"

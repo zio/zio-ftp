@@ -30,6 +30,10 @@ ThisBuild / ciDefaultJavaVersion   := "21"
 ThisBuild / ciTargetJavaVersions   := Seq("21")
 ThisBuild / ciTargetScalaVersions  := Map("zio-ftp" -> Seq(Scala212, Scala213, Scala3))
 ThisBuild / ciPublishSnapshots     := true
+// Not part of today's CI: no bot workflows that need extra secrets, no dependabot config.
+ThisBuild / ciEnableScalaSteward        := false
+ThisBuild / ciEnableDependabot          := false
+ThisBuild / ciEnableRegenerateWorkflows := false
 ThisBuild / ciDependencyUpdateBots := Seq(DependencyBot.Custom("scala-steward"), DependencyBot.Renovate)
 ThisBuild / ciCheckWebsiteBuildProcess := Seq(
   Step.SingleStep(name = "Check Document Generation", run = Some("sbt docs/compileDocs"))

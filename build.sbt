@@ -25,14 +25,14 @@ inThisBuild(
   )
 )
 
-ThisBuild / ciEnabledBranches      := Seq("series/2.x")
-ThisBuild / ciDefaultJavaVersion   := "21"
-ThisBuild / ciTargetJavaVersions   := Seq("21")
-ThisBuild / ciTargetScalaVersions  := Map("zio-ftp" -> Seq(Scala212, Scala213, Scala3))
-ThisBuild / ciPublishSnapshots     := true
+ThisBuild / ciEnabledBranches := Seq("series/2.x")
+ThisBuild / ciDefaultJavaVersion := "21"
+ThisBuild / ciTargetJavaVersions := Seq("21")
+ThisBuild / ciTargetScalaVersions := Map("zio-ftp" -> Seq(Scala212, Scala213, Scala3))
+ThisBuild / ciPublishSnapshots := true
 // Not part of today's CI: no bot workflows that need extra secrets, no dependabot config.
-ThisBuild / ciEnableScalaSteward        := false
-ThisBuild / ciEnableDependabot          := false
+ThisBuild / ciEnableScalaSteward := false
+ThisBuild / ciEnableDependabot := false
 ThisBuild / ciEnableRegenerateWorkflows := false
 ThisBuild / ciDependencyUpdateBots := Seq(DependencyBot.Custom("scala-steward"), DependencyBot.Renovate)
 ThisBuild / ciCheckWebsiteBuildProcess := Seq(
@@ -40,7 +40,7 @@ ThisBuild / ciCheckWebsiteBuildProcess := Seq(
 )
 // The tests need the FTP, FTPS and SFTP servers from docker-compose.yml.
 inThisBuild(List(ciTestJobs := {
-  val startContainers = Step.SingleStep(
+  val startContainers               = Step.SingleStep(
     name = "Start containers",
     run = Some(
       """chmod -R 777 ./zio-ftp/ftp-home/

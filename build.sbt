@@ -1,5 +1,6 @@
 import BuildHelper._
 import zio.sbt.WebsiteUtils
+import zio.sbt.githubactions.{ DependencyBot, Job, Step }
 
 inThisBuild(
   List(
@@ -24,6 +25,43 @@ inThisBuild(
   )
 )
 
+ThisBuild / ciEnabledBranches      := Seq("series/2.x")
+ThisBuild / ciDefaultJavaVersion   := "21"
+ThisBuild / ciTargetJavaVersions   := Seq("21")
+ThisBuild / ciTargetScalaVersions  := Map("zio-ftp" -> Seq(Scala212, Scala213, Scala3))
+ThisBuild / ciPublishSnapshots     := true
+ThisBuild / ciDependencyUpdateBots := Seq(DependencyBot.Custom("scala-steward"), DependencyBot.Renovate)
+ThisBuild / ciCheckWebsiteBuildProcess := Seq(
+  Step.SingleStep(name = "Check Document Generation", run = Some("sbt docs/compileDocs"))
+)
+// The tests need the FTP, FTPS and SFTP servers from docker-compose.yml.
+inThisBuild(List(ciTestJobs := {
+  val startContainers = Step.SingleStep(
+    name = "Start containers",
+    run = Some(
+      """chmod -R 777 ./zio-ftp/ftp-home/
+        |docker compose -f "docker-compose.yml" up -d --build
+        |chmod -R 777 ./zio-ftp/ftp-home/sftp/home/foo/dir1""".stripMargin
+    )
+  )
+  def withContainers(job: Job): Job =
+    job.copy(steps = job.steps.init ++ Seq(startContainers, job.steps.last))
+
+  // Every Scala version on Java 21, then the default Scala version on the other supported JVMs.
+  val allScalaVersions = ciTestJobs.value.map(withContainers)
+  val otherJvms        = allScalaVersions.map(job =>
+    job.copy(
+      id = "test-jvms",
+      name = "Test JVMs",
+      strategy = job.strategy.map(s =>
+        s.copy(matrix = Map("java" -> List("17"), "scala-project" -> List(s"++$Scala213 zio-ftp")))
+      )
+    )
+  )
+  allScalaVersions ++ otherJvms
+}))
+
+addCommandAlias("lint", "check")
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")

@@ -86,7 +86,7 @@ object FtpResource {
 }
 ```
 
-`FtpResource.fromFtpFile` uses the file name as the path, prefixed with `path` and a `/` when `path` is given. `FtpResource.fromResource` converts an sshj directory entry, and `FtpResource.apply(path, attr)` converts sshj file attributes, leaving `isDirectory` as `None`. For example, to list a directory with the `MLSD` command, which reports exact timestamps:
+`FtpResource.fromFtpFile` uses the file name as the path, prefixed with `path` and a `/` when `path` is given (a `path` of `/` gives `/name`, not `//name`). `FtpResource.fromResource` converts an sshj directory entry, and `FtpResource.apply(path, attr)` converts sshj file attributes, leaving `isDirectory` as `None`. For example, to list a directory with the `MLSD` command, which reports exact timestamps:
 
 ```scala mdoc:compile-only
 import zio._

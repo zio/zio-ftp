@@ -18,7 +18,7 @@ package object ftp {
 }
 ```
 
-The `FtpAccessors` trait is the common contract. Its methods need nothing from the environment, because the service is the object they belong to. The `Ftp`, `SFtp` and `StubFtp` objects take that service from the environment and forward the call to it:
+The `FtpAccessors` trait is the common contract. Its methods need nothing from the environment except the environment of the source stream passed to `FtpAccessors#upload`, because the service is the object they belong to. The `Ftp`, `SFtp` and `StubFtp` objects take that service from the environment and forward the call to it:
 
 ```scala
 object Ftp {
@@ -92,7 +92,7 @@ override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
   attemptBlockingIO(f(unsafeClient))
 ```
 
-You don't provide any extra layer for this. ZIO 2 dropped the old default-services environment, so every operation requires only `Ftp`, `SFtp` or `StubFtp`, plus the source stream's environment for `FtpAccessors#upload`. If you call a Java client method that the library doesn't wrap, use `FtpAccessors#execute` so it runs on the blocking pool too; see [Call an Unwrapped Client Method](guides/call-an-unwrapped-client-method.md).
+You don't provide any extra layer for this. ZIO 2 has no default-services environment, so every operation requires only `Ftp`, `SFtp` or `StubFtp`, plus the source stream's environment for `FtpAccessors#upload`. If you call a Java client method that the library doesn't wrap, use `FtpAccessors#execute` so it runs on the blocking pool too; see [Call an Unwrapped Client Method](guides/call-an-unwrapped-client-method.md).
 
 Each layer holds one connection, and the Commons Net FTP client is not safe to use from several fibers at once. Run operations on one `Ftp` service sequentially; [FTP, FTPS and SFTP](protocols.md#one-connection-one-conversation) explains why and what to do when you need parallel transfers.
 

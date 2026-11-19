@@ -34,7 +34,7 @@ Each type comes from a specific place:
 
 ## Errors by Protocol
 
-The SFTP implementation does not translate errors: when the server refuses an operation, sshj's `net.schmizz.sshj.sftp.SFTPException` (an `IOException`) reaches your code, with a message such as `No such file`. The stub fails with plain `IOException` values for `rm`, `rmdir`, `mkdir`, `rename` and `upload`. The full mapping, per operation:
+The SFTP implementation does not translate errors: when the server refuses an operation, sshj's `net.schmizz.sshj.sftp.SFTPException` (an `IOException`) reaches your code, with a message such as `No such file`. The stub fails with plain `IOException` values for `StubFtp.rm`, `StubFtp.rmdir`, `StubFtp.mkdir`, `StubFtp.rename` and `StubFtp.upload`. The full mapping, per operation:
 
 | Operation                              | FTP and FTPS                  | SFTP            | StubFtp            |
 | -------------------------------------- | ----------------------------- | --------------- | ------------------ |

@@ -73,7 +73,7 @@ If the local file can't be read, its `Throwable` becomes an `IOException` and th
 The source can be any stream, so you can upload data while you produce it. The following effect writes a CSV file from a stream of rows without building the whole file first:
 
 ```scala mdoc:silent
-final case class Sale(id: Long, amount: BigDecimal)
+case class Sale(id: Long, amount: BigDecimal)
 
 def salesCsv(sales: ZStream[Any, Throwable, Sale]): ZStream[Any, Throwable, Byte] =
   (ZStream.succeed("id,amount") ++ sales.map(s => s"${s.id},${s.amount}"))

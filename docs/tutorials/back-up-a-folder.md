@@ -136,7 +136,7 @@ Next, we need the list of local files and a rule that maps each local path to a 
 
 ```scala mdoc:silent
 def localFiles(dir: Path): ZIO[Any, IOException, List[Path]] =
-  ZIO.attemptBlockingIO(Files.walk(dir)).acquireReleaseWith(s => ZIO.succeed(s.close())) { s =>
+  ZIO.acquireReleaseWith(ZIO.attemptBlockingIO(Files.walk(dir)))(s => ZIO.succeed(s.close())) { s =>
     ZIO.attemptBlockingIO(s.iterator().asScala.filter(Files.isRegularFile(_)).toList.sorted)
   }
 
@@ -204,11 +204,15 @@ Everything is already on the server, so a run now uploads nothing:
 runOnStub(backupChanged)
 ```
 
-Let's change one local file and run it again. Only that file is uploaded:
+Let's change one local file, so its size no longer matches the copy on the server:
+
+```scala mdoc:silent
+Files.write(source.resolve("notes.txt"), "Buy milk and bread".getBytes)
+```
+
+Now we run the backup again. Only the changed file is uploaded:
 
 ```scala mdoc
-Files.write(source.resolve("notes.txt"), "Buy milk and bread".getBytes)
-
 runOnStub(backupChanged)
 ```
 

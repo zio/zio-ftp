@@ -17,6 +17,7 @@ project/plugins/project/
 
 # mdoc
 website/node_modules
+website/docs
 website/build
 website/i18n/en.json
 website/static/api

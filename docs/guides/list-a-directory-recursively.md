@@ -9,7 +9,7 @@ keywords:
   - "FtpResource"
 ---
 
-In this guide, we list every file under a remote directory, filter the listing by name and size, summarize it, and then write our own walk for the two things `lsDescendant` doesn't do: including the directories themselves and stopping at a given depth.
+In this guide, we list every file under a remote directory, filter the listing by name and size, summarize it, and then write our own walk for the two things `FtpAccessors#lsDescendant` doesn't do: including the directories themselves and stopping at a given depth.
 
 ## The Problem
 
@@ -25,7 +25,7 @@ def allFiles(client: FTPClient, dir: String): List[String] =
   }
 ```
 
-This version builds the whole list in memory, blocks the calling thread, and throws on the first error. ZIO FTP's `lsDescendant` does the same walk as a lazy `ZStream`, so you can filter, count or stop early while the walk is in progress.
+This version builds the whole list in memory, blocks the calling thread, and throws on the first error. ZIO FTP's `FtpAccessors#lsDescendant` does the same walk as a lazy `ZStream`, so you can filter, count or stop early while the walk is in progress.
 
 ## Prerequisites
 
@@ -55,13 +55,13 @@ def onServer[A](f: FtpAccessors[Any] => ZIO[Any, IOException, A]): A =
 
 ## Listing Every File
 
-`lsDescendant` streams every file below a directory, from every level. Directories themselves are not emitted:
+`FtpAccessors#lsDescendant` streams every file below a directory, from every level. Directories themselves are not emitted:
 
 ```scala mdoc
 onServer(ftp => ftp.lsDescendant("/photos").map(_.path).runCollect.map(_.sorted))
 ```
 
-The walk is lazy: each subdirectory is listed only when the stream reaches it. On FTP and SFTP, a directory that doesn't exist produces an empty stream rather than a failure, so check with `stat` first if you need to tell "empty" from "missing".
+The walk is lazy: each subdirectory is listed only when the stream reaches it. On SFTP and `StubFtp`, a directory that doesn't exist produces an empty stream rather than a failure; on FTP the result depends on the server. Check with `FtpAccessors#stat` first if you need to tell "empty" from "missing".
 
 ## Filtering and Summarizing
 
@@ -100,7 +100,7 @@ Each directory appears before its contents:
 onServer(ftp => walk(ftp, "/photos").map(e => if (e.isDirectory.contains(true)) s"${e.path}/" else e.path).runCollect.map(_.sorted))
 ```
 
-`isDirectory` is an `Option[Boolean]`, so we test it with `contains(true)`; `ls` always fills it, but `stat` on SFTP leaves it as `None`.
+`isDirectory` is an `Option[Boolean]`, so we test it with `contains(true)`; `FtpAccessors#ls` always fills it, but `FtpAccessors#stat` on SFTP leaves it as `None`.
 
 ## Limiting the Depth
 
@@ -114,7 +114,7 @@ def walkTo(ftp: FtpAccessors[Any], dir: String, depth: Int): ZStream[Any, IOExce
   }
 ```
 
-With a depth of 2, the walk lists `/photos` and its direct subdirectories, but not `/photos/2025/summer`:
+With a depth of 2, the walk lists the two levels below `/photos`, so `/photos/2025/summer` appears but the files inside it do not:
 
 ```scala mdoc
 onServer(ftp => walkTo(ftp, "/photos", 2).map(_.path).runCollect.map(_.sorted))

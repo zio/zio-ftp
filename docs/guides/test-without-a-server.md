@@ -13,7 +13,18 @@ In this guide, we test code that uploads and reads files with ZIO FTP, without s
 
 ## The Problem
 
-Code that talks to a file server is awkward to test: the tests need a running server, credentials, network ports and cleanup between runs. ZIO FTP's own integration tests start three Docker containers. For your application's logic, such as "the report is uploaded to the right folder with the right content", a real server adds slowness and flakiness without testing anything of yours.
+Code that talks to a file server is awkward to test: the tests need a running server, credentials, network ports and cleanup between runs. ZIO FTP's own integration tests start three Docker containers. Code that takes the real client as a parameter can only be tested against a real server:
+
+```scala mdoc:compile-only
+import org.apache.commons.net.ftp.FTPClient
+import java.io.ByteArrayInputStream
+
+def publishReport(client: FTPClient, csv: String): Boolean =
+  client.makeDirectory("/reports/2026-11") &&
+    client.storeFile("/reports/2026-11/19.csv", new ByteArrayInputStream(csv.getBytes("UTF-8")))
+```
+
+For your application's logic, such as "the report is uploaded to the right folder with the right content", a real server adds slowness and flakiness without testing anything of yours.
 
 ZIO FTP includes a test double, `TestFtp`, that implements every operation on a local directory. To use it, the code under test must not be tied to the `Ftp` or `SFtp` environment types.
 
@@ -87,7 +98,7 @@ val tempStub: ZLayer[Any, Throwable, StubFtp] =
 `TestFtp.create` takes a ZIO NIO path, so `zio.nio.file.Path.fromJava` converts the Java one.
 
 :::note
-Open pull request [#464](https://github.com/zio/zio-ftp/pull/464) proposes removing the ZIO NIO dependency. If it is merged, `TestFtp.create` and `stub` take a `java.nio.file.Path` directly and the `fromJava` call goes away.
+Open pull request [#464](https://github.com/zio/zio-ftp/pull/464) proposes removing the ZIO NIO dependency. If it is merged, `TestFtp.create` and `zio.ftp.stub` take a `java.nio.file.Path` directly and the `zio.nio.file.Path.fromJava` call goes away.
 :::
 
 ## Writing the Test
@@ -121,7 +132,7 @@ object PublishReportSpec extends ZIOSpecDefault {
 }
 ```
 
-`provide(tempStub)` on the suite builds a fresh layer, and so a fresh directory, for each test. Run the spec with `sbt test` as usual.
+`Spec#provide` with `tempStub` builds a fresh layer, and so a fresh directory, for each test. Run the spec with `sbt test` as usual.
 
 ## Seeing the Result
 
@@ -140,7 +151,14 @@ Unsafe.unsafe { implicit unsafe =>
 
 ## Knowing the Stub's Limits
 
-The stub follows the local file system, so a few behaviors differ from real servers. `mkdir` creates missing parent directories, as on SFTP but not on FTP; `readFile` ignores `chunkSize`; and errors are plain `IOException` values where FTP raises `InvalidPathError`. Keep at least one integration test against a real server for behavior that depends on the protocol. The [TestFtp](../reference/test-ftp.md) reference lists every difference.
+The stub follows the local file system, so a few behaviors differ from real servers. `FtpAccessors#mkdir` creates missing parent directories, as on SFTP but not on FTP; `FtpAccessors#readFile` ignores `chunkSize`; and, except for `FtpAccessors#readFile` on a missing file, errors are plain `IOException` values where FTP raises `InvalidPathError`. The first difference means a nested folder needs only one call on the stub, but one call per level on FTP:
+
+```scala mdoc:compile-only
+val nested: ZIO[StubFtp, IOException, Unit] =
+  ZIO.serviceWithZIO[StubFtp](_.mkdir("/archive/2026/11"))
+```
+
+Keep at least one integration test against a real server for behavior that depends on the protocol. The [TestFtp](../reference/test-ftp.md) reference lists every difference.
 
 ## Going Further
 

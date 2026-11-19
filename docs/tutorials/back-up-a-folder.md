@@ -85,7 +85,7 @@ The helper has three parts:
 - `provide(stub(...))` builds the stub layer around the `serverDisk` folder. A real program provides `unsecure` or `secure` here instead.
 - `Runtime.default.unsafe.run` runs the effect so the page can show the result. A real program extends `ZIOAppDefault` instead, as we do in section 7.
 
-Now let's ask the server what is in its root directory. `ls` returns a stream of entries, and `runCollect` gathers them:
+Now let's ask the server what is in its root directory. `FtpAccessors#ls` returns a stream of entries, and `ZStream#runCollect` gathers them:
 
 ```scala mdoc
 runOnStub(ftp => ftp.ls("/").map(_.path).runCollect)
@@ -95,7 +95,7 @@ The listing is empty: the server has no files yet.
 
 ## 3. Upload One File
 
-To upload a file, we need a directory to put it in and a stream of its bytes. `mkdir` creates the directory, `ZStream.fromPath` reads the local file as a stream, and `upload` sends that stream to the server:
+To upload a file, we need a directory to put it in and a stream of its bytes. `FtpAccessors#mkdir` creates the directory, `ZStream.fromPath` reads the local file as a stream, and `FtpAccessors#upload` sends that stream to the server:
 
 ```scala mdoc:silent
 def uploadFile(ftp: FtpAccessors[Any], local: Path, remote: String): ZIO[Any, IOException, Unit] =
@@ -112,11 +112,11 @@ runOnStub { ftp =>
 }
 ```
 
-The file arrived with its 8 bytes. Notice that the upload never loads the file into memory: `ZStream.fromPath` reads it in chunks while `upload` writes them, so the same code works for a file of any size.
+The file is on the server with its 8 bytes. Notice that the upload never loads the file into memory: `ZStream.fromPath` reads it in chunks while `FtpAccessors#upload` writes them, so the same code works for a file of any size.
 
 ## 4. Upload a Whole Folder
 
-A folder backup repeats the single upload for every file, but subfolders add a twist: the remote directory must exist before we upload into it. On FTP servers, `mkdir` creates only one level at a time, so we create each level that is missing. `stat` tells us whether a path exists by returning `Some(resource)` or `None`:
+A folder backup repeats the single upload for every file, but subfolders add a twist: the remote directory must exist before we upload into it. On FTP servers, `FtpAccessors#mkdir` creates only one level at a time, so we create each level that is missing. `FtpAccessors#stat` tells us whether a path exists by returning `Some(resource)` or `None`:
 
 ```scala mdoc:silent
 def ensureDirectory(ftp: FtpAccessors[Any], dir: String): ZIO[Any, IOException, Unit] = {
@@ -127,10 +127,7 @@ def ensureDirectory(ftp: FtpAccessors[Any], dir: String): ZIO[Any, IOException, 
 }
 ```
 
-The function works in two steps:
-
-- `levels` turns `/backup/photos` into `/backup` and `/backup/photos`, one entry per level.
-- For each level, `stat` checks whether it exists, and `mkdir` runs only when it doesn't.
+The function first turns `/backup/photos` into `/backup` and `/backup/photos`, one entry per level. For each level, `FtpAccessors#stat` checks whether it exists, and `FtpAccessors#mkdir` runs only when it doesn't.
 
 Next, we need the list of local files and a rule that maps each local path to a remote one:
 
@@ -144,10 +141,7 @@ def remotePath(local: Path): String =
   "/backup/" + source.relativize(local).asScala.mkString("/")
 ```
 
-These two helpers do the local side of the work:
-
-- `localFiles` walks the folder tree on the blocking thread pool and keeps only regular files, sorted so the output is stable.
-- `remotePath` turns `<source>/photos/cat.jpg` into `/backup/photos/cat.jpg`.
+These two helpers do the local side of the work. `localFiles` walks the folder tree on the blocking thread pool and keeps only regular files, sorted so the output is stable. `remotePath` turns `<source>/photos/cat.jpg` into `/backup/photos/cat.jpg`.
 
 Now the backup itself: for each local file, make sure its remote directory exists, then upload it:
 
@@ -161,7 +155,7 @@ def backupAll(ftp: FtpAccessors[Any]): ZIO[Any, IOException, Int] =
   }
 ```
 
-Let's run it and list everything under `/backup`. `lsDescendant` walks the remote tree and returns every file in it:
+Let's run it and list everything under `/backup`. `FtpAccessors#lsDescendant` walks the remote tree and returns every file in it:
 
 ```scala mdoc
 runOnStub { ftp =>
@@ -173,7 +167,7 @@ All three files are on the server, in the same folder structure as on the local 
 
 ## 5. Skip Unchanged Files
 
-Running the backup again uploads every file again, which is wasteful when most of them haven't changed. Let's upload a file only when the server doesn't have it, or has a copy with a different size. `stat` gives us the remote size:
+Running the backup again uploads every file again, which is wasteful when most of them haven't changed. Let's upload a file only when the server doesn't have it, or has a copy with a different size. `FtpAccessors#stat` gives us the remote size:
 
 ```scala mdoc:silent
 def needsUpload(ftp: FtpAccessors[Any], local: Path, remote: String): ZIO[Any, IOException, Boolean] =
@@ -193,10 +187,7 @@ def backupChanged(ftp: FtpAccessors[Any]): ZIO[Any, IOException, Int] =
   }
 ```
 
-The new code changes the backup in two places:
-
-- `needsUpload` returns true when `stat` finds nothing (`forall` on `None` is true) or finds a file whose size differs.
-- `backupChanged` keeps only the files that need uploading, uploads them like `backupAll`, and returns how many it uploaded.
+The new code changes the backup in two places. `needsUpload` returns true when `FtpAccessors#stat` finds nothing (`Option#forall` on `None` is true) or finds a file whose size differs. `backupChanged` keeps only the files that need uploading, uploads them like `backupAll`, and returns how many it uploaded.
 
 Everything is already on the server, so a run now uploads nothing:
 
@@ -220,7 +211,7 @@ Comparing sizes is a simple rule that misses edits that keep the size the same. 
 
 ## 6. Verify the Backup
 
-A backup is only useful if it can be read back. `readFile` streams a remote file's bytes, so we can compare them with the local file:
+A backup is only useful if it can be read back. `FtpAccessors#readFile` streams a remote file's bytes, so we can compare them with the local file:
 
 ```scala mdoc:silent
 def verify(ftp: FtpAccessors[Any]): ZIO[Any, IOException, List[String]] =
@@ -234,7 +225,7 @@ def verify(ftp: FtpAccessors[Any]): ZIO[Any, IOException, List[String]] =
   }
 ```
 
-The verification reads each remote file in full with `runCollect` and compares it byte for byte with the local file. Let's run it:
+The verification reads each remote file in full with `ZStream#runCollect` and compares it byte for byte with the local file. Let's run it:
 
 ```scala mdoc
 runOnStub(verify)
@@ -279,8 +270,8 @@ Try it: start the Pure-FTPd container from Getting Started, run `BackupApp`, the
 In this tutorial, you learned:
 
 - How a connection is provided as a layer (`stub`, `unsecure`) and used as an `FtpAccessors` service.
-- How `upload`, `ls`, `lsDescendant` and `readFile` turn file transfers into effects and streams that never hold a whole file in memory.
-- How `stat` and `mkdir` let you check for paths and create directory trees that work on every server.
+- How `FtpAccessors#upload`, `FtpAccessors#ls`, `FtpAccessors#lsDescendant` and `FtpAccessors#readFile` turn file transfers into effects and streams that can move a file in chunks.
+- How `FtpAccessors#stat` and `FtpAccessors#mkdir` let you check for paths and create directory trees one level at a time.
 - How code written against `FtpAccessors[Any]` runs on a test double and on a real server without changes.
 
 You now have a working mental model of ZIO FTP. The next step is to apply it to your own servers and protocols.
@@ -289,7 +280,7 @@ You now have a working mental model of ZIO FTP. The next step is to apply it to 
 
 To keep going:
 
-- **Connecting to SFTP?** Follow [Connect over SFTP with a Key](../guides/connect-over-sftp-with-a-key.md), then provide `secure` instead of `unsecure`.
+- **Connecting to SFTP?** Follow [Connect over SFTP with a Key](../guides/connect-over-sftp-with-a-key.md), then provide `secure` instead of `unsecure` and take `SFtp` from the environment instead of `Ftp`.
 - **Testing your own code?** [Test Without a Server](../guides/test-without-a-server.md) uses the same stub with ZIO Test.
 - **Want every operation in detail?** Read the [Ftp API](../reference/ftp-accessors.md) reference.
 - **Wondering how FTP, FTPS and SFTP differ?** Read [FTP, FTPS and SFTP](../protocols.md).

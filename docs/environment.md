@@ -61,7 +61,7 @@ val sftpSettings = SecureFtpSettings("127.0.0.1", 22, PasswordCredentials("one",
 val sftpListing = SFtp.ls("/").runCollect.provide(secure(sftpSettings))
 ```
 
-Each `provide` builds the layer, so each of these two effects opens its own connection. In a real program, provide the layer once, at the edge, and write the rest of the program against `Ftp` or `SFtp`.
+Each `ZIO#provide` call builds the layer, so each of these two effects opens its own connection. In a real program, provide the layer once, at the edge, and write the rest of the program against `Ftp` or `SFtp`.
 
 ## Using Two Connections in One Program
 
@@ -81,18 +81,18 @@ val sftpSettings = SecureFtpSettings("sftp.example.com", 22, PasswordCredentials
 val copied = copyToSftp("/reports/2026-11.csv").provide(unsecure(ftpSettings), secure(sftpSettings))
 ```
 
-The `upload` accessors also require whatever environment their source stream needs, so here `SFtp.upload` requires `Ftp` because its source is an `Ftp.readFile` stream.
+The `Ftp.upload` and `SFtp.upload` accessors also require whatever environment their source stream needs, so here `SFtp.upload` requires `Ftp` because its source is an `Ftp.readFile` stream.
 
 ## Running Java Calls Safely
 
-The FTP and SFTP Java clients only offer blocking methods. ZIO FTP runs every call to the Java client through `FtpAccessors#execute`, which wraps the call in `ZIO.attemptBlockingIO`. That moves the call onto ZIO's blocking thread pool, so the main pool keeps running other fibers, and turns any thrown `IOException` into a typed failure. In the plain FTP client, `UnsecureFtp#execute` is implemented as:
+The FTP and SFTP Java clients only offer blocking methods. ZIO FTP runs every call to the Java client through `FtpAccessors#execute`, which the FTP and SFTP implementations define with `ZIO.attemptBlockingIO`. That moves the call onto ZIO's blocking thread pool, so the main pool keeps running other fibers, and turns any thrown `IOException` into a typed failure. In the plain FTP client, `UnsecureFtp#execute` is implemented as:
 
 ```scala
 override def execute[T](f: Client => T): ZIO[Any, IOException, T] =
   attemptBlockingIO(f(unsafeClient))
 ```
 
-You don't provide any extra layer for this. ZIO 2 dropped the old default-services environment, so every operation requires only `Ftp`, `SFtp` or `StubFtp`, plus the source stream's environment for `upload`. If you call a Java client method that the library doesn't wrap, use `FtpAccessors#execute` so it runs on the blocking pool too; see [Call an Unwrapped Client Method](guides/call-an-unwrapped-client-method.md).
+You don't provide any extra layer for this. ZIO 2 dropped the old default-services environment, so every operation requires only `Ftp`, `SFtp` or `StubFtp`, plus the source stream's environment for `FtpAccessors#upload`. If you call a Java client method that the library doesn't wrap, use `FtpAccessors#execute` so it runs on the blocking pool too; see [Call an Unwrapped Client Method](guides/call-an-unwrapped-client-method.md).
 
 Each layer holds one connection, and the Commons Net FTP client is not safe to use from several fibers at once. Run operations on one `Ftp` service sequentially; [FTP, FTPS and SFTP](protocols.md#one-connection-one-conversation) explains why and what to do when you need parallel transfers.
 

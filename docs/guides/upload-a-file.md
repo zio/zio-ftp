@@ -34,7 +34,7 @@ try {
 }
 ```
 
-Every upload repeats this, and none of it composes with the rest of a ZIO program. ZIO FTP's `upload` takes a `ZStream` of bytes and returns a `ZIO` effect that fails with `IOException`, so the connection, the threading and the cleanup are handled for you.
+Every upload repeats this, and none of it composes with the rest of a ZIO program. ZIO FTP's `Ftp.upload` takes a `ZStream` of bytes and returns a `ZIO` effect that fails with `IOException`, so the connection, the threading and the cleanup are handled for you.
 
 ## Prerequisites
 
@@ -88,7 +88,7 @@ When the source stream needs an environment, such as a database connection, that
 
 ## Creating the Target Directory
 
-The parent directory must exist before the upload. On FTP, `mkdir` creates one level at a time, so create each missing level first. The following helper works on FTP and SFTP alike:
+The parent directory must exist before the upload. On FTP, `Ftp.mkdir` creates one level at a time, so create each missing level first. The following helper works on FTP and SFTP alike:
 
 ```scala mdoc:silent
 def ensureDirectory(dir: String): ZIO[Ftp, IOException, Unit] = {
@@ -118,7 +118,7 @@ def uploadAtomically[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[
 `Ftp.rename` fails with `Exception` in its signature, so `refineToOrDie[IOException]` narrows it back to `IOException`; the failure is always an `IOException` at runtime. Many servers refuse to rename over an existing file, so remove the old file first if you replace one.
 
 :::warning
-On SFTP, `upload` does not truncate an existing file. Uploading a shorter file over a longer one leaves the old file's trailing bytes in place. Upload to a new name and rename it, as above, or remove the old file with `SFtp.rm` first.
+On SFTP, `SFtp.upload` does not truncate an existing file. Uploading a shorter file over a longer one leaves the old file's trailing bytes in place. Upload to a new name and rename it, as above, or remove the old file with `SFtp.rm` first.
 :::
 
 ## Running an Upload

@@ -65,10 +65,9 @@ The `host` field is the server's host name or IP address, and `port` is its SSH 
 
 ### Host Key Verification
 
-The `strictHostKeyChecking` and `knownHosts` fields decide which server keys the client trusts:
+The `strictHostKeyChecking` and `knownHosts` fields decide which server keys the client trusts.
 
-- When `strictHostKeyChecking` is false, any host key is accepted and `knownHosts` is ignored.
-- When `strictHostKeyChecking` is true, the client loads the OpenSSH `known_hosts` file at the path in `knownHosts` and accepts only keys listed there for that host. If `knownHosts` is `None`, no key is trusted and every connection fails with a `ConnectionError`.
+When `strictHostKeyChecking` is false, the client accepts any host key and ignores `knownHosts`. When it is true, the client loads the OpenSSH `known_hosts` file at the path in `knownHosts` and accepts only keys listed there for that host. If `knownHosts` is `None`, no key is trusted and every connection fails with a `ConnectionError`.
 
 To trust the keys in your own `known_hosts` file:
 
@@ -111,7 +110,7 @@ final case class KeyCredentials(username: String, identity: SftpIdentity) extend
 
 `PasswordCredentials` logs in with SSH password authentication. `KeyCredentials` logs in with public key authentication, using the private key described by its `SftpIdentity`. [Connect over SFTP with a Key](../guides/connect-over-sftp-with-a-key.md) walks through key setup end to end.
 
-### SftpIdentity
+## SftpIdentity
 
 `SftpIdentity` is a sealed trait with two cases, one for a key held in a string and one for a key in a file. Both carry an optional passphrase that decrypts an encrypted private key:
 

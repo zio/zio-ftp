@@ -13,14 +13,20 @@ In this guide, we connect to an SFTP server with an SSH key instead of a passwor
 
 ## The Problem
 
-Password logins are weak for unattended jobs: the password ends up in configuration, and many servers disable it. SSH keys fix that, but they bring two decisions of their own: where the private key comes from, and how the client knows it is talking to the real server. `SecureFtpSettings.apply` uses a password and accepts any host key, which is fine for a local container and wrong for production:
+Password logins are weak for unattended jobs: the password ends up in configuration, and many servers disable it. SSH keys fix that, but they bring two decisions of their own: where the private key comes from, and how the client knows it is talking to the real server. The shortest setup, a password login that accepts any host key, is fine for a local container and wrong for production:
 
 ```scala mdoc:compile-only
-import zio.ftp._
+import net.schmizz.sshj.SSHClient
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier
 
 // Works, but sends a password and trusts whatever server answers.
-val insecure = SecureFtpSettings("sftp.example.com", 22, PasswordCredentials("app", "s3cret"))
+val ssh = new SSHClient()
+ssh.addHostKeyVerifier(new PromiscuousVerifier())
+ssh.connect("sftp.example.com", 22)
+ssh.authPassword("app", "s3cret")
 ```
+
+`SecureFtpSettings.apply` makes the same choices, a password and no host key check, so this guide changes both.
 
 ## Prerequisites
 

@@ -13,14 +13,18 @@ In this guide, we connect to an FTP server over TLS (FTPS), make sure file conte
 
 ## The Problem
 
-Plain FTP sends the password and every file in clear text. FTPS adds TLS, but its default is easy to get wrong in a way that still "works": the data channel can stay unencrypted while the commands are encrypted. The shortest FTPS settings in ZIO FTP do exactly that:
+Plain FTP sends the password and every file in clear text. FTPS adds TLS, but its default is easy to get wrong in a way that still "works": the data channel can stay unencrypted while the commands are encrypted. The shortest FTPS setup does exactly that:
 
 ```scala mdoc:compile-only
-import zio.ftp._
+import org.apache.commons.net.ftp.FTPSClient
 
 // Encrypts the commands and the password, but not the file contents.
-val weak = UnsecureFtpSettings.secure("ftp.example.com", 21, PasswordCredentials("one", "1234"))
+val client = new FTPSClient(false)
+client.connect("ftp.example.com", 21)
+client.login("one", "1234")
 ```
+
+`UnsecureFtpSettings.secure` keeps the same default, `PROT C`, through `SslParams.default`.
 
 This guide fixes that, and shows how to choose between the two FTPS modes.
 

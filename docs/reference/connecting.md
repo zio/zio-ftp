@@ -4,7 +4,7 @@ title: "Connecting"
 sidebar_label: "Connecting"
 ---
 
-ZIO FTP offers three ways to get a connection: a `ZLayer` for the environment, a scoped effect for code that manages its own connections, and an `unsafe` wrapper around a Java client you created yourself. This page documents all three and what happens when a connection opens and closes.
+ZIO FTP offers three ways to get a connection: a `ZLayer` for the environment, a scoped effect for code that manages its own connections, and an `UnsecureFtp.unsafe` or `SecureFtp.unsafe` wrapper around a Java client you created yourself. This page documents all three and what happens when a connection opens and closes.
 
 ## Layers
 
@@ -50,7 +50,7 @@ object SecureFtp {
 }
 ```
 
-`FtpAccessors[UnsecureFtp.Client]` is the same type as `Ftp`, so you call the trait's methods on the returned value directly. The following effect uploads several files in parallel, each over its own connection, with at most four connections open at a time:
+[`FtpAccessors[UnsecureFtp.Client]`](ftp-accessors.md) is the same type as `Ftp`, so you call the trait's methods on the returned value directly. The following effect uploads several files in parallel, each over its own connection, with at most four connections open at a time:
 
 ```scala mdoc:compile-only
 import zio._
@@ -86,7 +86,7 @@ object SecureFtp {
 }
 ```
 
-You rarely need this: it is an advanced API for clients that need configuration the settings classes don't expose, such as a Commons Net `FTPClientConfig` for a server with an unusual listing format. Prefer the layers or the scoped constructors. With `unsafe`, you own the client's lifecycle, so pair it with `ZIO.acquireRelease`:
+You rarely need this: it is an advanced API for clients that need configuration the settings classes don't expose, such as a Commons Net `FTPClientConfig` for a server with an unusual listing format. Prefer the layers or the scoped constructors. With `UnsecureFtp.unsafe` or `SecureFtp.unsafe`, you own the client's lifecycle, so pair it with `ZIO.acquireRelease`:
 
 ```scala mdoc:compile-only
 import zio._
@@ -115,14 +115,15 @@ The connect and disconnect steps follow the settings. For FTP and FTPS, `Unsecur
 1. Creates an `FTPClient`, or an `FTPSClient` in implicit or explicit mode when `sslParams` is set.
 2. Sets the control encoding, or turns on UTF-8 auto-detection when `controlEncoding` is `None`.
 3. Installs a socket factory that goes through `proxy`, if set, and turns on TCP keepalive with `keepalive`, if set.
-4. Sets `defaultTimeout`, connects to `host` and `port`, and logs in with the credentials.
+4. Sets `defaultTimeout` as the control connection's read timeout, connects to `host` and `port`, and logs in with the credentials.
 5. Switches to binary mode if `binary` is true and to passive mode if `passiveMode` is true.
-6. For FTPS, sends `PBSZ` and `PROT` with the values from `sslParams`.
-7. Sets `dataTimeout`.
+6. Turns on remote verification of data connections if `remoteVerificationEnabled` is true.
+7. For FTPS, sends `PBSZ` and `PROT` with the values from `sslParams`.
+8. Sets `dataTimeout`.
 
 If any step throws, or the server rejects the login, the effect fails with a `ConnectionError`. When the scope closes, the client sends `QUIT` and disconnects, ignoring errors.
 
-For SFTP, `SecureFtp.connect` creates an sshj `SSHClient` with `sshConfig`, installs a proxy socket factory if `proxy` is set, sets up host key verification (accept any key when `strictHostKeyChecking` is false, otherwise load `knownHosts`), connects, authenticates with a password or a key, and opens an SFTP channel. Any failure becomes a `ConnectionError` whose message names the host and port. When the scope closes, the SFTP channel is closed and the SSH connection is disconnected, ignoring errors.
+For SFTP, `SecureFtp.connect` creates an sshj `SSHClient` with `sshConfig`, installs a proxy socket factory if `proxy` is set, sets up host key verification (accept any key when `strictHostKeyChecking` is false, otherwise load the `knownHosts` file if one is set), connects, authenticates with a password or a key, and opens an SFTP channel. Any failure becomes a `ConnectionError` whose message names the host and port. When the scope closes, the SFTP channel is closed and the SSH connection is disconnected, ignoring errors.
 
 ## Related Pages
 

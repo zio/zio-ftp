@@ -18,17 +18,17 @@ FTP, FTPS and SFTP all move files between a client and a server, but they differ
 
 ZIO FTP uses Apache Commons Net for FTP and FTPS, and sshj for SFTP. FTP and FTPS share one implementation, so they share a settings class, a layer and an environment type:
 
-| Protocol | Settings                                 | Layer      | Environment | Accessors | Java client                  |
-| -------- | ---------------------------------------- | ---------- | ----------- | --------- | ---------------------------- |
-| FTP      | `UnsecureFtpSettings(host, port, creds)` | `unsecure` | `Ftp`       | `Ftp.*`   | Commons Net `FTPClient`      |
-| FTPS     | `UnsecureFtpSettings.secure(...)`        | `unsecure` | `Ftp`       | `Ftp.*`   | Commons Net `FTPSClient`     |
-| SFTP     | `SecureFtpSettings(host, port, creds)`   | `secure`   | `SFtp`      | `SFtp.*`  | sshj `SFTPClient`            |
-| None     | a local directory                        | `stub`     | `StubFtp`   | `StubFtp.*` | none (local file system)   |
+| Protocol | Settings                                 | Layer      | Environment | Accessors   | Java client              |
+| -------- | ---------------------------------------- | ---------- | ----------- | ----------- | ------------------------ |
+| FTP      | `UnsecureFtpSettings(host, port, creds)` | `unsecure` | `Ftp`       | `Ftp.*`     | Commons Net `FTPClient`  |
+| FTPS     | `UnsecureFtpSettings.secure(...)`        | `unsecure` | `Ftp`       | `Ftp.*`     | Commons Net `FTPSClient` |
+| SFTP     | `SecureFtpSettings(host, port, creds)`   | `secure`   | `SFtp`      | `SFtp.*`    | sshj `SFTPClient`        |
+| None     | a local directory                        | `stub`     | `StubFtp`   | `StubFtp.*` | none (local file system) |
 
 The last row is the test double: `StubFtp` runs the same operations against a local directory, so tests need no server. See [Test Without a Server](guides/test-without-a-server.md).
 
 :::note
-The names come from the code: `UnsecureFtpSettings` covers both FTP and FTPS, and "secure" in `SecureFtpSettings` and the `secure` layer means SFTP. FTPS is selected by the `sslParams` field of `UnsecureFtpSettings`, not by the `secure` layer.
+The names come from the code: `UnsecureFtpSettings` covers both FTP and FTPS, and "secure" in `SecureFtpSettings` and the `zio.ftp.secure` layer means SFTP. FTPS is selected by the `sslParams` field of `UnsecureFtpSettings`, not by the `zio.ftp.secure` layer.
 :::
 
 ## Choosing a Protocol
@@ -39,30 +39,27 @@ Usually the server decides for you. When you have a choice, prefer SFTP: it need
 
 All three implementations satisfy the same `FtpAccessors` interface, but they pass through the behavior of the underlying client. These differences are visible to your program:
 
-| Operation or setting        | FTP and FTPS                                 | SFTP                                          | StubFtp                                  |
-| --------------------------- | -------------------------------------------- | --------------------------------------------- | ---------------------------------------- |
-| `stat` on a missing path    | `None`                                       | `None`                                        | `None`                                   |
-| `stat(...).isDirectory`     | `Some(true)` or `Some(false)`                | always `None`                                 | `Some(true)` or `Some(false)`            |
-| `mkdir("/a/b/c")`           | creates only the last level                  | creates missing parents                       | creates missing parents                  |
-| `ls` on a missing directory | empty stream (as the servers we test return) | empty stream                                  | empty stream                             |
-| `lsDescendant`              | files only, recursively                      | files only, recursively                       | regular files only, recursively          |
-| `readFile` on a missing file | fails with `InvalidPathError`               | fails with sshj's `SFTPException`             | fails with `InvalidPathError`            |
-| `rm`, `rmdir`, `rename` failure | fail with `InvalidPathError`             | fail with sshj's `SFTPException`              | fail with `IOException`                  |
-| Incomplete download         | stream fails with `FileTransferIncompleteError` | stream fails with the client's `IOException` | not applicable                        |
-| TCP keepalive               | `keepalive` setting                          | not configurable                              | not applicable                           |
-| Timeouts                    | `dataTimeout`, `defaultTimeout`              | not configurable (sshj defaults)              | not applicable                           |
+| Operation or setting                                                   | FTP and FTPS                                                     | SFTP                                         | StubFtp                         |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------- | ------------------------------- |
+| `FtpAccessors#stat` on a missing path                                  | `None`                                                           | `None`                                       | `None`                          |
+| `FtpAccessors#stat(...).isDirectory`                                   | `Some(true)` or `Some(false)`                                    | always `None`                                | `Some(true)` or `Some(false)`   |
+| `FtpAccessors#mkdir("/a/b/c")`                                         | creates only the last level                                      | creates missing parents                      | creates missing parents         |
+| `FtpAccessors#ls` on a missing directory                               | depends on the server; the tested servers return an empty stream | empty stream                                 | empty stream                    |
+| `FtpAccessors#lsDescendant`                                            | files only, recursively                                          | files only, recursively                      | regular files only, recursively |
+| `FtpAccessors#readFile` on a missing file                              | fails with `InvalidPathError`                                    | fails with sshj's `SFTPException`            | fails with `InvalidPathError`   |
+| `FtpAccessors#rm`, `FtpAccessors#rmdir`, `FtpAccessors#rename` failure | fail with `InvalidPathError`                                     | fail with sshj's `SFTPException`             | fail with `IOException`         |
+| Incomplete download                                                    | stream fails with `FileTransferIncompleteError`                  | stream fails with the client's `IOException` | not applicable                  |
+| TCP keepalive                                                          | `keepalive` setting                                              | not configurable                             | not applicable                  |
+| Timeouts                                                               | `dataTimeout`, `defaultTimeout`                                  | not configurable (sshj defaults)             | not applicable                  |
 
-Every failure is an `IOException`, so code that handles `IOException` works with all three. Code that matches on `InvalidPathError` only catches FTP and stub failures; see [Errors](reference/errors.md).
+Every failure is an `IOException`, so code that handles `IOException` works with all three. Code that matches on `InvalidPathError` only catches FTP failures and `StubFtp.readFile` failures; see [Errors](reference/errors.md).
 
 ## One Connection, One Conversation
 
-Each layer holds exactly one connection, and every operation in the program shares it. FTP in particular is a strict request and reply conversation on one control connection: while a `readFile` stream is open, the server is busy with that transfer, and the stream only finishes the command when it is fully consumed or closed. Run operations on the same `Ftp` service one after another, not in parallel, and consume or close each `readFile` stream before starting the next operation.
+Each layer holds exactly one connection, and every operation in the program shares it. FTP in particular is a strict request and reply conversation on one control connection: while an `FtpAccessors#readFile` stream is open, the server is busy with that transfer, and the stream only finishes the command when it is fully consumed or closed. Run operations on the same `Ftp` service one after another, not in parallel, and consume or close each `FtpAccessors#readFile` stream before starting the next operation.
 
 If you need parallel transfers, build one layer per connection, for example with `ZIO.scoped` and `UnsecureFtp.connect` for each worker. [Connecting](reference/connecting.md) shows the scoped constructors.
 
 ## Security Defaults
 
-Two defaults favor getting started over security, and you should change both for production:
-
-- `SecureFtpSettings.apply` sets `strictHostKeyChecking = false`, so the SFTP client accepts any host key and cannot detect a man-in-the-middle. Turn it on and point `knownHosts` at a `known_hosts` file; see [Connect over SFTP with a Key](guides/connect-over-sftp-with-a-key.md).
-- `SslParams.default` sets the FTPS data channel protection level to `Clear`, so file contents travel unencrypted even though the commands and password are encrypted. Use `ProtectionLevel.Private`; see [Use FTPS](guides/use-ftps.md).
+Two defaults favor getting started over security, and you should change both for production. First, `SecureFtpSettings.apply` sets `strictHostKeyChecking = false`, so the SFTP client accepts any host key and cannot detect a man-in-the-middle; turn it on and point `knownHosts` at a `known_hosts` file, as shown in [Connect over SFTP with a Key](guides/connect-over-sftp-with-a-key.md). Second, `SslParams.default` sets the FTPS data channel protection level to `Clear`, so file contents travel unencrypted even though the commands and password are encrypted; use `ProtectionLevel.Private`, as shown in [Use FTPS](guides/use-ftps.md).

@@ -54,7 +54,7 @@ UnsecureFtpSettings("127.0.0.1", 21, PasswordCredentials("one", "1234"))
 UnsecureFtpSettings.secure("127.0.0.1", 21, PasswordCredentials("one", "1234")).sslParams
 ```
 
-To change any other field, use `copy` on the result.
+To change any other field, use `UnsecureFtpSettings#copy` on the result.
 
 ## Fields
 
@@ -104,12 +104,12 @@ The three parameters map to the FTPS connection setup:
 
 `ProtectionLevel` has one case per `PROT` value:
 
-| Case                           | `PROT` value | Meaning                                       |
-| ------------------------------ | ------------ | --------------------------------------------- |
-| `ProtectionLevel.Clear`        | `C`          | data connections are not encrypted            |
-| `ProtectionLevel.Private`      | `P`          | data connections are encrypted with TLS       |
-| `ProtectionLevel.Safe`         | `S`          | integrity protection only, not used with TLS  |
-| `ProtectionLevel.Confidential` | `E`          | confidentiality only, not used with TLS       |
+| Case                           | `PROT` value | Meaning                                      |
+| ------------------------------ | ------------ | -------------------------------------------- |
+| `ProtectionLevel.Clear`        | `C`          | data connections are not encrypted           |
+| `ProtectionLevel.Private`      | `P`          | data connections are encrypted with TLS      |
+| `ProtectionLevel.Safe`         | `S`          | integrity protection only, not used with TLS |
+| `ProtectionLevel.Confidential` | `E`          | confidentiality only, not used with TLS      |
 
 FTPS servers normally accept only `C` and `P`. Since `SslParams.default` uses `Clear`, file contents are not encrypted unless you choose `Private`:
 
@@ -128,7 +128,7 @@ val encrypted = UnsecureFtpSettings
 Two timeouts and a keepalive option protect long-running connections. Each one is turned off by setting it to `None`:
 
 - `dataTimeout` is how long a read on a data connection can block before it fails. It defaults to one minute.
-- `defaultTimeout` is the socket timeout of the control connection, used while connecting and waiting for replies. It defaults to one minute.
+- `defaultTimeout` is the read timeout of the control connection, which bounds how long the client waits for a command reply. It doesn't limit the initial TCP connection attempt. It defaults to one minute.
 - `keepalive` turns on TCP keepalive on every socket the client opens when it is `Some`. It defaults to `Some(KeepaliveSettings.default)`.
 
 `KeepaliveSettings` holds the three TCP keepalive parameters, each in the units of `jdk.net.ExtendedSocketOptions`:
@@ -141,7 +141,7 @@ object KeepaliveSettings {
 }
 ```
 
-`idle` is the number of seconds a connection must be idle before the first probe, `interval` is the number of seconds between probes, and `count` is the number of unanswered probes after which the connection is dropped. A `None` parameter keeps the operating system's default. If the platform does not support one of the options, ZIO FTP logs a warning with `ZIO.logWarning` and continues without it. To tune them:
+`idle` is the number of seconds a connection must be idle before the first probe, `interval` is the number of seconds between probes, and `count` is the number of unanswered probes after which the connection is dropped. A `None` parameter keeps the operating system's default. If the platform does not support one of the options, ZIO FTP logs a warning with `ZIO.logWarning` and continues without it. To set both timeouts and all three keepalive parameters at once:
 
 ```scala mdoc:compile-only
 import zio._

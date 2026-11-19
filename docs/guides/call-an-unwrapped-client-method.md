@@ -9,7 +9,7 @@ keywords:
   - "FtpAccessors"
 ---
 
-In this guide, we run commands that ZIO FTP doesn't wrap, such as changing file permissions, reading the working directory or creating symbolic links, by calling the underlying Java client through `execute`. The calls stay on ZIO's blocking thread pool and fail with typed errors, like the built-in operations.
+In this guide, we run commands that ZIO FTP doesn't wrap, such as changing file permissions, reading the working directory or creating symbolic links, by calling the underlying Java client through `FtpAccessors#execute`. The calls stay on ZIO's blocking thread pool and fail with typed errors, like the built-in operations.
 
 ## The Problem
 
@@ -44,7 +44,7 @@ val workingDirectory: ZIO[Ftp, IOException, String] =
   Ftp.execute(_.printWorkingDirectory())
 ```
 
-Many `FTPClient` methods return `false` instead of throwing when the server refuses a command, so check the result and turn a refusal into a failure. `getReplyString` holds the server's last reply:
+Many `FTPClient` methods return `false` instead of throwing when the server refuses a command, so check the result and turn a refusal into a failure. `FTPClient#getReplyString` holds the server's last reply:
 
 ```scala mdoc:silent
 def chmod(path: String, mode: String): ZIO[Ftp, IOException, Unit] =
@@ -56,7 +56,7 @@ def chmod(path: String, mode: String): ZIO[Ftp, IOException, Unit] =
   }
 ```
 
-Read the reply inside the same `execute` call as the command, as above. A later call might run after another command has replaced the reply.
+Read the reply inside the same `FtpAccessors#execute` call as the command, as above. A later call might run after another command has replaced the reply.
 
 ## Calling an SFTP Client Method
 
@@ -70,14 +70,14 @@ def makePrivate(path: String): ZIO[SFtp, IOException, Unit] =
   SFtp.execute(_.chmod(path, Integer.parseInt("600", 8)))
 
 def link(target: String, linkPath: String): ZIO[SFtp, IOException, Unit] =
-  SFtp.execute(_.symlink(linkPath, target))
+  SFtp.execute(_.symlink(target, linkPath))
 ```
 
-`canonicalize(".")` returns the absolute path of the login directory, which helps when the server's `/` is not what you expect.
+`SFTPClient#canonicalize` with `"."` returns the absolute path of the login directory, which helps when the server's `/` is not what you expect. On OpenSSH servers, `SFTPClient#symlink` takes the link's target first and the new link's path second.
 
 ## Reading Modification Times Exactly
 
-On FTP, listings often show only the minute of a file's modification time. The `MDTM` command returns it to the second, and `FtpResource.fromFtpFile` converts the result of `mlistFile` and `mlistDir` into the usual `FtpResource` type. The following function returns the exact time, or `None` if the file doesn't exist:
+On FTP, listings often show only the minute of a file's modification time. The `MDTM` command returns it to the second. The following function returns the exact time, or `None` if the file doesn't exist:
 
 ```scala mdoc:silent
 def modifiedAt(path: String): ZIO[Ftp, IOException, Option[java.time.Instant]] =
@@ -86,9 +86,17 @@ def modifiedAt(path: String): ZIO[Ftp, IOException, Option[java.time.Instant]] =
 
 ## Knowing What execute Catches
 
-`execute` turns `IOException` into a failure. Any other exception, such as an `IllegalArgumentException` from a bad argument, is a defect that ends the fiber rather than a failure you can handle with `catchAll`. Validate arguments before the call, or catch the exception inside the function and return it as a value.
+`FtpAccessors#execute` turns `IOException` into a failure. Any other exception, such as an `IllegalArgumentException` from a bad argument, is a defect that ends the fiber rather than a failure you can handle with `ZIO#catchAll`. Validate arguments before the call, or catch the exception inside the function and return it as a value. To validate an argument before the call, fail with an `IOException` of your own:
 
-`execute` also doesn't add synchronization: the function runs on the same connection as every other operation. On FTP, don't call `execute` while a `readFile` stream on the same connection is still open, and don't run it in parallel with other operations on that connection.
+```scala mdoc:silent
+def chmodOctal(path: String, mode: String): ZIO[SFtp, IOException, Unit] =
+  ZIO
+    .attempt(Integer.parseInt(mode, 8))
+    .mapError(e => new IOException(s"Invalid mode $mode", e))
+    .flatMap(bits => SFtp.execute(_.chmod(path, bits)))
+```
+
+`FtpAccessors#execute` also doesn't add synchronization: the function runs on the same connection as every other operation. On FTP, don't call `Ftp.execute` while an `Ftp.readFile` stream on the same connection is still open, and don't run it in parallel with other operations on that connection.
 
 ## Going Further
 

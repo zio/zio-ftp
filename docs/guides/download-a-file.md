@@ -9,7 +9,7 @@ keywords:
   - "readFile"
 ---
 
-In this guide, we download files with ZIO FTP: read a small text file into a string, save a large file straight to disk, and resume a download that was interrupted. All three use `readFile`, which streams a remote file's bytes.
+In this guide, we download files with ZIO FTP: read a small text file into a string, save a large file straight to disk, and resume a download that was interrupted. All three use `Ftp.readFile`, which streams a remote file's bytes.
 
 ## The Problem
 
@@ -32,7 +32,7 @@ def download(client: FTPClient, remote: String, local: String): Unit = {
 }
 ```
 
-ZIO FTP's `readFile` does all of this inside a `ZStream`: it opens the transfer when the stream starts, completes the command when the stream ends, and fails the stream with `FileTransferIncompleteError` if the server doesn't confirm the transfer.
+ZIO FTP's `Ftp.readFile` does all of this inside a `ZStream`: it opens the transfer when the stream starts, completes the command when the stream ends, and fails the stream with `FileTransferIncompleteError` if the server doesn't confirm the transfer.
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ def saveTo(remote: String, local: String): ZIO[Ftp, IOException, Long] =
   Ftp.readFile(remote).run(ZSink.fromPath(Paths.get(local))).refineToOrDie[IOException]
 ```
 
-The effect returns the number of bytes written. The optional `chunkSize` parameter of `readFile`, 2048 bytes by default, sets the read buffer size; a larger value, such as `Ftp.readFile(remote, chunkSize = 64 * 1024)`, can speed up large transfers.
+The effect returns the number of bytes written. The optional `chunkSize` parameter of `Ftp.readFile`, 2048 bytes by default, sets the read buffer size; a larger value, such as `Ftp.readFile(remote, chunkSize = 64 * 1024)`, can speed up large transfers.
 
 ## Resuming an Interrupted Download
 
@@ -105,7 +105,7 @@ A broken connection usually stays broken, so in practice each retry should also 
 
 ## Handling a Missing File
 
-If the remote file doesn't exist, the stream fails as soon as it starts: with `InvalidPathError` on FTP and with sshj's `SFTPException` on SFTP. Check first with `stat` when a missing file is expected:
+If the remote file doesn't exist, the stream fails as soon as it starts: with `InvalidPathError` on FTP and with sshj's `SFTPException` on SFTP. Check first with `Ftp.stat` when a missing file is expected:
 
 ```scala mdoc:silent
 def readIfPresent(remote: String): ZIO[Ftp, IOException, Option[String]] =
@@ -117,7 +117,7 @@ def readIfPresent(remote: String): ZIO[Ftp, IOException, Option[String]] =
 
 ## One Download at a Time
 
-FTP sends every command over one control connection, and a download keeps it busy until the stream ends. Consume or close each `readFile` stream before starting the next operation on the same connection, as all the examples above do by running the stream to completion. For parallel downloads, open one connection per download; see [FTP, FTPS and SFTP](../protocols.md#one-connection-one-conversation).
+FTP sends every command over one control connection, and a download keeps it busy until the stream ends. Consume or close each `Ftp.readFile` stream before starting the next operation on the same connection, as all the examples above do by running the stream to completion. For parallel downloads, open one connection per download; see [FTP, FTPS and SFTP](../protocols.md#one-connection-one-conversation).
 
 ## Going Further
 

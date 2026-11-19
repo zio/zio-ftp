@@ -4,7 +4,7 @@ title: "FtpResource"
 sidebar_label: "FtpResource"
 ---
 
-`FtpResource` is the metadata of one file, directory or link on a server. The listing operations `ls` and `lsDescendant` stream `FtpResource` values, and `stat` returns one when the path exists.
+`FtpResource` is the metadata of one file, directory or link on a server. The listing operations `FtpAccessors#ls` and `FtpAccessors#lsDescendant` stream `FtpResource` values, and `FtpAccessors#stat` returns one when the path exists.
 
 ## Definition
 
@@ -32,14 +32,14 @@ The fields have these meanings:
 
 The values come from different sources depending on the connection, so their precision differs:
 
-| Field          | FTP and FTPS                                              | SFTP                                       | StubFtp                                   |
-| -------------- | --------------------------------------------------------- | ------------------------------------------ | ----------------------------------------- |
-| `path`         | listed directory joined with the entry name               | path returned by the server                | path relative to the stub root, with a leading `/` |
-| `lastModified` | listing timestamp (often minute precision for `ls`)       | modification time in seconds               | file system modification time             |
-| `permissions`  | parsed from the listing                                   | from the file attributes                   | POSIX permissions, empty on Windows       |
-| `isDirectory`  | always `Some`                                             | `Some` from `ls`, `None` from `stat`        | always `Some`                             |
+| Field          | FTP and FTPS                                                                            | SFTP                                                           | StubFtp                                            |
+| -------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------- |
+| `path`         | `ls`: listed directory joined with the entry name; `stat`: the name in the `MLST` reply | `ls`: path of the directory entry; `stat`: the path you passed | path relative to the stub root, with a leading `/` |
+| `lastModified` | listing timestamp (often minute precision for `ls`)                                     | modification time in seconds                                   | file system modification time                      |
+| `permissions`  | parsed from the listing                                                                 | from the file attributes                                       | POSIX permissions, empty on Windows                |
+| `isDirectory`  | always `Some`                                                                           | `Some` from `ls`, `None` from `stat`                           | always `Some`                                      |
 
-On FTP, `ls` and `lsDescendant` parse the server's `LIST` output, which often shows only the minute for recent files and only the day for older ones. `stat` uses `MLST`, which reports seconds. On SFTP, `stat` does not determine the entry type, so check `isDirectory` with `contains(true)` or `contains(false)` rather than `get`.
+On FTP, `FtpAccessors#ls` and `FtpAccessors#lsDescendant` parse the server's `LIST` output, which often shows only the minute for recent files and only the day for older ones. `FtpAccessors#stat` uses `MLST`, which reports seconds. On SFTP, `FtpAccessors#stat` does not determine the entry type, so check `isDirectory` with `Option#contains` (`isDirectory.contains(true)` or `isDirectory.contains(false)`) rather than `Option#get`.
 
 ## Working with Resources
 
@@ -76,7 +76,7 @@ report.path.split('/').last
 
 ## Constructors from Java Clients
 
-The companion object also converts the Java clients' metadata types. The FTP and SFTP implementations use them internally, and they are public for code that calls the Java clients through `execute`:
+The companion object also converts the Java clients' metadata types. The FTP and SFTP implementations use them internally, and they are public for code that calls the Java clients through `FtpAccessors#execute`:
 
 ```scala
 object FtpResource {

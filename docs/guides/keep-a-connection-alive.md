@@ -15,7 +15,21 @@ In this guide, we keep FTP connections from being dropped by firewalls and NAT g
 
 Firewalls and NAT gateways forget TCP connections that have been idle for a while, often after a few minutes. When that happens to an FTP connection, nothing fails right away: the next command waits for a reply that never comes. FTP makes this worse, because a large transfer moves its bytes over the data connection while the control connection sits idle; the transfer finishes, but the server's confirmation is lost, and the download fails with `FileTransferIncompleteError` after all the data has arrived.
 
-Three tools fix this, and ZIO FTP turns the first two on by default: TCP keepalive, socket timeouts, and connections that don't live longer than they need to.
+A program that opens one connection at startup and then sleeps between runs runs straight into it:
+
+```scala mdoc:compile-only
+import org.apache.commons.net.ftp.FTPClient
+
+val client = new FTPClient()
+client.connect("ftp.example.com", 21)
+client.login("one", "1234")
+while (true) {
+  Thread.sleep(60 * 60 * 1000L)   // the firewall forgets the idle connection here
+  client.listFiles("/incoming")   // waits for a reply that never comes
+}
+```
+
+Four tools help, and ZIO FTP turns the first two on by default: TCP keepalive and socket timeouts, followed by `NOOP` commands during uploads and connections that don't live longer than they need to.
 
 ## Prerequisites
 
@@ -51,7 +65,7 @@ val boundedSettings = settings.copy(
 )
 ```
 
-The `defaultTimeout` field covers the control connection: connecting and waiting for command replies. The `dataTimeout` field covers each read on a data connection, so set it longer than the server's slowest pause during a transfer. Both default to one minute. A read that times out fails with `java.net.SocketTimeoutException`, an `IOException`.
+The `defaultTimeout` field is the read timeout of the control connection: it bounds how long the client waits for a command reply. It doesn't limit how long the initial TCP connection attempt can take. The `dataTimeout` field covers each read on a data connection, so set it longer than the server's slowest pause during a transfer. Both default to one minute. A read that times out fails with `java.net.SocketTimeoutException`, an `IOException`.
 
 ## Keeping the Control Connection Busy During Uploads
 
@@ -63,7 +77,7 @@ val uploadWithNoops: ZIO[Ftp, IOException, Unit] =
     Ftp.upload("/backups/archive.tar", ZStream.fromPath(java.nio.file.Paths.get("archive.tar")))
 ```
 
-With this setting, the client sends a `NOOP` whenever five minutes pass during an upload. It applies to `upload`, which uses `FTPClient#storeFile`; `readFile` streams the data itself, so it doesn't send `NOOP`s and relies on TCP keepalive.
+With this setting, the client sends a `NOOP` whenever five minutes pass during an upload. It applies to `Ftp.upload`, which uses `FTPClient#storeFile`; `Ftp.readFile` streams the data itself, so it doesn't send `NOOP`s and relies on TCP keepalive.
 
 ## Using Short-Lived Connections
 
@@ -84,7 +98,16 @@ The retry reconnects on every attempt, because each attempt runs `UnsecureFtp.co
 
 ## SFTP Connections
 
-The SFTP implementation has no keepalive or timeout settings; an SSH connection carries its own traffic over a single TCP connection and is less prone to the idle control connection problem, but a NAT gateway can still drop it when idle. Use short-lived connections with `SecureFtp.connect`, exactly as above, for SFTP jobs that sleep between runs.
+The SFTP implementation has no keepalive or timeout settings; an SSH connection carries its own traffic over a single TCP connection and is less prone to the idle control connection problem, but a NAT gateway can still drop it when idle. For SFTP jobs that sleep between runs, use short-lived connections with `SecureFtp.connect`, reusing `syncOnce`:
+
+```scala mdoc:compile-only
+val sftpSync: ZIO[Any, IOException, Unit] =
+  ZIO.scoped(
+    SecureFtp
+      .connect(SecureFtpSettings("sftp.example.com", 22, PasswordCredentials("one", "1234")))
+      .flatMap(syncOnce)
+  )
+```
 
 ## Going Further
 

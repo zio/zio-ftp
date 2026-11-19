@@ -29,11 +29,11 @@ Open pull request [#464](https://github.com/zio/zio-ftp/pull/464) proposes remov
 
 ## How Paths Map to the Root
 
-Every path you pass is resolved inside the root directory: `/reports/a.csv` with root `/tmp/ftp-root` becomes `/tmp/ftp-root/reports/a.csv`. The leading `/` is optional. Paths in returned `FtpResource` values are relative to the root and start with `/`, so they look like server paths.
+Every path you pass is joined to the root directory: `/reports/a.csv` with root `/tmp/ftp-root` becomes `/tmp/ftp-root/reports/a.csv`. The leading `/` is optional. The stub does not normalize `..` segments, so a path containing them can leave the root. Paths in returned `FtpResource` values are relative to the root and start with `/`, so they look like server paths.
 
 ## Example
 
-To see the stub in action, the following setup creates a temporary root directory with one file and a subdirectory, and defines a helper that runs an effect against the stub layer:
+The following setup creates a temporary root directory with one file and a subdirectory, and defines a helper that runs an effect against the stub layer:
 
 ```scala mdoc:silent
 import zio._
@@ -60,7 +60,7 @@ Listing the root returns both entries, with paths relative to the root:
 runStub(StubFtp.ls("/").map(_.path).runCollect.map(_.sorted))
 ```
 
-`lsDescendant` returns only the files, from every level:
+`StubFtp.lsDescendant` returns only the files, from every level:
 
 ```scala mdoc
 runStub(StubFtp.lsDescendant("/").map(_.path).runCollect.map(_.sorted))
@@ -85,14 +85,14 @@ runStub(StubFtp.readFile("/missing.txt").runCollect.either)
 
 The stub follows FTP's behavior where it can, and the local file system's otherwise:
 
-- `stat` returns `None` for a missing path and fills `isDirectory`, `size`, `lastModified` and `permissions` from the file system. On Windows, `permissions` is empty.
-- `ls` and `lsDescendant` return an empty stream for a missing directory. `lsDescendant` emits regular files only.
-- `readFile` reads the whole file into memory before streaming it, ignores `chunkSize`, and skips `fileOffset` bytes. A missing file fails with `InvalidPathError`.
-- `upload` replaces an existing file and fails if the parent directory doesn't exist.
-- `mkdir` creates missing parent directories, like SFTP and unlike FTP.
-- `rm` and `rmdir` both delete the path, and fail on a non-empty directory.
-- `rename` moves the file or directory and fails if the target exists.
-- Errors other than a missing file for `readFile` are plain `IOException` values; see [Errors](errors.md).
+- `FtpAccessors#stat` returns `None` for a missing path and fills `isDirectory`, `size`, `lastModified` and `permissions` from the file system. On Windows, `permissions` is empty.
+- `FtpAccessors#ls` and `FtpAccessors#lsDescendant` return an empty stream for a missing directory. `FtpAccessors#lsDescendant` emits regular files only.
+- `FtpAccessors#readFile` reads the whole file into memory before streaming it, ignores `chunkSize`, and skips `fileOffset` bytes. A missing file fails with `InvalidPathError`.
+- `FtpAccessors#upload` replaces an existing file and fails if the parent directory doesn't exist.
+- `FtpAccessors#mkdir` creates missing parent directories, like SFTP and unlike FTP.
+- `FtpAccessors#rm` and `FtpAccessors#rmdir` both delete the path, and fail on a non-empty directory.
+- `FtpAccessors#rename` moves the file or directory and fails if the target exists.
+- Errors other than a missing file for `FtpAccessors#readFile` are plain `IOException` values; see [Errors](errors.md).
 
 ## Testing Code Written for Ftp or SFtp
 

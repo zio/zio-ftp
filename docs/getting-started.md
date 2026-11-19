@@ -41,7 +41,7 @@ Ports 30000 to 30009 carry the data connections, which the server opens in passi
 
 ## Describe the Connection
 
-Every connection starts with a settings value. For plain FTP it is `UnsecureFtpSettings`, and its three-argument `apply` takes the host, the port and the credentials:
+Every connection starts with a settings value. For plain FTP it is `UnsecureFtpSettings`, and its three-argument `UnsecureFtpSettings.apply` takes the host, the port and the credentials:
 
 ```scala mdoc:silent
 import zio.ftp._
@@ -70,7 +70,7 @@ val program: ZIO[Ftp, IOException, Unit] =
   } yield ()
 ```
 
-`Ftp.upload` takes the bytes as a `ZStream`, so the same call works for a short string and for a multi-gigabyte file. `Ftp.ls` and `Ftp.readFile` return streams too: `runCollect` gathers the elements once we want them all.
+`Ftp.upload` takes the bytes as a `ZStream`, so the same call works for a short string and for a multi-gigabyte file. `Ftp.ls` and `Ftp.readFile` return streams too: `ZStream#runCollect` gathers the elements once we want them all.
 
 ## Provide the Connection
 

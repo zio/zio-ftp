@@ -12,7 +12,7 @@ sidebar_label: "Introduction"
 
 ZIO FTP wraps two Java clients: [Apache Commons Net](https://commons.apache.org/proper/commons-net/) for FTP and FTPS, and [sshj](https://github.com/hierynomus/sshj) for SFTP. It runs their blocking calls on ZIO's blocking thread pool and turns their errors into typed `IOException` failures. The library offers:
 
-- One set of operations for all three protocols: `ls`, `lsDescendant`, `stat`, `readFile`, `upload`, `mkdir`, `rm`, `rmdir` and `rename`.
+- One set of operations for all three protocols: `Ftp.ls`, `Ftp.lsDescendant`, `Ftp.stat`, `Ftp.readFile`, `Ftp.upload`, `Ftp.mkdir`, `Ftp.rm`, `Ftp.rmdir` and `Ftp.rename`, with the same accessors on `SFtp` and `StubFtp`.
 - Streaming reads and writes, so large files never have to fit in memory.
 - Password and SSH key authentication for SFTP, and explicit or implicit TLS for FTPS.
 - Connection settings for passive mode, timeouts, TCP keepalive and proxies.
@@ -65,4 +65,4 @@ The rest of the documentation is organized as follows:
 - [Environment](environment.md) explains how the connection lives in the ZIO environment.
 - The reference section documents every operation ([Ftp API](reference/ftp-accessors.md)), every layer and constructor ([Connecting](reference/connecting.md)), and every settings type ([FTP and FTPS settings](reference/unsecure-ftp-settings.md), [SFTP settings](reference/secure-ftp-settings.md)), plus [FtpResource](reference/ftp-resource.md), [Errors](reference/errors.md) and [TestFtp](reference/test-ftp.md).
 - The [tutorial](tutorials/back-up-a-folder.md) builds a small backup tool from scratch.
-- The how-to guides solve one task each, such as [connecting over SFTP with a key](guides/connect-over-sftp-with-a-key.md) or [testing without a server](guides/test-without-a-server.md).
+- The how-to guides solve one task each: [uploading a file](guides/upload-a-file.md), [downloading a file](guides/download-a-file.md), [listing a directory recursively](guides/list-a-directory-recursively.md), [connecting over SFTP with a key](guides/connect-over-sftp-with-a-key.md), [using FTPS](guides/use-ftps.md), [keeping a connection alive](guides/keep-a-connection-alive.md), [testing without a server](guides/test-without-a-server.md) and [calling an unwrapped client method](guides/call-an-unwrapped-client-method.md).

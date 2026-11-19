@@ -82,7 +82,7 @@ def runOnStub[A](f: FtpAccessors[Any] => ZIO[Any, IOException, A]): A =
 The helper has three parts:
 
 - `ZIO.serviceWithZIO[StubFtp](f)` takes the connection out of the environment and passes it to `f`.
-- `provide(stub(...))` builds the stub layer around the `serverDisk` folder. A real program provides `unsecure` or `secure` here instead.
+- `ZIO#provide` with `stub(...)` builds the stub layer around the `serverDisk` folder. A real program provides `unsecure` or `secure` here instead.
 - `Runtime.default.unsafe.run` runs the effect so the page can show the result. A real program extends `ZIOAppDefault` instead, as we do in section 7.
 
 Now let's ask the server what is in its root directory. `FtpAccessors#ls` returns a stream of entries, and `ZStream#runCollect` gathers them:
@@ -261,7 +261,7 @@ The program differs from the stub runs in three places:
 
 - `settings` describes the server; the values match the local server from [Getting Started](../getting-started.md).
 - `ZIO.serviceWithZIO[Ftp]` takes the FTP connection from the environment, just as `runOnStub` did with `StubFtp`.
-- `provide(unsecure(settings))` connects before the program starts and disconnects when it ends.
+- `ZIO#provide` with `unsecure(settings)` connects before the program starts and disconnects when it ends.
 
 Try it: start the Pure-FTPd container from Getting Started, run `BackupApp`, then run it a second time and notice that it uploads nothing.
 

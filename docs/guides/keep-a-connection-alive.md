@@ -98,7 +98,7 @@ The retry reconnects on every attempt, because each attempt runs `UnsecureFtp.co
 
 ## SFTP Connections
 
-The SFTP implementation has no keepalive or timeout settings; an SSH connection carries its own traffic over a single TCP connection and is less prone to the idle control connection problem, but a NAT gateway can still drop it when idle. For SFTP jobs that sleep between runs, use short-lived connections with `SecureFtp.connect`, reusing `syncOnce`:
+`SecureFtpSettings` has no dedicated keepalive or timeout fields; an SSH connection carries its own traffic over a single TCP connection and is less prone to the idle control connection problem, but a NAT gateway can still drop it when idle. For SFTP jobs that sleep between runs, use short-lived connections with `SecureFtp.connect`, reusing `syncOnce`:
 
 ```scala mdoc:compile-only
 val sftpSync: ZIO[Any, IOException, Unit] =

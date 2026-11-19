@@ -13,7 +13,7 @@ In this guide, we download files with ZIO FTP: read a small text file into a str
 
 ## The Problem
 
-With the Commons Net client, a download is a `retrieveFileStream` call whose result may be `null`, followed by a copy loop and a `completePendingCommand` call that is easy to forget. Without it, the next command on the connection fails:
+With the Commons Net client, a download is an `FTPClient#retrieveFileStream` call whose result may be `null`, followed by a copy loop and an `FTPClient#completePendingCommand` call that is easy to forget. Without it, the next command on the connection fails:
 
 ```scala mdoc:compile-only
 import org.apache.commons.net.ftp.FTPClient
@@ -117,8 +117,13 @@ def readIfPresent(remote: String): ZIO[Ftp, IOException, Option[String]] =
 
 ## One Download at a Time
 
-FTP sends every command over one control connection, and a download keeps it busy until the stream ends. Consume or close each `Ftp.readFile` stream before starting the next operation on the same connection, as all the examples above do by running the stream to completion. For parallel downloads, open one connection per download; see [FTP, FTPS and SFTP](../protocols.md#one-connection-one-conversation).
+FTP sends every command over one control connection, and a download keeps it busy until the stream ends. Consume or close each `Ftp.readFile` stream before starting the next operation on the same connection, as all the examples above do by running the stream to completion. For parallel downloads, open one connection per download; see [FTP, FTPS and SFTP](../protocols.md#one-connection-one-conversation). The following function downloads several files one after another, which is safe on a single connection because `ZIO.foreach` runs the downloads sequentially:
+
+```scala mdoc:silent
+def saveAll(names: List[String]): ZIO[Ftp, IOException, Long] =
+  ZIO.foreach(names)(name => saveTo(s"/incoming/$name", s"downloads/$name")).map(_.sum)
+```
 
 ## Going Further
 
-To send files the other way, see [Upload a File](upload-a-file.md). For every parameter of `readFile` and its per-protocol behavior, see the [Ftp API](../reference/ftp-accessors.md#reading-files) reference.
+To send files the other way, see [Upload a File](upload-a-file.md). For every parameter of `FtpAccessors#readFile` and its per-protocol behavior, see the [Ftp API](../reference/ftp-accessors.md#reading-files) reference.

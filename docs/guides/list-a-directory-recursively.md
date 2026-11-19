@@ -84,7 +84,7 @@ onServer(ftp => ftp.lsDescendant("/photos").filter(_.size > 2500).map(_.path).ru
 
 ## Including Directories
 
-Sometimes you need the directories too, for example to recreate the tree elsewhere. `ls` lists one level with both files and directories, so a walk that emits every entry and descends into directories is a few lines:
+Sometimes you need the directories too, for example to recreate the tree elsewhere. `FtpAccessors#ls` lists one level with both files and directories, so a walk that emits every entry and descends into directories is a few lines:
 
 ```scala mdoc:silent
 def walk(ftp: FtpAccessors[Any], dir: String): ZStream[Any, IOException, FtpResource] =
@@ -100,7 +100,7 @@ Each directory appears before its contents:
 onServer(ftp => walk(ftp, "/photos").map(e => if (e.isDirectory.contains(true)) s"${e.path}/" else e.path).runCollect.map(_.sorted))
 ```
 
-`isDirectory` is an `Option[Boolean]`, so we test it with `contains(true)`; `FtpAccessors#ls` always fills it, but `FtpAccessors#stat` on SFTP leaves it as `None`.
+`isDirectory` is an `Option[Boolean]`, so we test it with `Option#contains`; `FtpAccessors#ls` always fills it, but `FtpAccessors#stat` on SFTP leaves it as `None`.
 
 ## Limiting the Depth
 
@@ -133,4 +133,4 @@ val tree: ZIO[Any, IOException, Chunk[FtpResource]] =
 
 ## Going Further
 
-For the fields of each listed entry, see [FtpResource](../reference/ftp-resource.md); on FTP, `ls` timestamps often have only minute precision. For `ls`, `lsDescendant` and `stat` in detail, see the [Ftp API](../reference/ftp-accessors.md#inspecting-files) reference.
+For the fields of each listed entry, see [FtpResource](../reference/ftp-resource.md); on FTP, `FtpAccessors#ls` timestamps often have only minute precision. For `FtpAccessors#ls`, `FtpAccessors#lsDescendant` and `FtpAccessors#stat` in detail, see the [Ftp API](../reference/ftp-accessors.md#inspecting-files) reference.

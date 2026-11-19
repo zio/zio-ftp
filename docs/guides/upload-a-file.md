@@ -115,7 +115,7 @@ def uploadAtomically[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[
 }
 ```
 
-`Ftp.rename` fails with `Exception` in its signature, so `refineToOrDie[IOException]` narrows it back to `IOException`; the failure is always an `IOException` at runtime. Many servers refuse to rename over an existing file, so remove the old file first if you replace one.
+`Ftp.rename` fails with `Exception` in its signature, so `ZIO#refineToOrDie` narrows it back to `IOException`; the failure is always an `IOException` at runtime. Many servers refuse to rename over an existing file, so remove the old file first if you replace one.
 
 :::warning
 On SFTP, `SFtp.upload` does not truncate an existing file. Uploading a shorter file over a longer one leaves the old file's trailing bytes in place. Upload to a new name and rename it, as above, or remove the old file with `SFtp.rm` first.
@@ -137,4 +137,4 @@ object UploadApp extends ZIOAppDefault {
 
 ## Going Further
 
-To read files back, see [Download a File](download-a-file.md). For every parameter of `upload` and the per-protocol differences, see the [Ftp API](../reference/ftp-accessors.md#writing-files) reference.
+To read files back, see [Download a File](download-a-file.md). For every parameter of `FtpAccessors#upload` and the per-protocol differences, see the [Ftp API](../reference/ftp-accessors.md#writing-files) reference.

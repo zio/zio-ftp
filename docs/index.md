@@ -56,7 +56,7 @@ object QuickStart extends ZIOAppDefault {
 
 For SFTP, the same program uses `SecureFtpSettings`, the `SFtp` accessors and the `secure` layer. The [Getting Started](getting-started.md) page runs a program like this one against a local server, step by step.
 
-## Documentation
+## Learn More
 
 The rest of the documentation is organized as follows:
 

@@ -100,4 +100,4 @@ def chmodOctal(path: String, mode: String): ZIO[SFtp, IOException, Unit] =
 
 ## Going Further
 
-For the Java clients' full APIs, see the [Commons Net `FTPClient`](https://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/ftp/FTPClient.html) and [sshj](https://github.com/hierynomus/sshj) documentation. For `execute` alongside the other operations, see the [Ftp API](../reference/ftp-accessors.md#running-unwrapped-client-calls) reference.
+For the Java clients' full APIs, see the [Commons Net `FTPClient`](https://commons.apache.org/proper/commons-net/apidocs/org/apache/commons/net/ftp/FTPClient.html) and [sshj](https://github.com/hierynomus/sshj) documentation. For `FtpAccessors#execute` alongside the other operations, see the [Ftp API](../reference/ftp-accessors.md#running-unwrapped-client-calls) reference.

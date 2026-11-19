@@ -26,7 +26,7 @@ ssh.connect("sftp.example.com", 22)
 ssh.authPassword("app", "s3cret")
 ```
 
-`SecureFtpSettings.apply` makes the same choices, a password and no host key check, so this guide changes both.
+`SecureFtpSettings.apply` also skips the host key check, and `PasswordCredentials` sends a password, so this guide changes both.
 
 ## Prerequisites
 

@@ -25,7 +25,7 @@ ZIO FTP is published for Scala 2.12, 2.13 and 3 on the JVM. To use it, add the f
 ```scala
 libraryDependencies ++= Seq(
   // FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
-  "dev.zio" %% "zio-ftp" % "0.5.3"
+  "dev.zio" %% "zio-ftp" % "0.5.4"
 )
 ```
 

@@ -33,16 +33,14 @@ ZIO FTP includes a test double, `TestFtp`, that implements every operation on a 
 You need the `zio-ftp` dependency from [Getting Started](../getting-started.md) and ZIO Test:
 
 ```scala
-libraryDependencies ++= Seq(
-  // FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
-  "dev.zio" %% "zio-ftp" % "@VERSION@",
+// FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
+libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 
-  // ZIO's test framework
-  "dev.zio" %% "zio-test" % "2.1.11" % Test,
+// ZIO's test framework
+libraryDependencies += "dev.zio" %% "zio-test" % "2.1.11" % Test
 
-  // runs ZIO Test specs from sbt
-  "dev.zio" %% "zio-test-sbt" % "2.1.11" % Test
-)
+// runs ZIO Test specs from sbt
+libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.1.11" % Test
 ```
 
 Use the ZIO version your project already depends on for the two test artifacts.

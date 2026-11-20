@@ -15,10 +15,8 @@ You need sbt, a JDK (ZIO FTP is tested on Java 17 and 21), and Docker to run a l
 ZIO FTP is published for Scala 2.12, 2.13 and 3 on the JVM. Add it to your `build.sbt`:
 
 ```scala
-libraryDependencies ++= Seq(
-  // FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
-  "dev.zio" %% "zio-ftp" % "@VERSION@"
-)
+// FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
+libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 ```
 
 The library depends on ZIO and ZIO Streams, so you don't need to add them separately.

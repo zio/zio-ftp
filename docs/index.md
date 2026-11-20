@@ -23,10 +23,8 @@ ZIO FTP wraps two Java clients: [Apache Commons Net](https://commons.apache.org/
 ZIO FTP is published for Scala 2.12, 2.13 and 3 on the JVM. To use it, add the following to your `build.sbt`:
 
 ```scala
-libraryDependencies ++= Seq(
-  // FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
-  "dev.zio" %% "zio-ftp" % "@VERSION@"
-)
+// FTP, FTPS and SFTP clients as ZIO effects and streams (JVM only)
+libraryDependencies += "dev.zio" %% "zio-ftp" % "@VERSION@"
 ```
 
 ## Example

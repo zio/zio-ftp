@@ -39,9 +39,15 @@ import zio.ZIO.{ acquireRelease, attemptBlockingIO, fromAutoCloseable, scoped }
  */
 sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
+  /**
+   * Returns the resource at `path`, or `None` when the path does not exist.
+   */
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
+  /**
+   * Streams the bytes of the file at `path`, starting at byte `fileOffset`. The stream reads `chunkSize` bytes per chunk. The file is opened for reading when the stream starts.
+   */
   def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
     for {
       remoteFile             <- ZStream.fromZIO(
@@ -58,15 +64,27 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       input <- ZStream.fromInputStreamZIO(ZIO.succeed(is), chunkSize)
     } yield input
 
+  /**
+   * Deletes the file at `path`.
+   */
   def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.rm(path))
 
+  /**
+   * Deletes the directory at `path`. The SFTP server refuses to delete a directory that is not empty.
+   */
   def rmdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.rmdir(path))
 
+  /**
+   * Creates the directory at `path`, together with any missing parent directories.
+   */
   def mkdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.mkdirs(path))
 
+  /**
+   * Lists the entries of the directory at `path`. A missing directory gives an empty stream.
+   */
   def ls(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(
@@ -79,9 +97,15 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromResource)
 
+  /**
+   * Renames or moves the file or directory at `oldPath` to `newPath`.
+   */
   def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
     execute(_.rename(oldPath, newPath))
 
+  /**
+   * Lists the files below the directory at `path`, recursively. Directories are not emitted. A missing top-level directory gives an empty stream.
+   */
   def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(
@@ -97,6 +121,11 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
         else ZStream.succeed(FtpResource.fromResource(f))
       }
 
+  /**
+   * Writes `source` to the file at `path`, creating the file when it does not exist.
+   *
+   * The file is not truncated before writing. When the existing file is longer than the new data, the bytes after the end of the new data remain in the file.
+   */
   def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     for {
       remoteFile <- execute(_.open(path, util.EnumSet.of(OpenMode.WRITE, OpenMode.CREAT)))
@@ -114,12 +143,29 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
     attemptBlockingIO(f(unsafeClient))
 }
 
+/**
+ * Factory methods for the SFTP client.
+ */
 object SecureFtp {
+
+  /**
+   * The underlying client: sshj's `SFTPClient`.
+   */
   type Client = SFTPClient
 
+  /**
+   * Wraps an open `SFTPClient` as a `SecureFtp`. The wrapper does not close the client.
+   */
   def unsafe(c: Client): SecureFtp =
     new SecureFtp(c) {}
 
+  /**
+   * Connects to the SFTP server in `settings` and authenticates with its credentials. The SSH connection is closed when the enclosing `Scope` closes.
+   *
+   * A failure to connect or to authenticate fails with a `ConnectionError`.
+   *
+   * When `proxy` is set, the TCP connection is opened through it. When `strictHostKeyChecking` is `false`, the server's host key is accepted without checking. When it is `true`, the keys in `knownHosts` are loaded and the server's host key is checked against them.
+   */
   def connect(settings: SecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] = {
     val ssh = new SSHClient(settings.sshConfig)
     import settings._

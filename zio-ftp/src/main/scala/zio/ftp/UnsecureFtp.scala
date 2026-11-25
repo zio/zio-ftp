@@ -32,9 +32,17 @@ import javax.net.SocketFactory
  */
 sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Client] {
 
+  /**
+   * Returns the resource at `path`, read from an `MLST` reply, or `None` when the server gives no entry for `path`.
+   */
   def stat(path: String): ZIO[Any, IOException, Option[FtpResource]] =
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
+  /**
+   * Streams the file at `path`, starting at byte `fileOffset`. The offset is sent to the server with `REST`. The stream reads `chunkSize` bytes per chunk.
+   *
+   * Fails with an `InvalidPathError` when the file cannot be opened. Fails with a `FileTransferIncompleteError` when the server does not confirm that the transfer finished.
+   */
   def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long): ZStream[Any, IOException, Byte] = {
     def error(cause: Option[Exception] = None): Left[FileTransferIncompleteError, Unit] =
       Left(
@@ -74,27 +82,42 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
     }
   }
 
+  /**
+   * Deletes the file at `path`. Fails with an `InvalidPathError` when the server refuses the deletion.
+   */
   def rm(path: String): ZIO[Any, IOException, Unit] =
     execute(_.deleteFile(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete file : $path"))
       .unit
 
+  /**
+   * Removes the directory at `path`. Fails with an `InvalidPathError` when the server refuses the removal.
+   */
   def rmdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.removeDirectory(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot delete directory : $path"))
       .unit
 
+  /**
+   * Creates the directory at `path` with one `MKD` command. Fails with an `InvalidPathError` when the server refuses it.
+   */
   def mkdir(path: String): ZIO[Any, IOException, Unit] =
     execute(_.makeDirectory(path))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot create directory : $path"))
       .unit
 
+  /**
+   * Lists the entries of the directory at `path`. The `path` of each entry is `path`, a `/`, and the entry name. When `path` is `/`, the entry path is `/` followed by the entry name.
+   */
   def ls(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(execute(_.listFiles(path).toList))
       .flatMap(ZStream.fromIterable(_))
       .map(FtpResource.fromFtpFile(_, Some(path)))
 
+  /**
+   * Lists the files below `path`, recursively. Directories are not emitted. Each entry path is built as in `ls`.
+   */
   def lsDescendant(path: String): ZStream[Any, IOException, FtpResource] =
     ZStream
       .fromZIO(execute(_.listFiles(path).toList))
@@ -107,6 +130,9 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
           ZStream(FtpResource.fromFtpFile(f, Some(path)))
       }
 
+  /**
+   * Writes `source` to the file at `path` with one `STOR` command. Fails with an `InvalidPathError` when the server refuses the upload.
+   */
   def upload[R](path: String, source: ZStream[R, Throwable, Byte]): ZIO[R, IOException, Unit] =
     ZIO.scoped[R] {
       source.toInputStream
@@ -118,6 +144,9 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
         )
     }
 
+  /**
+   * Renames or moves `oldPath` to `newPath`. Fails with an `InvalidPathError` when the server refuses the rename.
+   */
   def rename(oldPath: String, newPath: String): ZIO[Any, IOException, Unit] =
     execute(_.rename(oldPath, newPath))
       .filterOrFail(identity)(InvalidPathError(s"Path is invalid. Cannot rename $oldPath to $newPath"))
@@ -127,12 +156,29 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
     attemptBlockingIO(f(unsafeClient))
 }
 
+/**
+ * Factory methods for the FTP client.
+ */
 object UnsecureFtp {
+
+  /**
+   * The underlying client: commons-net's `FTPClient`. When `sslParams` is set, the connection uses its `FTPSClient` subclass.
+   */
   type Client = JFTPClient
 
+  /**
+   * Wraps an open `FTPClient` as an `UnsecureFtp`. The wrapper does not disconnect the client.
+   */
   def unsafe(c: Client): UnsecureFtp                                                            =
     new UnsecureFtp(c) {}
 
+  /**
+   * Connects to the FTP server in `settings` and logs in with its credentials. The client is disconnected when the enclosing `Scope` closes.
+   *
+   * After the login, the client sets the BINARY transfer type when `binary` is `true`, passive mode when `passiveMode` is `true`, and the remote verification flag when `remoteVerificationEnabled` is `true`. When `sslParams` is set, it sends `PBSZ` and `PROT`. The data timeout is set from `dataTimeout`.
+   *
+   * Fails with a `ConnectionError` when the connection fails or the server refuses the login. In both cases the client is not disconnected.
+   */
   def connect(settings: UnsecureFtpSettings): ZIO[Scope, ConnectionError, FtpAccessors[Client]] =
     acquireRelease(
       ZIO.runtime

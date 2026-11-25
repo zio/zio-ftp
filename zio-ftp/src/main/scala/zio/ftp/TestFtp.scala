@@ -31,7 +31,7 @@ import zio.{ Cause, ZIO }
 object TestFtp {
 
   /**
-   * Creates accessors that resolve each path under the local directory `root`. Paths in results start with `/` and are relative to `root`. A missing directory gives an empty `ls` or `lsDescendant`.
+   * Creates accessors that resolve each path relative to the local directory root `root`. Paths in results start with `/` and are relative to `root`. A missing directory gives an empty `ls` or `lsDescendant`.
    *
    * `execute` calls its function with `()` and does no IO. An exception thrown by that function becomes a defect. `lsDescendant` on a file path returns that file. `upload` turns a `source` error other than `IOException` into a defect. `readFile` reads the whole file into memory before it streams it, and it ignores `chunkSize`. `upload` truncates an existing file before it writes. `rmdir` behaves like `rm`.
    */

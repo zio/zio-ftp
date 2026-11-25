@@ -19,7 +19,7 @@ package zio.ftp
 import java.io.IOException
 
 /**
- * A connection to an FTP or SFTP server failed, or the server refused the login. `cause` holds the underlying exception.
+ * A connection to an FTP or SFTP server failed, or the server refused the login. `cause` holds the underlying exception, or, when the FTP server refuses the login, a `Throwable` with the same message.
  */
 final case class ConnectionError(message: String, cause: Throwable) extends IOException(message, cause)
 
@@ -35,7 +35,7 @@ object ConnectionError {
 }
 
 /**
- * Raised by `UnsecureFtp` operations and by the test stub when a path does not exist or the server refuses an operation on it.
+ * Raised by `UnsecureFtp` when the server refuses `rm`, `rmdir`, `mkdir`, `upload` or `rename`, or when `readFile` cannot open the file. The test stub raises it only from `readFile`, when the file does not exist.
  */
 final case class InvalidPathError(message: String) extends IOException(message)
 

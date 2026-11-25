@@ -39,7 +39,7 @@ sealed abstract class UnsecureFtp(unsafeClient: Client) extends FtpAccessors[Cli
     execute(c => Option(c.mlistFile(path))).map(_.map(FtpResource.fromFtpFile(_)))
 
   /**
-   * Streams the file at `path`, starting at byte `fileOffset`. The offset is sent to the server with `REST`. The stream reads `chunkSize` bytes per chunk.
+   * Streams the file at `path`, starting at byte `fileOffset`. When `fileOffset` is greater than 0, it is sent to the server with `REST`. The stream reads up to `chunkSize` bytes per chunk.
    *
    * Fails with an `InvalidPathError` when the file cannot be opened. Fails with a `FileTransferIncompleteError` when the server does not confirm that the transfer finished.
    */
@@ -175,7 +175,7 @@ object UnsecureFtp {
   /**
    * Connects to the FTP server in `settings` and logs in with its credentials. The client is disconnected when the enclosing `Scope` closes.
    *
-   * After the login, the client sets the BINARY transfer type when `binary` is `true`, passive mode when `passiveMode` is `true`, and the remote verification flag when `remoteVerificationEnabled` is `true`. When `sslParams` is set, it sends `PBSZ` and `PROT`. The data timeout is set from `dataTimeout`.
+   * After the login, the client sets the BINARY transfer type when `binary` is `true`, passive mode when `passiveMode` is `true`, and the remote verification flag when `remoteVerificationEnabled` is `true`. When `sslParams` is set, it sends `PBSZ` and `PROT`. When `dataTimeout` is set, the data timeout is set from it. These settings are applied after the login, even when the login is refused.
    *
    * Fails with a `ConnectionError` when the connection fails or the server refuses the login. In both cases the client is not disconnected.
    */

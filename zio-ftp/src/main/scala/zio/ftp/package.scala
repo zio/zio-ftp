@@ -70,7 +70,7 @@ package object ftp {
       ZIO.serviceWithZIO(_.execute(f))
 
     /**
-     * Returns the resource at `path` through the `Ftp` service, or `None` when the path does not exist.
+     * Returns the resource at `path` through the `Ftp` service, or `None` when the server does not return an `MLST` entry for `path` (for example, when the path does not exist).
      */
     def stat(path: String): ZIO[Ftp, IOException, Option[FtpResource]] =
       ZIO.serviceWithZIO(_.stat(path))
@@ -136,7 +136,7 @@ package object ftp {
       } yield ()
 
     /**
-     * Streams the file at `path` through the `Ftp` service, starting at byte `fileOffset` and reading `chunkSize` bytes per chunk.
+     * Streams the file at `path` through the `Ftp` service, starting at byte `fileOffset` and reading up to `chunkSize` bytes per chunk.
      *
      * {{{
      * import java.io.IOException
@@ -217,7 +217,7 @@ package object ftp {
       } yield ()
 
     /**
-     * Streams the file at `path` through the `SFtp` service, starting at byte `fileOffset` and reading `chunkSize` bytes per chunk.
+     * Streams the file at `path` through the `SFtp` service, starting at byte `fileOffset` and reading up to `chunkSize` bytes per chunk.
      */
     def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[SFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))
@@ -289,7 +289,7 @@ package object ftp {
       } yield ()
 
     /**
-     * Streams the file at `path` through the `StubFtp` service, starting at byte `fileOffset` and reading `chunkSize` bytes per chunk.
+     * Streams the file at `path` through the `StubFtp` service, starting at byte `fileOffset`. The stub reads the whole file into memory and ignores `chunkSize`.
      */
     def readFile(path: String, chunkSize: Int = 2048, fileOffset: Long = 0): ZStream[StubFtp, IOException, Byte] =
       ZStream.serviceWithStream(_.readFile(path, chunkSize, fileOffset))

@@ -46,7 +46,7 @@ sealed abstract class SecureFtp(unsafeClient: Client) extends FtpAccessors[Clien
     execute(c => Option(c.statExistence(path)).map(FtpResource(path, _)))
 
   /**
-   * Streams the bytes of the file at `path`, starting at byte `fileOffset`. The stream reads `chunkSize` bytes per chunk. The file is opened for reading when the stream starts.
+   * Streams the bytes of the file at `path`, starting at byte `fileOffset`. The stream reads up to `chunkSize` bytes per chunk. The file is opened for reading when the stream starts.
    */
   def readFile(path: String, chunkSize: Int, fileOffset: Long): ZStream[Any, IOException, Byte] =
     for {

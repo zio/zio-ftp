@@ -4,10 +4,17 @@ import java.io.IOException
 import zio.ZIO
 import zio.stream.ZStream
 
+/**
+ * Operations on an FTP or SFTP server.
+ *
+ * The type parameter `A` is the client type that `execute` passes to its function: `UnsecureFtp.Client` for FTP, `SecureFtp.Client` for SFTP, and `Unit` for the test stub.
+ *
+ * Each operation returns a `ZIO` or a `ZStream` whose error type is `IOException`. An exception that is not an `IOException` becomes a defect, not a failure.
+ */
 trait FtpAccessors[+A] {
 
   /**
-   * Lift unsafe operation that does blocking IO into a ZIO effect. If the operation failed an error will be emitted
+   * Runs `f` on the client as a blocking effect. An `IOException` thrown by `f` becomes a failure, and any other exception becomes a defect. The test stub runs `f` with `ZIO.succeed`, so every exception that `f` throws becomes a defect.
    *
    * @param f unsafe function to lift
    * @tparam T return value
@@ -15,7 +22,7 @@ trait FtpAccessors[+A] {
   def execute[T](f: A => T): ZIO[Any, IOException, T]
 
   /**
-   * Check existence of a file. If the file doesn't exist, the operation will succeed by returning an empty ftp resource
+   * Returns the resource at `path`, or `None` when the path does not exist. On FTP, the result is also `None` whenever the server does not answer the `MLST` command with a positive completion reply, for example when the server does not support `MLST`. On SFTP the returned resource has `isDirectory` set to `None`.
    * If the operation failed an error will be emitted
    *
    * @param path absolute path of the file
@@ -42,7 +49,6 @@ trait FtpAccessors[+A] {
    * Delete a directory. If the operation failed, an error will be emitted
    *
    * @param path absolute path of the directory
-   * @return
    */
   def rmdir(path: String): ZIO[Any, IOException, Unit]
 
@@ -61,7 +67,8 @@ trait FtpAccessors[+A] {
   def ls(path: String): ZStream[Any, IOException, FtpResource]
 
   /**
-   * List of files from a base directory recursively. If the operation failed, an error will be emitted
+   * Lists the files below a base directory, recursively. Directories are not emitted.
+   * If the operation failed, an error will be emitted
    *
    * @param path absolute path of the directory
    */

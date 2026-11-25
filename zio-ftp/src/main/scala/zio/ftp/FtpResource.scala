@@ -41,8 +41,16 @@ final case class FtpResource(
   isDirectory: Option[Boolean]
 )
 
+/**
+ * Factory methods that convert the entries of a client listing into `FtpResource`.
+ */
 object FtpResource {
 
+  /**
+   * Converts a commons-net `FTPFile` into a resource. The resource path is the entry name when `path` is `None`. When `path` is `Some`, it is that path followed by `/` and the entry name, or `/` followed by the name when the path is `/`.
+   *
+   * The permissions come from the owner, group and world access bits of the listing.
+   */
   def fromFtpFile(f: FTPFile, path: Option[String] = None): FtpResource =
     FtpResource(
       path.fold(f.getName) {
@@ -55,6 +63,9 @@ object FtpResource {
       Some(f.isDirectory)
     )
 
+  /**
+   * Converts an sshj `RemoteResourceInfo` into a resource, using the path, size, modification time and permissions that the server reports.
+   */
   def fromResource(file: RemoteResourceInfo): FtpResource =
     FtpResource(
       file.getPath,
@@ -64,6 +75,9 @@ object FtpResource {
       Some(file.isDirectory)
     )
 
+  /**
+   * Creates a resource at `path` from sshj `FileAttributes`. `isDirectory` is always `None`, because this method does not read the file type from the attributes.
+   */
   def apply(path: String, attr: FileAttributes): FtpResource =
     FtpResource(path, attr.getSize, Instant.ofEpochSecond(attr.getMtime), posixFilePermissions(attr), None)
 

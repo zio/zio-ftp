@@ -25,8 +25,16 @@ import zio.nio.file.Files
 import zio.stream.{ ZSink, ZStream }
 import zio.{ Cause, ZIO }
 
+/**
+ * Creates the test stub that `zio.ftp.stub` provides. Each operation works on files under a local directory.
+ */
 object TestFtp {
 
+  /**
+   * Creates accessors that resolve each path under the local directory `root`. Paths in results start with `/` and are relative to `root`. A missing directory gives an empty `ls` or `lsDescendant`.
+   *
+   * `execute` calls its function with `()` and does no IO. `readFile` reads the whole file into memory before it streams it, and it ignores `chunkSize`. `upload` truncates an existing file before it writes. `rmdir` behaves like `rm`.
+   */
   def create(root: ZPath): FtpAccessors[Unit] =
     new FtpAccessors[Unit] {
       override def execute[T](f: Unit => T): ZIO[Any, IOException, T] = ZIO.succeed(f((): Unit))

@@ -9,12 +9,12 @@ import zio.stream.ZStream
  *
  * The type parameter `A` is the client type that `execute` passes to its function: `UnsecureFtp.Client` for FTP, `SecureFtp.Client` for SFTP, and `Unit` for the test stub.
  *
- * Each operation returns a `ZIO` or a `ZStream` that fails with an `IOException` when the operation fails.
+ * Each operation returns a `ZIO` or a `ZStream` whose error type is `IOException`. An exception that is not an `IOException` becomes a defect, not a failure.
  */
 trait FtpAccessors[+A] {
 
   /**
-   * Lift unsafe operation that does blocking IO into a ZIO effect. If the operation failed an error will be emitted
+   * Runs `f` on the client as a blocking effect. An `IOException` thrown by `f` becomes a failure, and any other exception becomes a defect. The test stub runs `f` with `ZIO.succeed`, so every exception that `f` throws becomes a defect.
    *
    * @param f unsafe function to lift
    * @tparam T return value
@@ -22,7 +22,7 @@ trait FtpAccessors[+A] {
   def execute[T](f: A => T): ZIO[Any, IOException, T]
 
   /**
-   * Returns the resource at `path`, or `None` when the path does not exist.
+   * Returns the resource at `path`, or `None` when the path does not exist. On FTP, the result is also `None` whenever the server does not answer the `MLST` command with a positive completion reply, for example when the server does not support `MLST`. On SFTP the returned resource has `isDirectory` set to `None`.
    * If the operation failed an error will be emitted
    *
    * @param path absolute path of the file

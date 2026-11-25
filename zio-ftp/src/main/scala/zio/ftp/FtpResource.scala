@@ -31,7 +31,7 @@ import scala.jdk.CollectionConverters._
  * @param size size in bytes
  * @param lastModified last modified date as a timestamp
  * @param permissions linux file system permissions
- * @param isDirectory boolean flag: 'true' if it is a directory, 'false' if it is a file. In some situation we cannot determine the type of the resource
+ * @param isDirectory `Some(true)` for a directory, `Some(false)` for any other entry type, including files and symbolic links, and `None` when the type is unknown, as for resources made by `FtpResource.apply(path, attr)`
  */
 final case class FtpResource(
   path: String,
@@ -47,9 +47,9 @@ final case class FtpResource(
 object FtpResource {
 
   /**
-   * Converts a commons-net `FTPFile` into a resource. The resource path is the entry name when `path` is `None`. When `path` is `Some`, it is that path followed by `/` and the entry name, or `/` followed by the name when the path is `/`.
+   * Converts a commons-net `FTPFile` into a resource. The resource path is the entry name when `path` is `None`. When `path` is `Some`, it is that path followed by `/` and the entry name, or `/` followed by the name when the path is `/`. A `path` that ends in `/` gives a double slash.
    *
-   * The permissions come from the owner, group and world access bits of the listing.
+   * The permissions come from the owner, group and world access bits of the listing. The method throws a `NullPointerException` when the listing entry has no timestamp.
    */
   def fromFtpFile(f: FTPFile, path: Option[String] = None): FtpResource =
     FtpResource(
@@ -64,7 +64,7 @@ object FtpResource {
     )
 
   /**
-   * Converts an sshj `RemoteResourceInfo` into a resource, using the path, size, modification time and permissions that the server reports.
+   * Converts an sshj `RemoteResourceInfo` into a resource. The path is the one sshj builds from the listed directory and the entry name. The size, modification time and permissions come from the attributes that the server reports.
    */
   def fromResource(file: RemoteResourceInfo): FtpResource =
     FtpResource(

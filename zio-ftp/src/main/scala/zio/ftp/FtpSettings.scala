@@ -37,15 +37,15 @@ sealed trait FtpCredentials
 final case class PasswordCredentials(username: String, password: String) extends FtpCredentials
 
 /**
- * Key file credentials used during ftp authentication
+ * Private key credentials used during SFTP authentication
  *
  * @param username identifier of the user in plain text
- * @param identity key file certificate used authentication
+ * @param identity the private key, given as key text or as a key file path
  */
 final case class KeyCredentials(username: String, identity: SftpIdentity) extends FtpCredentials
 
 /**
- * Settings to connect to a secure Ftp server (Ftp over ssh)
+ * Settings to connect to an SFTP server (SSH File Transfer Protocol)
  *
  * @param host hostname of ftp server (ipAddress / dnsName)
  * @param port port of communication used by the server
@@ -236,7 +236,7 @@ object SslParams {
 }
 
 /**
- * Settings to connect unsecure Ftp server
+ * Settings to connect to an FTP server, or to an FTPS server when `sslParams` is defined
  *
  * @param host hostname of ftp server (ipAddress / dnsName)
  * @param port port of communication used by the server
